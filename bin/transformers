@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php declare(strict_types=1);
+
+(static function () {
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+    if (!file_exists($autoload)) {
+        throw new RuntimeException('Install dependencies to run this script.');
+    }
+    require_once $autoload;
+
+    $args = $_SERVER['argv'];
+
+    foreach ($args as $key => $value) {
+        if ($value === '--init') {
+            OnnxRuntime\Vendor::check();
+            exit(0);
+        }
+
+        if ($value === '--') {
+            unset($args[$key]);
+        }
+    }
+})();

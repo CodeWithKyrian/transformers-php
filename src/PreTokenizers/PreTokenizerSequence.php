@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+
+namespace Codewithkyrian\Transformers\PreTokenizers;
+
+class PreTokenizerSequence extends PreTokenizer
+{
+    /**
+     * @var PreTokenizer[]
+     */
+    protected array $preTokenizers;
+
+    public function __construct(array $config)
+    {
+        $this->preTokenizers = array_map(
+            fn(array $config) => PreTokenizer::fromConfig($config),
+            $config['pre_tokenizers']
+        );
+    }
+
+    public function preTokenizeText(string|array $text, array $options): array
+    {
+        return array_reduce(
+            $this->preTokenizers,
+            fn(array $text, PreTokenizer $preTokenizer) => $preTokenizer->preTokenizeText($text, $options),
+            [$text]
+        );
+    }
+}

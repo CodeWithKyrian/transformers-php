@@ -1,0 +1,450 @@
+<?php
+
+declare(strict_types=1);
+
+
+namespace Codewithkyrian\Transformers\Utils;
+
+use Rindow\Math\Matrix\MatrixOperator;
+use Rindow\Math\Matrix\NDArrayPhp;
+
+class Tensor extends NDArrayPhp
+{
+
+
+    public function __construct($array = null, $dtype = null, array $shape = null, $offset = null)
+    {
+        parent::__construct($array, $dtype, $shape, $offset);
+    }
+
+    public static function getMo(): MatrixOperator
+    {
+        return new MatrixOperator();
+    }
+
+    public static function fromArray(array $array, ?string $dtype = null): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->array($array, $dtype);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    public static function fromNdArray(NDArrayPhp $ndArray): static
+    {
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a zero matrix with the given dimensions.
+     * @param array $shape The shape of the zero matrix to return.
+     * @param string|null $dtype The data type of the zero matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     * @return static
+     */
+    public static function zeros(array $shape, ?string $dtype = null): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->zeros($shape, $dtype);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a zero matrix like the given one.
+     *
+     * @param Tensor $other The tensor to copy the shape and dtype from.
+     */
+    public static function zerosLike(Tensor $other): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->zerosLike($other);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+
+    /**
+     * Return a one matrix with the given dimensions.
+     *
+     * @param array $shape The shape of the one matrix to return.
+     * @param string|null $dtype The data type of the one matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     * @return static
+     */
+    public static function ones(array $shape, ?string $dtype = null): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->ones($shape, $dtype);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a one matrix like the given one.
+     *
+     * @param Tensor $other The tensor to copy the shape and dtype from.
+     */
+    public static function onesLike(Tensor $other): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->ones($other->shape(), $other->dtype());
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+
+    /**
+     * Add two NDArrays element-wise, A + B
+     *
+     * @param Tensor $other The NDArray to add to this NDArray.
+     * @return static
+     */
+    public function add(Tensor $other): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->add($this, $other);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a new Tensor with every element added by a constant.
+     *
+     * @param float|int $scalar The constant to add.
+     * @return static
+     */
+    public function addScalar(float|int $scalar): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->op($this, '+', $scalar);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a new Tensor with the sigmoid function applied to each element.
+     * @return self
+     */
+    public function sigmoid(): self
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->f(fn($x) => 1 / (1 + exp(-$x)), $this);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a new Tensor with every element multiplied by a constant.
+     *
+     * @param float|int $scalar The constant to multiply by.
+     *
+     * @return self
+     */
+    public function multiplyScalar(float|int $scalar): self
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->op($this, '*', $scalar);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a transposed version of this Tensor.
+     * @return $this
+     */
+    public function transpose(): self
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->transpose($this);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Returns the matrix norm or vector norm of a given tensor.
+     *
+     * @param int $ord Order of the norm. Supported values are 1, 2, Infinity.
+     * @param int|null $dim The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
+     * @param bool $keepdims If true, retains reduced dimensions with length 1.
+     *
+     * @return static
+     */
+    public function norm(int $ord = 2, ?int $dim = null, bool $keepdims = false): static
+    {
+        $mo = self::getMo();
+
+        if ($dim === null) {
+            $val = pow(array_reduce($this->_buffer, function ($carry, $item) use ($ord) {
+                return $carry + pow($item, $ord);
+            }, 0), 1 / $ord);
+
+            return new Tensor([$val], $this->dtype(), []);
+        }
+
+        // Negative indexing
+        $dim = $this->safeIndex($dim, $this->ndim());
+
+        // Calculate the shape of the resulting array after summation
+        $resultDims = $this->shape();
+        $resultDims[$dim] = 1; // Remove the specified axis
+
+        // Create a new array to store the accumulated values
+        $result = $this->zeros([count($this->_buffer) / $this->shape()[$dim]]);
+
+        // Iterate over the data array
+        foreach ($this->_buffer as $i => $value) {
+            // Calculate the index in the resulting array
+            $resultIndex = 0;
+            $num = $i;
+            $resultMultiplier = 1;
+
+            for ($j = $this->ndim() - 1; $j >= 0; --$j) {
+                $size = $this->shape()[$j];
+
+                if ($j !== $dim) {
+                    $index = $num % $size;
+                    $resultIndex += $index * $resultMultiplier;
+                    $resultMultiplier *= $resultDims[$j];
+                }
+
+                $num = floor($num / $size);
+            }
+
+            // Accumulate the value at the current index
+            $result[$resultIndex] += pow($this->_buffer[$i], $ord);
+        }
+
+        if ($ord === 1) {
+            $result = $mo->op($result, '**', 1 / $ord);
+        }
+
+        if (!$keepdims) {
+            array_splice($resultDims, $dim, 1);
+        }
+
+        return new static($result->toArray(), $result->dtype(), $resultDims);
+    }
+
+    /**
+     * Safely calculates the positive index within the specified size and dimension.
+     * @param int $index The input index.
+     * @param int $size The size of the dimension.
+     * @param int|null $dimension The dimension (optional).
+     * @return int The positive index within bounds.
+     * @throws \Exception If the index is out of bounds.
+     */
+    protected function safeIndex(int $index, int $size, ?int $dimension = null): int
+    {
+        if ($index < -$size || $index >= $size) {
+            throw new \Exception("IndexError: index $index is out of bounds for dimension"
+                . ($dimension === null ? '' : ' ' . $dimension) . " with size $size"
+            );
+        }
+
+        if ($index < 0) {
+            // Negative indexing, ensuring positive index
+            $index = (($index % $size) + $size) % $size;
+        }
+
+        return $index;
+    }
+
+    /**
+     * Performs `L_p` normalization of inputs over specified dimension.
+     *
+     * @param int $p Order of the norm. Supported values are 1, 2, Infinity.
+     * @param int|null $dim The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
+     *
+     * @return static The normalized tensor.
+     */
+    public function normalize(int $p = 2, ?int $dim = null): static
+    {
+        $mo = self::getMo();
+
+        $result = clone $this;
+
+        $dim = $result->safeIndex($dim, $result->ndim());
+
+        $norm = $result->norm($p, $dim, true);
+
+        foreach ($norm->_buffer as $i => $value) {
+            $resultIndex = 0;
+            $num = $i;
+            $resultMultiplier = 1;
+
+            for ($j = $result->ndim() - 1; $j >= 0; --$j) {
+                $size = $result->shape()[$j];
+
+                if ($j !== $dim) {
+                    $index = $num % $size;
+                    $resultIndex += $index * $resultMultiplier;
+                    $resultMultiplier *= $result->shape()[$j];
+                }
+
+                $num = floor($num / $size);
+            }
+
+            // Divide by normalized value
+            $result->_buffer[$i] /= $norm->_buffer[$resultIndex];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns a tensor with all specified dimensions of input of size 1 removed.
+     *
+     * @param ?int $dim If given, the input will be squeezed only in the specified dimensions.
+     *
+     * @return static The squeezed tensor.
+     */
+    public function squeeze(?int $dim = null): static
+    {
+        $mo = self::getMo();
+
+        $result = clone $this;
+
+        if ($dim === null) {
+            $result->_buffer = array_filter($result->_buffer, function ($value) {
+                return $value !== 1;
+            });
+            $result->_shape = array_filter($result->_shape, function ($value) {
+                return $value !== 1;
+            });
+        } else {
+            $dim = $result->safeIndex($dim, $result->ndim());
+
+            if ($result->_shape[$dim] !== 1) {
+                throw new \Exception("DimensionError: cannot select an axis to squeeze out which has size not equal to one");
+            }
+
+            array_splice($result->_buffer, $dim, 1);
+            array_splice($result->_shape, $dim, 1);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns a tensor with all specified dimensions of input of size 1 removed.
+     *
+     * @param ?int $dim If given, the input will be squeezed only in the specified dimensions.
+     *
+     * @return static The squeezed tensor.
+     */
+    public function unsqueeze(?int $dim = null): static
+    {
+        $mo = self::getMo();
+
+        $result = clone $this;
+
+        if ($dim === null) {
+            $result->_buffer = array_filter($result->_buffer, function ($value) {
+                return $value !== 1;
+            });
+            $result->_shape = array_filter($result->_shape, function ($value) {
+                return $value !== 1;
+            });
+        } else {
+            $dim = $result->safeIndex($dim, $result->ndim());
+
+            if ($result->_shape[$dim] !== 1) {
+                throw new \Exception("DimensionError: cannot select an axis to squeeze out which has size not equal to one");
+            }
+
+            array_splice($result->_buffer, $dim, 1);
+            array_splice($result->_shape, $dim, 1);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Clamps all elements in input into the range [ min, max ] and returns a resulting tensor.
+     *
+     * @param float|int $min The minimum value.
+     * @param float|int $max The maximum value.
+     * @return static The clamped tensor.
+     */
+    public function clamp(float|int $min, float|int $max): static
+    {
+        $mo = self::getMo();
+
+        $result = $mo->f(fn($x) => max($min, min($max, $x)), $this);
+
+        return new static($result->toArray(), $result->dtype(), $result->shape(), $result->offset());
+    }
+
+    /**
+     * Rounds elements of input to the nearest integer.
+     * @return static The rounded tensor.
+     */
+    public function round(): static
+    {
+        $mo = self::getMo();
+
+        $result = $mo->f(fn($x) => round($x), $this);
+
+        return new static($result->toArray(), $result->dtype(), $result->shape(), $result->offset());
+    }
+
+    /**
+     * Performs Tensor dtype conversion.
+     *
+     * @param string $dtype The target data type.
+     * @return static The converted tensor.
+     */
+    public function to(string $dtype): static
+    {
+        if ($this->dtype() === $dtype) {
+            return $this;
+        }
+
+        $mo = self::getMo();
+
+        $ndArray = $mo->astype($this, $dtype);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Reshapes a 1-dimensional array into an n-dimensional array, according to the provided dimensions.
+     *
+     * @param array $data The data to reshape.
+     * @param array $shape The new shape of the array.
+     *
+     */
+    public static function reshapeArray(array $data, array $shape): Tensor
+    {
+        $ndArray = self::fromArray($data);
+
+        $ndArray = $ndArray->reshape($shape);
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Returns the mean value of each row of the tensor in the given dimension dim.
+     */
+    public function mean(?int $dim = null, bool $keepdims = false): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->mean($this, $dim);
+
+        if (!$keepdims) {
+            array_splice($ndArray->_shape, $dim, 1);
+        }
+
+        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+}
