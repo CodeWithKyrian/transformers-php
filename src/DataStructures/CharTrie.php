@@ -18,7 +18,7 @@ class CharTrie
      */
     public function __construct()
     {
-        $this->root = CharTrieNode::default();
+        $this->root = CharTrieNode::default(256);
     }
 
     /**
@@ -40,13 +40,9 @@ class CharTrie
     {
         $node = $this->root;
 
-        foreach (str_split($text) as $ch) {
-            $child = $node->children[$ch] ?? null;
-            if ($child === null) {
-                $child = CharTrieNode::default();
-                $node->children[$ch] = $child;
-            }
-            $node = $child;
+        for ($i = 0, $length = strlen($text); $i < $length; $i++) {
+            $ch = $text[$i];
+            $node = $node->getChild($ch);
         }
 
         $node->isLeaf = true;
@@ -64,7 +60,7 @@ class CharTrie
         for ($i = 0; $i < strlen($text) && $node != null; $i++) {
             $ch = $text[$i];
             $prefix .= $ch;
-            $node = $node->children[$ch] ?? null;
+            $node = $node->getChild($ch);
             if ($node?->isLeaf) {
                 yield $prefix;
             }

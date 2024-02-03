@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\Utils\Tensor;
 
 class Pipeline
 {
@@ -19,9 +20,10 @@ class Pipeline
     {
     }
 
-    public function __invoke(...$args): array
+
+    public function __invoke(...$args): array|Tensor
     {
-        echo 'Hello World';
+       return [];
     }
 
 }

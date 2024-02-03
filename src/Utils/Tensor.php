@@ -447,4 +447,117 @@ class Tensor extends NDArrayPhp
 
         return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
+
+    /**
+     * Perform mean pooling of the tensor followed by a normalization step.
+     *
+     * @param Tensor $other The tensor to pool of the same shape as the input tensor.
+     *
+     * @return Tensor The pooled tensor.
+     */
+    public function meanPooling(Tensor $other): Tensor
+    {
+        // $this->shape should be : [batchSize, seqLength, embedDim]
+        // $other->shape should be : [batchSize, seqLength]
+        [$batchSize, $seqLength, $embedDim] = $this->shape();
+
+        $returnedData = [];
+        $outIndex = 0;
+
+        for ($i = 0; $i < $batchSize; ++$i) {
+            $offset = $i * $embedDim * $seqLength;
+
+            for ($k = 0; $k < $embedDim; ++$k) {
+                $sum = 0;
+                $count = 0;
+
+                $otherOffset = $i * $seqLength;
+                $offset2 = $offset + $k;
+
+                // Pool over all words in sequence
+                for ($j = 0; $j < $seqLength; ++$j) {
+                    // index into attention mask
+                    $attn = (int)$other[$i][$j];
+
+                    $count += $attn;
+                    $sum += $this[$i][$j][$k] * $attn;
+                }
+
+                $avg = $count ? $sum / $count : 0;
+                $returnedData[$outIndex++] = $avg;
+            }
+        }
+
+        return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedDim]);
+    }
+
+    public function slice(...$slices): Tensor
+    {
+        $newTensorDims = [];
+        $newOffsets = [];
+
+        for ($sliceIndex = 0; $sliceIndex < $this->ndim(); ++$sliceIndex) {
+            $slice = $slices[$sliceIndex] ?? null;
+
+            if ($slice === null) {
+                $newOffsets[] = [0, $this->shape()[$sliceIndex]];
+                $newTensorDims[] = $this->shape()[$sliceIndex];
+
+            } elseif (is_int($slice)) {
+                $slice = $this->safeIndex($slice, $this->shape()[$sliceIndex], $sliceIndex);
+                $newOffsets[] = [$slice, $slice + 1];
+
+            } elseif (is_array($slice) && count($slice) === 2) {
+                if ($slice[0] > $slice[1]) {
+                    throw new \Exception("Invalid slice: " . json_encode($slice));
+                }
+                $offsets = [
+                    max($slice[0], 0),
+                    min($slice[1], $this->shape()[$sliceIndex])
+                ];
+                $newOffsets[] = $offsets;
+                $newTensorDims[] = $offsets[1] - $offsets[0];
+
+            } else {
+                throw new \Exception("Invalid slice: " . json_encode($slice));
+            }
+        }
+
+        $newDims = array_map(fn($offsets) => $offsets[1] - $offsets[0], $newOffsets);
+
+        $newBufferSize = array_reduce($newDims, fn($a, $b) => $a * $b, 1);
+
+        $buffer = [];
+        $stride = $this->stride();
+
+        for ($i = 0; $i < $newBufferSize; ++$i) {
+            $originalIndex = 0;
+            for ($j = count($newDims) - 1, $num = $i; $j >= 0; --$j) {
+                $size = $newDims[$j];
+                $originalIndex += (($num % $size) + $newOffsets[$j][0]) * $stride[$j];
+                $num = floor($num / $size);
+            }
+            $buffer[$i] = $this->_buffer[$originalIndex];
+        }
+
+        return new Tensor($buffer, $this->dtype(), $newDims);
+    }
+
+    /**
+     * Compute and return the stride of this tensor.
+     * Stride is the jump necessary to go from one element to the next one in the specified dimension dim.
+     * @return array The stride of this tensor.
+     */
+    public function stride(): array
+    {
+        $stride = [];
+        $s2 = 1;
+
+        for ($i = $this->ndim() - 1; $i >= 0; --$i) {
+            $stride[$i] = $s2;
+            $s2 *= $this->shape()[$i];
+        }
+
+        return $stride;
+    }
 }

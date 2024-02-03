@@ -74,13 +74,12 @@ class UnigramTokenizer extends Tokenizer
         $sentence = $lattice->sentence;
         $len = strlen($sentence);
         $beginPos = 0;
+
         while ($beginPos < $len) {
             $mblen = 1;
             $hasSingleNode = false;
-            $tokens = [];
 
             foreach ($this->trie->commonPrefixSearch(substr($sentence, $beginPos)) as $token) {
-                $tokens[] = $token;
                 $tokenId = $this->tokenToIds[$token];
                 $tokenScore = $this->scores[$tokenId];
                 $n = strlen($token);

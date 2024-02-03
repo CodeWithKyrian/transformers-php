@@ -25,4 +25,11 @@ class CharTrieNode
     {
         return new CharTrieNode(false, []);
     }
+
+    public function getChild(string $ch): CharTrieNode
+    {
+        $this->children[$ch] ??= CharTrieNode::default();
+
+        return $this->children[$ch];
+    }
 }

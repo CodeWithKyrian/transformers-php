@@ -14,10 +14,10 @@ enum Task: string
     case TextClassification = 'text-classification';
     case QuestionAnswering = 'question-answering';
     case ZeroShotClassification = 'zero-shot-classification';
+    case FeatureExtraction = 'feature-extraction';
 
 
     case Ner = 'ner';
-    case FeatureExtraction = 'feature-extraction';
     case Summarization = 'summarization';
     case Translation_xx_to_yy = 'translation_xx_to_yy';
     case TextGeneration = 'text-generation';
@@ -31,6 +31,8 @@ enum Task: string
             self::FillMask => FillMaskPipeline::class,
             self::QuestionAnswering => QuestionAnsweringPipeline::class,
             self::ZeroShotClassification => ZeroShotClassificationPipeline::class,
+
+            self::FeatureExtraction => FeatureExtractionPipeline::class,
 
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
@@ -48,6 +50,8 @@ enum Task: string
 
             self::ZeroShotClassification => 'Xenova/distilbert-base-uncased-mnli',
 
+            self::FeatureExtraction => 'Xenova/all-MiniLM-L6-v2',
+
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
     }
@@ -59,7 +63,8 @@ enum Task: string
             self::QuestionAnswering,
             self::TextClassification,
             self::SentimentAnalysis,
-            self::ZeroShotClassification => ModelGroup::EncoderOnly,
+            self::ZeroShotClassification,
+            self::FeatureExtraction=> ModelGroup::EncoderOnly,
 
             default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
         };
