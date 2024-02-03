@@ -51,6 +51,7 @@ class MetaspacePreTokenizer extends PreTokenizer
     {
         $normalized = str_replace(' ', $this->strRep, $text);
 
+
         $sectionIndex = $options['section_index'] ?? null;
 
         if (

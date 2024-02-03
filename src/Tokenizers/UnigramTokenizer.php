@@ -5,7 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tokenizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\DataStructures\CharTrie;
+use Codewithkyrian\Transformers\DataStructures\TokenLattice;
 
 /**
  * Class representing a Unigram tokenizer model.
@@ -14,18 +15,22 @@ class UnigramTokenizer extends Tokenizer
 {
     protected array $scores = [];
 
-    protected string $bosToken;
-    protected int $bosTokenId;
+    protected ?string $bosToken;
+    protected ?int $bosTokenId;
 
-    protected string $eosToken;
-    protected int $eosTokenId;
+    protected ?string $eosToken;
+    protected ?int $eosTokenId;
 
     protected float $minScore = 0;
 
     protected float $unkScore = 0;
 
-    public function __construct(array $config, ...$moreConfig)
+    protected CharTrie $trie;
+
+
+    public function __construct(array $config, ...$args)
     {
+        $moreConfig = $args[0] ?? [];
         parent::__construct($config);
 
         foreach ($config['vocab'] as $piece) {
@@ -35,21 +40,87 @@ class UnigramTokenizer extends Tokenizer
 
         $this->unkTokenId = $config['unk_id'];
         $this->unkToken = $this->vocab[$this->unkTokenId];
-        $this->tokenToIds = self::toMap(array_map(fn($x, $y) => [$x, $y], $this->vocab, array_keys($this->vocab)));
+        $this->tokenToIds = self::toMap(array_flip($this->vocab));
 
         $this->bosToken = ' '; // beginning of a sentence token
         $this->bosTokenId = $this->tokenToIds[$this->bosToken] ?? null;
 
-        $this->eosToken = $moreConfig['eos_token'] ?? '</s>'; // end of a sentence token
+        $this->eosToken = $moreConfig['eos_token'] ?? '[SEP]'; // end of a sentence token
         $this->eosTokenId = $this->tokenToIds[$this->eosToken] ?? null;
 
-        $this->minScore = min($this->scores)[0];
+        $this->minScore = min($this->scores);
         $this->unkScore = $this->minScore - 10.0;
+
+        $this->scores[$this->unkTokenId] = $this->unkScore;
+
+        $this->trie = new CharTrie();
+        $this->trie->extend($this->vocab);
 
     }
 
+    // NOTE: `fuse_unk` is hardcoded to true for Unigram models
+    // See: https://github.com/huggingface/tokenizers/blob/b58227c7f1ccf8b73ee2268354336da56d91e492/tokenizers/src/models/unigram/model.rs#L119
+    protected function fuseUnk(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Populates lattice nodes.
+     * @param TokenLattice $lattice The token lattice to populate with nodes.
+     */
+    public function populateNodes(TokenLattice $lattice): void
+    {
+        $sentence = $lattice->sentence;
+        $len = strlen($sentence);
+        $beginPos = 0;
+        while ($beginPos < $len) {
+            $mblen = 1;
+            $hasSingleNode = false;
+            $tokens = [];
+
+            foreach ($this->trie->commonPrefixSearch(substr($sentence, $beginPos)) as $token) {
+                $tokens[] = $token;
+                $tokenId = $this->tokenToIds[$token];
+                $tokenScore = $this->scores[$tokenId];
+                $n = strlen($token);
+                $lattice->insert($beginPos, $n, $tokenScore, $tokenId);
+                if (!$hasSingleNode && $n === $mblen) {
+                    $hasSingleNode = true;
+                }
+            }
+            if (!$hasSingleNode) {
+                $lattice->insert($beginPos, $mblen, $this->unkScore, $this->unkTokenId);
+            }
+            $beginPos += $mblen;
+        }
+    }
+
+    /**
+     * Encodes an array of tokens into an array of subtokens using the unigram model.
+     *
+     * @param string $normalized The normalized string.
+     * @return string[] An array of subtokens obtained by encoding the input tokens using the unigram model.
+     */
+    public function tokenize(string $normalized): array
+    {
+        $lattice = new TokenLattice($normalized, $this->bosTokenId, $this->eosTokenId);
+        $this->populateNodes($lattice);
+        return $lattice->tokens();
+    }
+
+    /**
+     * Encodes an array of tokens using Unigram encoding.
+     * @param string[] $tokens The tokens to encode.
+     * @return string[] An array of encoded tokens.
+     */
     protected function encode(array $tokens): array
     {
-        // TODO: Implement encode() method.
+        $toReturn = [];
+        foreach ($tokens as $token) {
+            $tokenized = $this->tokenize($token);
+            $toReturn = array_merge($toReturn, $tokenized);
+        }
+        return $toReturn;
     }
 }

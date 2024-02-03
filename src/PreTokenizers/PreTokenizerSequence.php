@@ -16,7 +16,7 @@ class PreTokenizerSequence extends PreTokenizer
     {
         $this->preTokenizers = array_map(
             fn(array $config) => PreTokenizer::fromConfig($config),
-            $config['pre_tokenizers']
+            $config['pretokenizers']
         );
     }
 
@@ -24,8 +24,8 @@ class PreTokenizerSequence extends PreTokenizer
     {
         return array_reduce(
             $this->preTokenizers,
-            fn(array $text, PreTokenizer $preTokenizer) => $preTokenizer->preTokenizeText($text, $options),
-            [$text]
+            fn(string $text, PreTokenizer $preTokenizer) => $preTokenizer->preTokenizeText($text, $options),
+            $text
         );
     }
 }

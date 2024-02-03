@@ -38,6 +38,9 @@ enum ModelGroup: string
         return [
             "bert" => BertModel::class,
             "distilbert" => DistilBertModel::class,
+            "mobilebert" => MobileBertModel::class,
+            "deberta-v2" => DebertaV2Model::class,
+            "roformer" => RoFormerModel::class,
         ];
     }
 

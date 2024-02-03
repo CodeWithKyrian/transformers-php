@@ -55,3 +55,20 @@ function pipeline(
 
     return new $pipelineClass($task, $model, $tokenizer);
 }
+
+
+function memoryUsage(): string
+{
+    $mem = memory_get_usage(true);
+    $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+}
+
+function memoryPeak(): string
+{
+    $mem = memory_get_peak_usage(true);
+    $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+}

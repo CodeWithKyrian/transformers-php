@@ -9,12 +9,15 @@ use Codewithkyrian\Transformers\Models\ModelGroup;
 
 enum Task: string
 {
-    case FeatureExtraction = 'feature-extraction';
+    case FillMask = 'fill-mask';
     case SentimentAnalysis = 'sentiment-analysis';
     case TextClassification = 'text-classification';
-    case Ner = 'ner';
     case QuestionAnswering = 'question-answering';
-    case FillMask = 'fill-mask';
+    case ZeroShotClassification = 'zero-shot-classification';
+
+
+    case Ner = 'ner';
+    case FeatureExtraction = 'feature-extraction';
     case Summarization = 'summarization';
     case Translation_xx_to_yy = 'translation_xx_to_yy';
     case TextGeneration = 'text-generation';
@@ -26,8 +29,8 @@ enum Task: string
             self::TextClassification => TextClassificationPipeline::class,
 
             self::FillMask => FillMaskPipeline::class,
-
             self::QuestionAnswering => QuestionAnsweringPipeline::class,
+            self::ZeroShotClassification => ZeroShotClassificationPipeline::class,
 
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
@@ -43,6 +46,8 @@ enum Task: string
 
             self::QuestionAnswering => 'Xenova/distilbert-base-uncased-distilled-squad',
 
+            self::ZeroShotClassification => 'Xenova/distilbert-base-uncased-mnli',
+
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
     }
@@ -53,7 +58,8 @@ enum Task: string
             self::FillMask,
             self::QuestionAnswering,
             self::TextClassification,
-            self::SentimentAnalysis => ModelGroup::EncoderOnly,
+            self::SentimentAnalysis,
+            self::ZeroShotClassification => ModelGroup::EncoderOnly,
 
             default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
         };

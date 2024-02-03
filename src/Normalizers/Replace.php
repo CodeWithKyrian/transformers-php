@@ -18,5 +18,7 @@ class Replace extends Normalizer
         if ($pattern != null) {
             $text = preg_replace($pattern, $this->config['content'], $text);
         }
+
+        return $text;
     }
 }
