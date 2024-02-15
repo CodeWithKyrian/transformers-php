@@ -27,9 +27,10 @@ class CharTrie
      */
     public function extend(array $texts): void
     {
-        foreach ($texts as $text) {
-            $this->push($text);
-        }
+//        foreach ($texts as $text) {
+//            $this->push($text);
+//        }
+        array_map([$this, 'push'], $texts);
     }
 
     /**
@@ -44,6 +45,7 @@ class CharTrie
             $ch = $text[$i];
             $node = $node->getChild($ch);
         }
+
 
         $node->isLeaf = true;
     }

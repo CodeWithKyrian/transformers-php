@@ -12,7 +12,7 @@ class AutoModel
 {
     public static function fromPretrained(
         string      $modelNameOrPath,
-        string|Task $task,
+        string|Task|null $task  = null,
         bool        $quantized = true,
         ?array      $config = null,
         ?string     $cacheDir = null,
@@ -23,7 +23,10 @@ class AutoModel
     {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision);
 
-        $modelGroup = $task->modelGroup();
+        if (is_string($task)) $task = Task::from($task);
+
+        $modelGroup = $task?->modelGroup() ?? ModelGroup::EncoderOnly;
+
         $model = $modelGroup->models()[$config->modelType]
             ?? throw new \Error("Model group {$modelGroup->value} does not contain a model for type {$config->modelType}.");
 

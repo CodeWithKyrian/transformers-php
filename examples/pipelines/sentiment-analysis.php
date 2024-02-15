@@ -8,7 +8,8 @@ use function Codewithkyrian\Transformers\pipeline;
 
 $classifier = pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
 
-$result = $classifier("She's not a good singer, but her acting is manageable.");
+$result1 = $classifier("I love her, she's a great friend.");
+$result2 = $classifier("I hate him, he's very terrible.");
 
-dd($result);
+dd($result1, $result2);
 

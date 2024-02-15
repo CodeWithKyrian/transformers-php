@@ -52,9 +52,9 @@ class UnigramTokenizer extends Tokenizer
         $this->unkScore = $this->minScore - 10.0;
 
         $this->scores[$this->unkTokenId] = $this->unkScore;
-
         $this->trie = new CharTrie();
         $this->trie->extend($this->vocab);
+
 
     }
 

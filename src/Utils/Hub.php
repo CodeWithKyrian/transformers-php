@@ -8,6 +8,8 @@ namespace Codewithkyrian\Transformers\Utils;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\RequestOptions;
 
 /**
  * Utility class to download files from the Hugging Face Hub
@@ -48,7 +50,7 @@ class Hub
      *
      * @throws Exception
      */
-    public static function getFile(
+    public static function getFile2(
         string  $pathOrRepoID,
         string  $fileName,
         ?string $cacheDir = null,
@@ -65,7 +67,7 @@ class Hub
 
         if (is_dir($localCacheDir)) {
             if (file_exists($fileLocalPath)) {
-                echo "Found local copy of $fullFilePath \n";
+//                echo "Found local copy of $fullFilePath \n";
                 return $fileLocalPath;
             }
         }
@@ -81,7 +83,7 @@ class Hub
             }
         }
 
-        $repositoryURL = "https://huggingface.co/{$pathOrRepoID}/resolve/{$revision}/{$fullFilePath}";
+        $repositoryURL = "https://huggingface.co/$pathOrRepoID/resolve/$revision/$fullFilePath";
 
         echo "Downloading $fullFilePath from $repositoryURL \n";
 
@@ -105,10 +107,135 @@ class Hub
                 unlink($fileLocalPath);
             }
 
-            self::handleError($e->getCode(), $repositoryURL, $fatal);
+            self::handleException($e->getCode(), $repositoryURL, $fatal);
         }
 
         return null;
+    }
+
+
+    public static function getFile(
+        string  $pathOrRepoID,
+        string  $fileName,
+        ?string $cacheDir = null,
+        ?string $token = null,
+        string  $revision = 'main',
+        string  $subFolder = '',
+        bool    $fatal = true
+    ): ?string
+    {
+        # Local cache and file paths
+        $cacheDir ??= self::DEFAULT_CACHE_DIR;
+        $localPath = self::joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
+
+        # Check local cache
+        if (file_exists($localPath)) {
+            return $localPath;
+        }
+
+        // Since Guzzle 'sink' option expects the folder to already exist, we create it if it doesn't
+        $pathParts = explode(DIRECTORY_SEPARATOR, $localPath, -1);
+        $currentPath = '';
+        foreach ($pathParts as $pathPart) {
+            $currentPath = self::joinPaths($currentPath, $pathPart);
+            if (!is_dir($currentPath)) {
+                mkdir($currentPath, 0755);
+            }
+        }
+
+        # Download URL and part file handling
+        $url = "https://huggingface.co/$pathOrRepoID/resolve/$revision/" . self::joinPaths($subFolder, $fileName);
+        $partCounter = 1;
+        $partBasePath = "$localPath.part";
+
+        while (file_exists($partBasePath . $partCounter)) {
+            $partCounter++;
+        }
+
+        $partPath = $partBasePath . $partCounter;
+
+        # Create client and progress callback
+        $client = new Client([
+            'headers' => [
+                'User-Agent' => 'transformers-php',
+                'Authorization' => 'Bearer ' . $token,
+            ],
+            'progress' => self::downloadProgressCallback($fileName),
+        ]);
+
+        # Resume download if partially downloaded
+        $downloadedBytes = 0;
+        if ($partCounter > 1) {
+            for ($i = 1; $i < $partCounter; $i++) {
+                $downloadedBytes += filesize($partBasePath . $i);
+            }
+        }
+
+        if ($downloadedBytes > 0) {
+            echo "Previously downloaded " .
+                round($downloadedBytes / 1024 / 1024, 2) . "MB. Resuming download...\n";
+        }
+
+        $options = [
+            'headers' => ['Range' => 'bytes=' . $downloadedBytes . '-'],
+            'sink' => Utils::tryFopen($partPath, 'w'),
+        ];
+
+        # Create directory structure if needed
+        self::ensureDirectory($localPath);
+
+        try {
+            $client->get($url, $options);
+
+            # Combine part files if necessary
+            if ($partCounter > 1) {
+                self::combinePartFiles($localPath, $partBasePath, $partCounter);
+            } else {
+                rename($partPath, $localPath);
+            }
+
+            return $localPath;
+        } catch (GuzzleException $e) {
+            self::handleException($e->getCode(), $url, $fatal);
+        }
+
+        return null;
+    }
+
+    # Helper functions for progress, directory creation, and combining files
+    private static function downloadProgressCallback($fileName): callable
+    {
+        return function ($totalDownload, $downloadedBytes) use ($fileName) {
+            if ($totalDownload > 0) {
+                $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
+                echo "\rDownloading $fileName: $percent% complete";
+            }
+        };
+    }
+
+    private static function ensureDirectory($filePath): void
+    {
+        $pathParts = explode(DIRECTORY_SEPARATOR, $filePath, -1);
+        $currentPath = '';
+        foreach ($pathParts as $pathPart) {
+            $currentPath = self::joinPaths($currentPath, $pathPart);
+            if (!is_dir($currentPath)) {
+                mkdir($currentPath, 0755);
+            }
+        }
+    }
+
+    private static function combinePartFiles($filePath, $partBasePath, $partCount): void
+    {
+        $fileHandle = fopen($filePath, 'w');
+        for ($i = 1; $i <= $partCount; $i++) {
+            $partPath = $partBasePath . $i;
+            $partFileHandle = fopen($partPath, 'r');
+            stream_copy_to_stream($partFileHandle, $fileHandle);
+            fclose($partFileHandle);
+            unlink($partPath);
+        }
+        fclose($fileHandle);
     }
 
     public static function getJson(
@@ -146,7 +273,7 @@ class Hub
     /**
      * @throws Exception
      */
-    private static function handleError(int $statusCode, string $remoteURL, bool $fatal = true): void
+    private static function handleException(int $statusCode, string $remoteURL, bool $fatal = true): void
     {
         if (!$fatal) {
             // File was not loaded correctly, but it is optional.

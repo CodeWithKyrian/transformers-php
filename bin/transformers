@@ -1,23 +1,22 @@
 #!/usr/bin/env php
 <?php declare(strict_types=1);
 
-(static function () {
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-    if (!file_exists($autoload)) {
-        throw new RuntimeException('Install dependencies to run this script.');
-    }
-    require_once $autoload;
+use Symfony\Component\Console\Application;
 
-    $args = $_SERVER['argv'];
+require_once $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
-    foreach ($args as $key => $value) {
-        if ($value === '--init') {
-            OnnxRuntime\Vendor::check();
-            exit(0);
-        }
+$application = new Application();
 
-        if ($value === '--') {
-            unset($args[$key]);
-        }
-    }
-})();
+// ... register commands
+
+try {
+    $application->setName('Transformers PHP CLI');
+
+    $application->add(new Codewithkyrian\Transformers\Commands\InitCommand());
+    $application->add(new Codewithkyrian\Transformers\Commands\DownloadModelCommand());
+
+    $application->run();
+} catch (Exception $e) {
+    echo $e->getMessage();
+    exit(1);
+}

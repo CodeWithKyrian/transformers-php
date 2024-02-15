@@ -43,6 +43,9 @@
             "pestphp/pest-plugin": true
         }
     },
+    "bin": [
+        "bin/transformers"
+    ],
     "scripts": {
         "test": "vendor/bin/pest",
         "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage"

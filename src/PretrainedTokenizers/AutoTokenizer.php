@@ -105,7 +105,6 @@ class AutoTokenizer
         // Build the fully qualified class name
         $cls = __NAMESPACE__ . '\\' . $cls;
 
-
         return new $cls($tokenizerJson, $tokenizerConfig);
     }
 }

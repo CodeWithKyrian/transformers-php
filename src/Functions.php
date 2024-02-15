@@ -72,3 +72,12 @@ function memoryPeak(): string
 
     return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
 }
+
+function timeUsage(bool $milliseconds = false): string
+{
+    $time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+
+    $time = $milliseconds ? $time * 1000 : $time;
+
+    return @round($time, 4) . ($milliseconds ? ' ms' : ' s');
+}

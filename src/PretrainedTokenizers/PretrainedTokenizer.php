@@ -85,6 +85,7 @@ class PretrainedTokenizer
         $this->postProcessor = PostProcessor::fromConfig($this->tokenizerJSON['post_processor']);
         $this->decoder = Decoder::fromConfig($this->tokenizerJSON['decoder']);
 
+
         foreach ($this->tokenizerJSON['added_tokens'] as $addedToken) {
             $token = AddedToken::make($addedToken);
             $this->addedTokens[] = $token;
@@ -147,6 +148,7 @@ class PretrainedTokenizer
 
         $this->chatTemplate = $tokenizerConfig['chat_template'] ?? null;
         $this->compiledTemplateCache = new \SplObjectStorage();
+
     }
 
     /**

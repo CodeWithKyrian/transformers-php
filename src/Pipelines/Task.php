@@ -15,6 +15,7 @@ enum Task: string
     case QuestionAnswering = 'question-answering';
     case ZeroShotClassification = 'zero-shot-classification';
     case FeatureExtraction = 'feature-extraction';
+    case Text2TextGeneration = 'text2text-generation';
 
 
     case Ner = 'ner';
@@ -34,6 +35,8 @@ enum Task: string
 
             self::FeatureExtraction => FeatureExtractionPipeline::class,
 
+            self::Text2TextGeneration => Text2TextGenerationPipeline::class,
+
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
     }
@@ -52,6 +55,8 @@ enum Task: string
 
             self::FeatureExtraction => 'Xenova/all-MiniLM-L6-v2',
 
+            self::Text2TextGeneration => 'Xenova/flan-t5-small',
+
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
     }
@@ -64,7 +69,9 @@ enum Task: string
             self::TextClassification,
             self::SentimentAnalysis,
             self::ZeroShotClassification,
-            self::FeatureExtraction=> ModelGroup::EncoderOnly,
+            self::FeatureExtraction => ModelGroup::EncoderOnly,
+
+            self::Text2TextGeneration => ModelGroup::Seq2SeqLM,
 
             default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
         };

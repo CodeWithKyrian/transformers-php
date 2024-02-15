@@ -6,10 +6,16 @@ require_once './vendor/autoload.php';
 
 use function Codewithkyrian\Transformers\{memoryUsage, pipeline};
 
-//$extractor = pipeline('feature-extraction', 'Xenova/bert-base-uncased');
-$extractor = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+$extractor = pipeline('feature-extraction', 'Xenova/bert-base-uncased');
 
-$result = $extractor('The quick brown fox jumps over the lazy dog.', pooling: 'mean', normalize: true);
+
+$result = $extractor('The quick brown fox jumps over the lazy dog.', normalize: true);
 
 dd(memoryUsage(), $result->shape());
+
+
+
+
+
+$extractor = pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
 

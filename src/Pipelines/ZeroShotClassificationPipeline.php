@@ -79,6 +79,7 @@ class ZeroShotClassificationPipeline extends Pipeline
 
     public function __invoke(...$args): array
     {
+
         $texts = $args[0];
         $candidateLabels = $args[1];
         $multiLabel = $args['multiLabel'] ?? false;
@@ -141,6 +142,7 @@ class ZeroShotClassificationPipeline extends Pipeline
                 'scores' => array_map(fn($x) => array_shift($x), $scoresSorted),
             ];
         }
+
 
         return $isBatched ? $toReturn : $toReturn[0];
     }

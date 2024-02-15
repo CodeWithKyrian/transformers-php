@@ -29,6 +29,7 @@ enum ModelGroup: string
             self::EncoderOnly => $this->encoderOnlyModels(),
             self::EncoderDecoder => $this->encoderDecoderModels(),
             self::DecoderOnly => $this->decoderOnlyModels(),
+            self::Seq2SeqLM => $this->sequence2SequenceLMModels(),
             default => throw new \Error("Model group {$this->value} is not implemented yet."),
         };
     }
@@ -55,6 +56,17 @@ enum ModelGroup: string
     {
         return [
             "gpt2" => GPT2Model::class,
+        ];
+    }
+
+    protected function sequence2SequenceLMModels(): array
+    {
+        return [
+            "t5" => T5ForConditionalGeneration::class,
+            "longt5" => LongT5ForConditionalGeneration::class,
+            "mt5" => MT5ForConditionalGeneration::class,
+            "bart" => BartForConditionalGeneration::class,
+            "mbart" => MBartForConditionalGeneration::class,
         ];
     }
 

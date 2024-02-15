@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
 use Codewithkyrian\Transformers\Tokenizers\BatchEncoding;
+use Codewithkyrian\Transformers\Utils\Tensor;
 
 class NllbTokenizer extends PretrainedTokenizer
 {
@@ -33,9 +34,16 @@ class NllbTokenizer extends PretrainedTokenizer
      * @param string|string[] $rawInputs The text to tokenize.
      * @param $tokenizerOptions
      * @param $generateKwargs
+     *
+     * @return array{input_ids: Tensor, token_type_ids: Tensor, attention_mask: Tensor}
      * @throws \Exception
      */
-    public function buildTranslationInputs(string|array $rawInputs, $tokenizerOptions, $generateKwargs): BatchEncoding
+    public function buildTranslationInputs(
+        string|array $rawInputs,
+                     $generateKwargs,
+        bool|string  $padding = false,
+        bool         $truncation = false,
+    ): array
     {
 
         $srcLangToken = $generateKwargs['src_lang'] ?? null;
@@ -69,6 +77,6 @@ class NllbTokenizer extends PretrainedTokenizer
             [call_user_func($this->langToToken, $tgtLangToken)]
         )[0];
 
-        return $this->__invoke($rawInputs, $tokenizerOptions);
+        return $this->__invoke($rawInputs, padding: $padding, truncation: $truncation);
     }
 }

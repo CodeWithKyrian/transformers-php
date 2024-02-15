@@ -10,7 +10,7 @@ class AutoConfig implements \ArrayAccess
 
     public string $modelType;
 
-    protected bool $isEncoderDecoder;
+    public bool $isEncoderDecoder;
 
     protected array $architectures = [];
 
@@ -20,7 +20,7 @@ class AutoConfig implements \ArrayAccess
 
     protected int $hiddenSize;
 
-    private function __construct(protected array $config)
+    private function __construct(public array $config)
     {
         $this->modelType = $this->config['model_type'] ?? null;
         $this->isEncoderDecoder = $this->config['is_encoder_decoder'] ?? false;
