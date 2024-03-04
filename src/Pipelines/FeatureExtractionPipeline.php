@@ -63,7 +63,7 @@ use Codewithkyrian\Transformers\Utils\Tensor;
  */
 class FeatureExtractionPipeline extends Pipeline
 {
-    public function __invoke(...$args): Tensor
+    public function __invoke(...$args): array
     {
         $texts = $args[0];
         $pooling = $args["pooling"] ?? 'none';
@@ -95,6 +95,6 @@ class FeatureExtractionPipeline extends Pipeline
             $result = $result->normalize(2, -1);
         }
 
-        return $result;
+        return $result->toArray();
     }
 }

@@ -15,7 +15,7 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 #[AsCommand(
     name: 'init',
     description: 'Initialize Transformers PHP and downloads the required shared libraries.',
-    aliases: ['initialize']
+    aliases: ['initialize', 'install']
 )]
 class InitCommand extends Command
 {
@@ -48,7 +48,7 @@ class InitCommand extends Command
         }
 
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('? All done! Would you like to show some love by starring the Transformers repo on GitHub?', true);
+        $question = new ConfirmationQuestion('? All done! Would you like to show some love by starring the Transformers repo on GitHub? ', true);
 
         if ($helper->ask($input, $output, $question)) {
             if (PHP_OS_FAMILY === 'Darwin') {
@@ -62,6 +62,8 @@ class InitCommand extends Command
             }
 
             $output->writeln('✔ Thank you!');
+        } else {
+            $output->writeln('✔ That\'s okay. You can always star the repo later.');
         }
     }
 }

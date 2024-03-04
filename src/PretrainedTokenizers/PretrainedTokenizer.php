@@ -299,9 +299,10 @@ class PretrainedTokenizer
         $maxLength = min($maxLength, $this->modelMaxLength);
 
 
+
         if ($padding || $truncation) {
-            // Perform padding and/or truncation
-            foreach ($encodedTokens as $token) {
+            for ($i = 0; $i < count($encodedTokens); $i++) {
+                $token = &$encodedTokens[$i];
                 if (count($token['input_ids']) === $maxLength) {
                     continue;
                 } elseif (count($token['input_ids']) > $maxLength) {
@@ -323,6 +324,8 @@ class PretrainedTokenizer
                         );
                     }
                 }
+                // Update the encodedTokens array with the modified token
+//                $encodedTokens[$i] = $token;
             }
         }
 
@@ -551,12 +554,14 @@ class PretrainedTokenizer
     {
         foreach (array_keys($item) as $key) {
             $diff = $length - count($item[$key]);
+            dump("Diff: $diff");
             $value = $value_fn($key);
 
             $padData = array_fill(0, $diff, $value);
             $item[$key] = ($side === 'right')
                 ? [...$item[$key], ...$padData]
                 : [...$padData, ...$item[$key]];
+
         }
     }
 

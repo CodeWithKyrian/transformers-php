@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
+use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\AutoModel;
-use Codewithkyrian\Transformers\Models\BertModel;
 use Codewithkyrian\Transformers\Pipelines\Pipeline;
 use Codewithkyrian\Transformers\Pipelines\Task;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
@@ -21,7 +21,7 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
  * - "summarization": will return a `SummarizationPipeline`.
  * - "translation_xx_to_yy": will return a `TranslationPipeline`.
  * - "text-generation": will return a `TextGenerationPipeline`.
- * @param string|null $model The name of the pre-trained model to use. If not specified, the default model for the task will be used.
+ * @param string|null $modelName
  * @param bool $quantized Whether to use a quantized version of the model. If the model doesn't have a quantized version, will
  * default to `false`. Only available for some models.
  * @param array|null $config The configuration to use for the pipeline.
@@ -30,6 +30,7 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
  * @param string $revision The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a git-based
  * system for storing models and other artifacts on huggingface.co, so ``revision`` can be any identifier allowed by git.
  * @return Pipeline
+ * @throws UnsupportedTaskException If the task is not supported.
  */
 function pipeline(
     string|Task $task,
@@ -42,7 +43,12 @@ function pipeline(
 ) : Pipeline
 {
     if (is_string($task)) {
-        $task = Task::from($task);
+        $stringTask = $task;
+        $task = Task::tryFrom($stringTask);
+
+        if ($task === null) {
+            throw UnsupportedTaskException::make($stringTask);
+        }
     }
 
     $modelName ??= $task->defaultModel();
@@ -51,9 +57,7 @@ function pipeline(
 
     $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $token, $revision);
 
-    $pipelineClass = $task->pipeline();
-
-    return new $pipelineClass($task, $model, $tokenizer);
+    return $task->getPipeline($model, $tokenizer);
 }
 
 

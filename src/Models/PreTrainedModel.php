@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models;
 
+use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
+use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\LogitsProcessors\BadWordsLogitsProcessor;
 use Codewithkyrian\Transformers\LogitsProcessors\ForcedBOSTokenLogitsProcessor;
 use Codewithkyrian\Transformers\LogitsProcessors\ForcedEOSTokenLogitsProcessor;
@@ -29,9 +31,6 @@ class PreTrainedModel
 {
     public string $mainInputName = 'input_ids';
 
-    protected static ModelType $modelType = ModelType::EncoderOnly;
-
-
     /**
      * @param array $config The model configuration.
      * @param mixed $session The ONNX session.
@@ -39,6 +38,7 @@ class PreTrainedModel
     public function __construct(
         public readonly AutoConfig $config,
         public InferenceSession    $session,
+        public ModelGroup          $modelGroup = ModelGroup::EncoderOnly,
                                    ...$args
     )
     {
@@ -74,18 +74,15 @@ class PreTrainedModel
         ?string          $token = null,
         string           $revision = 'main',
         ?string          $modelFilename = null,
+        ModelGroup       $modelGroup = ModelGroup::EncoderOnly
     ): self
     {
-        $className = get_called_class();
-
-        if (!$config instanceof AutoConfig) {
+        if (is_array($config)) {
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision);
         }
 
-        $modelType = $className::$modelType;
-
-        switch ($modelType) {
-            case ModelType::DecoderOnly:
+        switch ($modelGroup) {
+            case ModelGroup::DecoderOnly:
             {
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: $modelFilename ?? 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
@@ -93,11 +90,11 @@ class PreTrainedModel
                 $generatorConfig = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generator_config.json',
                     cacheDir: $cacheDir, revision: $revision, fatal: false);
 
-                return new static($config, $session, $generatorConfig);
+                return new static($config, $session, $modelGroup, $generatorConfig);
             }
 
-            case ModelType::Seq2Seq:
-            case ModelType::Vision2Seq:
+            case ModelGroup::Seq2SeqLM:
+            case ModelGroup::Vision2Seq:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
@@ -110,10 +107,10 @@ class PreTrainedModel
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
-                return new static($config, $encoderSession, $decoderSession, $generatorConfig);
+                return new static($config, $encoderSession, $decoderSession, $modelGroup, $generatorConfig);
             }
 
-            case ModelType::MaskGeneration:
+            case ModelGroup::MaskGeneration:
             {
                 $visionEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'vision_encoder', cacheDir: $cacheDir, revision: $revision);
@@ -121,10 +118,10 @@ class PreTrainedModel
                 $promptMaskEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'prompt_encoder_mask_decoder', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $visionEncoder, $promptMaskEncoder);
+                return new static($config, $visionEncoder, $promptMaskEncoder, $modelGroup);
             }
 
-            case ModelType::EncoderDecoder:
+            case ModelGroup::EncoderDecoder:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
@@ -132,19 +129,19 @@ class PreTrainedModel
                 $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $encoderSession, $decoderSession);
+                return new static($config, $encoderSession, $decoderSession, $modelGroup);
             }
 
             default:
             {
-                if ($modelType != ModelType::EncoderOnly) {
-                    echo "WARNING: {$modelType->value} is not a valid model type. Defaulting to EncoderOnly.";
+                if ($modelGroup != ModelGroup::EncoderOnly) {
+                    echo "WARNING: {$modelGroup->value} is not a valid model group. Defaulting to EncoderOnly.";
                 }
 
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'model', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $session);
+                return new static($config, $session, $modelGroup);
             }
         }
     }
@@ -162,7 +159,7 @@ class PreTrainedModel
      */
     public function forward(array $modelInputs): array
     {
-        return $this::$modelType->forward($this, $modelInputs);
+        return $this->modelGroup->forward($this, $modelInputs);
     }
 
     /**
@@ -182,7 +179,7 @@ class PreTrainedModel
         Tensor           $inputsAttentionMask = null
     ): array
     {
-        return $this::$modelType->startBeams(
+        return $this->modelGroup->startBeams(
             $this,
             $inputTokenIds,
             $generationConfig,
@@ -200,7 +197,7 @@ class PreTrainedModel
      */
     public function runBeam(array &$beam): array
     {
-        return $this::$modelType->runBeam($this, $beam);
+        return $this->modelGroup->runBeam($this, $beam);
     }
 
     /**
@@ -213,7 +210,7 @@ class PreTrainedModel
      */
     public function updateBeam(array $beam, int $newTokenId): array
     {
-        return $this::$modelType->updateBeam($this, $beam, $newTokenId);
+        return $this->modelGroup->updateBeam($this, $beam, $newTokenId);
     }
 
     /**
@@ -246,12 +243,7 @@ class PreTrainedModel
 
         $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $token, $revision, $subFolder, $fatal);
 
-        if ($file === null) {
-            if ($fatal) {
-                throw new \Exception("Unable to load file $fileName from $modelNameOrPath");
-            }
-            return null;
-        }
+        if ($file === null) return null;
 
         return new InferenceSession($file, ...$sessionOptions);
     }
@@ -260,6 +252,7 @@ class PreTrainedModel
      * @param InferenceSession $session
      * @param Tensor[] $inputs
      * @return Tensor[]
+     * @throws MissingModelInputException
      */
     public function validateInputs(InferenceSession $session, array $inputs): array
     {
@@ -280,8 +273,7 @@ class PreTrainedModel
 
 
         if (!empty($missingInputs)) {
-            throw new \Exception('An error occurred during model execution: "Missing the following inputs:
-             ' . implode(', ', $missingInputs) . '".');
+            throw MissingModelInputException::make($missingInputs);
         }
 
         $numInputsProvided = count($inputs);
@@ -299,11 +291,15 @@ class PreTrainedModel
         return array_map(fn($i) => $i->toArray(), $inputs);
     }
 
+    /**
+     * @throws ModelExecutionException
+     */
     public function runSession(InferenceSession $session, array $inputs): array
     {
-        $inputs = $this->validateInputs($session, $inputs);
-
         try {
+            $inputs = $this->validateInputs($session, $inputs);
+
+
             $outputNames = array_map(fn($o) => $o['name'], $session->outputs());
 
             $outputs = $session->run($outputNames, $inputs);
@@ -315,7 +311,7 @@ class PreTrainedModel
 
             return $outputsAssoc;
         } catch (\Exception $e) {
-            throw new \Exception('An error occurred during model execution: "' . $e->getMessage() . '".');
+            throw ModelExecutionException::make($e->getMessage());
         }
     }
 
@@ -456,18 +452,12 @@ class PreTrainedModel
         array                $inputsAttentionMask = null
     ): array
     {
-        if (!$this::$modelType->canGenerate()) {
+        if (!$this->modelGroup->canGenerate()) {
             $className = get_called_class();
-            $errorMsg = "The current model class {$className} is not is not compatible with \`.generate()\`, as it doesn't have a language model head.";
+            $errorMsg = "The current model class {$className} is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
             $modelType = $this->config->modelType;
-            $possibleInfo =
-                ModelGroup::CausalLM->models()[$modelType->value]
-                ?? ModelGroup::Seq2SeqLM->models()[$modelType->value]
-                ?? ModelGroup::SpeechSeq2Seq->models()[$modelType->value]
-                ?? ModelGroup::TextToSpectrogram->models()[$modelType->value]
-//                ?? ModelGroup::VisionToSeq->models()[$modelType->value]
-                ?? null;
+            $possibleInfo = ModelGroup::SEQ_2_SEQ_LM_MODELS[$modelType->value] ?? null;
 
             if ($possibleInfo) {
                 $errorMsg .= " Try using `{$possibleInfo}` instead.";

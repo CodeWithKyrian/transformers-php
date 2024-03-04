@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Exceptions\HubException;
+use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -16,8 +18,6 @@ use GuzzleHttp\RequestOptions;
  */
 class Hub
 {
-
-    private const DEFAULT_CACHE_DIR = '.cache';
 
     private const ERROR_MAPPING = [
         '400' => 'Bad request error occurred while trying to load file',
@@ -48,71 +48,8 @@ class Hub
      * directory, indicate it here.
      * @param bool $fatal Whether to raise an error if the file could not be loaded.
      *
-     * @throws Exception
+     * @throws HubException
      */
-    public static function getFile2(
-        string  $pathOrRepoID,
-        string  $fileName,
-        ?string $cacheDir = null,
-        ?string $token = null,
-        string  $revision = 'main',
-        string  $subFolder = '',
-        bool    $fatal = true
-    ): ?string
-    {
-        $cacheDir ??= self::DEFAULT_CACHE_DIR;
-        $localCacheDir = self::joinPaths($cacheDir, $pathOrRepoID, $subFolder);
-        $fullFilePath = self::joinPaths($subFolder, $fileName);
-        $fileLocalPath = self::joinPaths($localCacheDir, $fileName);
-
-        if (is_dir($localCacheDir)) {
-            if (file_exists($fileLocalPath)) {
-//                echo "Found local copy of $fullFilePath \n";
-                return $fileLocalPath;
-            }
-        }
-
-
-        // Since Guzzle 'sink' option expects the folder to already exist, we create it if it doesn't
-        $pathParts = explode(DIRECTORY_SEPARATOR, $fileLocalPath, -1);
-        $currentPath = '';
-        foreach ($pathParts as $pathPart) {
-            $currentPath = self::joinPaths($currentPath, $pathPart);
-            if (!is_dir($currentPath)) {
-                mkdir($currentPath, 0755);
-            }
-        }
-
-        $repositoryURL = "https://huggingface.co/$pathOrRepoID/resolve/$revision/$fullFilePath";
-
-        echo "Downloading $fullFilePath from $repositoryURL \n";
-
-        try {
-            $client = new Client([
-                'headers' => [
-                    'User-Agent' => 'transformers-php',
-                    'Authorization' => 'Bearer ' . $token,
-                ]
-            ]);
-
-            $client->get($repositoryURL, [
-                'sink' => $fileLocalPath,
-            ]);
-
-            return $fileLocalPath;
-        } catch (GuzzleException $e) {
-
-            // Delete the file if it was created (guzzle 'sink' option creates a file even if the request fails)
-            if (file_exists($fileLocalPath)) {
-                unlink($fileLocalPath);
-            }
-
-            self::handleException($e->getCode(), $repositoryURL, $fatal);
-        }
-
-        return null;
-    }
-
 
     public static function getFile(
         string  $pathOrRepoID,
@@ -121,47 +58,29 @@ class Hub
         ?string $token = null,
         string  $revision = 'main',
         string  $subFolder = '',
-        bool    $fatal = true
+        bool    $fatal = true,
+        Client  $client = null
     ): ?string
     {
         # Local cache and file paths
-        $cacheDir ??= self::DEFAULT_CACHE_DIR;
-        $localPath = self::joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
+        $cacheDir ??= Transformers::$defaultCacheDir;
+        $filePath = self::joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
 
-        # Check local cache
-        if (file_exists($localPath)) {
-            return $localPath;
+        # Check if file already exists
+        if (file_exists($filePath)) {
+            return $filePath;
         }
 
-        // Since Guzzle 'sink' option expects the folder to already exist, we create it if it doesn't
-        $pathParts = explode(DIRECTORY_SEPARATOR, $localPath, -1);
-        $currentPath = '';
-        foreach ($pathParts as $pathPart) {
-            $currentPath = self::joinPaths($currentPath, $pathPart);
-            if (!is_dir($currentPath)) {
-                mkdir($currentPath, 0755);
-            }
-        }
+        $remoteURL = self::resolveRepositoryURL($pathOrRepoID, $revision, $fileName, $subFolder);
 
-        # Download URL and part file handling
-        $url = "https://huggingface.co/$pathOrRepoID/resolve/$revision/" . self::joinPaths($subFolder, $fileName);
         $partCounter = 1;
-        $partBasePath = "$localPath.part";
+        $partBasePath = "$filePath.part";
 
         while (file_exists($partBasePath . $partCounter)) {
             $partCounter++;
         }
 
         $partPath = $partBasePath . $partCounter;
-
-        # Create client and progress callback
-        $client = new Client([
-            'headers' => [
-                'User-Agent' => 'transformers-php',
-                'Authorization' => 'Bearer ' . $token,
-            ],
-            'progress' => self::downloadProgressCallback($fileName),
-        ]);
 
         # Resume download if partially downloaded
         $downloadedBytes = 0;
@@ -176,68 +95,44 @@ class Hub
                 round($downloadedBytes / 1024 / 1024, 2) . "MB. Resuming download...\n";
         }
 
+        # Create directory structure if needed
+        self::ensureDirectory($filePath);
+
+        # Create client and progress callback
+        $client ??= new Client([
+            'headers' => [
+                'User-Agent' => 'transformers-php',
+                'Authorization' => 'Bearer ' . $token,
+            ]
+        ]);
+
         $options = [
             'headers' => ['Range' => 'bytes=' . $downloadedBytes . '-'],
             'sink' => Utils::tryFopen($partPath, 'w'),
+            'progress' => self::downloadProgressCallback($fileName)
         ];
 
-        # Create directory structure if needed
-        self::ensureDirectory($localPath);
-
         try {
-            $client->get($url, $options);
+            $client->get($remoteURL, $options);
 
             # Combine part files if necessary
             if ($partCounter > 1) {
-                self::combinePartFiles($localPath, $partBasePath, $partCounter);
+                self::combinePartFiles($filePath, $partBasePath, $partCounter);
             } else {
-                rename($partPath, $localPath);
+                rename($partPath, $filePath);
             }
 
-            return $localPath;
+            return $filePath;
         } catch (GuzzleException $e) {
-            self::handleException($e->getCode(), $url, $fatal);
+            self::handleException($e->getCode(), $remoteURL, $fatal);
         }
 
         return null;
     }
 
-    # Helper functions for progress, directory creation, and combining files
-    private static function downloadProgressCallback($fileName): callable
-    {
-        return function ($totalDownload, $downloadedBytes) use ($fileName) {
-            if ($totalDownload > 0) {
-                $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
-                echo "\rDownloading $fileName: $percent% complete";
-            }
-        };
-    }
-
-    private static function ensureDirectory($filePath): void
-    {
-        $pathParts = explode(DIRECTORY_SEPARATOR, $filePath, -1);
-        $currentPath = '';
-        foreach ($pathParts as $pathPart) {
-            $currentPath = self::joinPaths($currentPath, $pathPart);
-            if (!is_dir($currentPath)) {
-                mkdir($currentPath, 0755);
-            }
-        }
-    }
-
-    private static function combinePartFiles($filePath, $partBasePath, $partCount): void
-    {
-        $fileHandle = fopen($filePath, 'w');
-        for ($i = 1; $i <= $partCount; $i++) {
-            $partPath = $partBasePath . $i;
-            $partFileHandle = fopen($partPath, 'r');
-            stream_copy_to_stream($partFileHandle, $fileHandle);
-            fclose($partFileHandle);
-            unlink($partPath);
-        }
-        fclose($fileHandle);
-    }
-
+    /**
+     * @throws HubException
+     */
     public static function getJson(
         string  $pathOrRepoID,
         string  $fileName,
@@ -257,6 +152,38 @@ class Hub
         return json_decode(file_get_contents($file), true);
     }
 
+
+    private static function downloadProgressCallback($fileName): callable
+    {
+        return function ($totalDownload, $downloadedBytes) use ($fileName) {
+            if ($totalDownload > 0) {
+                $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
+                echo "\rDownloading $fileName: $percent% complete\n";
+            }
+        };
+    }
+
+    public static function ensureDirectory($filePath): void
+    {
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755, true);
+        }
+    }
+
+    public static function combinePartFiles($filePath, $partBasePath, $partCount): void
+    {
+        $fileHandle = fopen($filePath, 'w');
+        for ($i = 1; $i <= $partCount; $i++) {
+            $partPath = $partBasePath . $i;
+            $partFileHandle = fopen($partPath, 'r');
+            stream_copy_to_stream($partFileHandle, $fileHandle);
+            fclose($partFileHandle);
+            unlink($partPath);
+        }
+        fclose($fileHandle);
+    }
+
+
     public static function joinPaths(): ?string
     {
         $paths = array();
@@ -271,7 +198,7 @@ class Hub
     }
 
     /**
-     * @throws Exception
+     * @throws HubException
      */
     private static function handleException(int $statusCode, string $remoteURL, bool $fatal = true): void
     {
@@ -283,7 +210,19 @@ class Hub
 
         $message = self::ERROR_MAPPING[$statusCode] ?? "Error $statusCode occurred while trying to load file from $remoteURL";
 
-        throw new Exception($message, $statusCode);
+        throw new HubException($message, $statusCode);
     }
 
+    private static function resolveRepositoryURL(string $pathOrRepoID, string $revision, string $fileName, string $subFolder): string
+    {
+        $remoteHost = Transformers::$remoteHost;
+
+        $remotePath = str_replace(
+            ['{model}', '{revision}', '{file}'],
+            [$pathOrRepoID, $revision, self::joinPaths($subFolder, $fileName)],
+            Transformers::$remotePathTemplate
+        );
+
+        return self::joinPaths($remoteHost, $remotePath);
+    }
 }

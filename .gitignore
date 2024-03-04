@@ -7,3 +7,5 @@
 *.swo
 playground/*
 .idea
+models/*
+tests/models/*

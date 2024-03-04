@@ -11,7 +11,6 @@ use OnnxRuntime\InferenceSession;
 
 class T5ForConditionalGeneration extends T5Model
 {
-    protected static ModelType $modelType = ModelType::Seq2Seq;
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;
     protected mixed $decoderDimKv;
@@ -22,7 +21,8 @@ class T5ForConditionalGeneration extends T5Model
     public function __construct(
         AutoConfig                 $config,
         InferenceSession           $session,
-        protected InferenceSession $decoderMergedSessions,
+        public InferenceSession $decoderMergedSessions,
+        ModelGroup                 $modelGroup,
         public GenerationConfig    $generationConfig
     )
     {

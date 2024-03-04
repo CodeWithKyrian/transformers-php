@@ -11,33 +11,30 @@ use Codewithkyrian\Transformers\Utils\AutoConfig;
 class AutoModel
 {
     public static function fromPretrained(
-        string      $modelNameOrPath,
-        string|Task|null $task  = null,
-        bool        $quantized = true,
-        ?array      $config = null,
-        ?string     $cacheDir = null,
-        ?string     $token = null,
-        string      $revision = 'main',
-        ?string     $modelFilename = null,
+        string           $modelNameOrPath,
+        string|Task|null $task = null,
+        bool             $quantized = true,
+        ?array           $config = null,
+        ?string          $cacheDir = null,
+        ?string          $token = null,
+        string           $revision = 'main',
+        ?string          $modelFilename = null,
     ): PreTrainedModel
     {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision);
 
         if (is_string($task)) $task = Task::from($task);
 
-        $modelGroup = $task?->modelGroup() ?? ModelGroup::EncoderOnly;
+        $modelGroup = $task?->modelGroup() ?? ModelGroup::inferFromModelType($config->modelType);
 
-        $model = $modelGroup->models()[$config->modelType]
-            ?? throw new \Error("Model group {$modelGroup->value} does not contain a model for type {$config->modelType}.");
-
-        return $model::fromPretrained(
+        return $modelGroup->constructModel(
             modelNameOrPath: $modelNameOrPath,
             quantized: $quantized,
             config: $config,
             cacheDir: $cacheDir,
             token: $token,
             revision: $revision,
-            modelFilename: $modelFilename,
+            modelFilename: $modelFilename
         );
     }
 }

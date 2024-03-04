@@ -33,7 +33,7 @@ class DownloadModelCommand extends Command
             'c',
             InputOption::VALUE_OPTIONAL,
             'The directory to cache the model in.',
-            '.cache'
+            'models'
         );
 
         $this->addOption(
@@ -51,7 +51,6 @@ class DownloadModelCommand extends Command
         $output->writeln('✔ Downloading model...');
 
         $model = $input->getArgument('model');
-//        $task = $input->getArgument('task');
         $cacheDir = $input->getOption('cache-dir');
         $quantized = $input->getOption('quantized');
 
@@ -59,7 +58,6 @@ class DownloadModelCommand extends Command
         try {
             $model = AutoModel::fromPretrained(
                 modelNameOrPath: $model,
-//                task: $task,
                 quantized: $quantized,
                 cacheDir: $cacheDir
             );

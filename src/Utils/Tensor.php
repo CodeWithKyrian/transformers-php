@@ -558,6 +558,6 @@ class Tensor extends NDArrayPhp
             $s2 *= $this->shape()[$i];
         }
 
-        return $stride;
+        return array_reverse($stride, true);
     }
 }

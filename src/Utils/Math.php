@@ -34,7 +34,7 @@ class Math
      * @param array<int|float> $arr The input array to calculate the log_softmax function for.
      * @return array<int|float> The resulting log_softmax array.
      */
-    public static function log_softmax(array $arr): array
+    public static function logSoftmax(array $arr): array
     {
         // Compute the softmax values
         $softmaxArr = self::softmax($arr);

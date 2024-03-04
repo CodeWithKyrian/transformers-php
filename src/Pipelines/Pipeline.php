@@ -21,7 +21,7 @@ class Pipeline
     }
 
 
-    public function __invoke(...$args): array|Tensor
+    public function __invoke(...$args): array
     {
        return [];
     }
