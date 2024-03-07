@@ -7,16 +7,32 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
+use function Codewithkyrian\Transformers\timeUsage;
 
 class Text2TextGenerationPipeline extends Pipeline
 {
-    protected $key = 'generated_text';
+    protected string $key = 'generated_text';
 
-    public function __invoke(...$args): array|Tensor
+    public function __invoke(...$args): array
     {
         $texts = array_shift($args);
 
-        $generateKwargs = new GenerationConfig($args);
+        $streamer = null;
+
+        if(array_key_exists('streamer', $args))
+        {
+            $streamer = $args['streamer'];
+            unset($args['streamer']);
+        }
+
+
+        // Convert the rest of the arguments key names from camelCase to snake_case
+        $snakeCasedArgs = [];
+        foreach ($args as $key => $value) {
+            $snakeCasedArgs[$this->camelCaseToSnakeCase($key)] = $value;
+        }
+
+        $generateKwargs = new GenerationConfig($snakeCasedArgs);
 
         if (!is_array($texts)) {
             $texts = [$texts];
@@ -50,13 +66,19 @@ class Text2TextGenerationPipeline extends Pipeline
             ? $tokenizer->buildTranslationInputs($texts, $generateKwargs, padding: true, truncation: true)['input_ids']
             : $tokenizer->__invoke($texts, padding: true, truncation: true)['input_ids'];
 
+
         // Generate output token ids
-        $outputTokenIds = $this->model->generate($inputIds, $generateKwargs);
+        $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
 
         // Decode token ids to text
         return array_map(
             fn($text) => [$this->key => $text],
             $tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
         );
+    }
+
+    protected function camelCaseToSnakeCase(string $input): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
     }
 }

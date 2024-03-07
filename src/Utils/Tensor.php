@@ -11,24 +11,16 @@ use Rindow\Math\Matrix\NDArrayPhp;
 class Tensor extends NDArrayPhp
 {
 
-
-    public function __construct($array = null, $dtype = null, array $shape = null, $offset = null)
-    {
-        parent::__construct($array, $dtype, $shape, $offset);
-    }
-
     public static function getMo(): MatrixOperator
     {
         return new MatrixOperator();
     }
 
-    public static function fromArray(array $array, ?string $dtype = null): static
+    public static function fromArray(array $array, ?string $dtype = null): ?static
     {
-        $mo = self::getMo();
+        if (empty($array)) return null;
 
-        $ndArray = $mo->array($array, $dtype);
-
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($array, $dtype);
     }
 
     public static function fromNdArray(NDArrayPhp $ndArray): static
@@ -559,5 +551,45 @@ class Tensor extends NDArrayPhp
         }
 
         return array_reverse($stride, true);
+    }
+
+    protected function array2Flat($A, $F, &$idx, $prepare)
+    {
+//        if (is_array($A)) {
+//            ksort($A);
+//        } elseif ($A instanceof \ArrayObject) {
+//            $A->ksort();
+//        } else {
+//            // If $A is neither an array nor an ArrayObject, it's an unexpected type.
+//            throw new \InvalidArgumentException("Input must be an array or ArrayObject.");
+//        }
+
+        $num = null;
+        $cursor = 0;
+        $arrayLength = count($A); // Optimize count() call
+        while ($cursor < $arrayLength) {
+            $value = $A[$cursor];
+            if (is_array($value) || $value instanceof \ArrayObject) {
+                if ($value instanceof \ArrayObject) {
+                    $value = $value->getArrayCopy(); // Standardize handling of ArrayObject
+                }
+                $num2 = $this->array2Flat($value, $F, $idx, $prepare);
+                if ($num === null) {
+                    $num = $num2;
+                } elseif ($num !== $num2) {
+                    throw new \InvalidArgumentException("The shape of the dimension is broken");
+                }
+            } else {
+                if ($num !== null) {
+                    throw new \InvalidArgumentException("The shape of the dimension is broken");
+                }
+                if (!$prepare) {
+                    $F[$idx] = $value;
+                }
+                $idx++;
+            }
+            $cursor++;
+        }
+        return $arrayLength; // Use the pre-computed length
     }
 }

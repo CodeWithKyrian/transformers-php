@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Models;
 
 use Codewithkyrian\Transformers\Pipelines\Task;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
+use function Codewithkyrian\Transformers\timeUsage;
 
 class AutoModel
 {

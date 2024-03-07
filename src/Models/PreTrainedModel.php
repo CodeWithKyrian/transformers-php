@@ -5,24 +5,28 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models;
 
+use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
-use Codewithkyrian\Transformers\LogitsProcessors\BadWordsLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\ForcedBOSTokenLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\ForcedEOSTokenLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\ForceTokensLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\LogitsProcessorList;
-use Codewithkyrian\Transformers\LogitsProcessors\MinLengthLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\MinNewTokensLengthLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\NoRepeatNGramLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\RepetitionPenaltyLogitsProcessor;
-use Codewithkyrian\Transformers\LogitsProcessors\SuppressTokensAtBeginLogitsProcessor;
-use Codewithkyrian\Transformers\Samplers\Sampler;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\BadWordsLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForcedBOSTokenLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForcedEOSTokenLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForceTokensLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\MinLengthLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\MinNewTokensLengthLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\NoRepeatNGramLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\RepetitionPenaltyLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\SuppressTokensAtBeginLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\Samplers\Sampler;
+use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\Tensor;
+use Exception;
 use OnnxRuntime\InferenceSession;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -57,14 +61,14 @@ class PreTrainedModel
      *    user or organization name, like `dbmdz/bert-base-german-cased`.
      *  - A path to a *directory* containing model weights, e.g., `./my_model_directory/`.
      * @param bool $quantized Whether to load the quantized version of a model (as opposed to the original one).
-     * @param array|null $config The configuration object used to instantiate the model.
+     * @param array|AutoConfig|null $config The configuration object used to instantiate the model.
      * @param string|null $cacheDir Path to a directory in which a downloaded pretrained model configuration should
      * @param string|null $token The token to use as an authorization to download from private model repos.
      * @param string $revision The specific model version to use. It can be a branch name, a tag name,
      * @param string|null $modelFilename The name of the model file to load. If not provided, will default to the
-     *
+     * @param ModelGroup $modelGroup
      * @return self The model instantiated from the configuration.
-     * @throws \Exception
+     * @throws HubException
      */
     public static function fromPretrained(
         string           $modelNameOrPath,
@@ -80,6 +84,7 @@ class PreTrainedModel
         if (is_array($config)) {
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision);
         }
+
 
         switch ($modelGroup) {
             case ModelGroup::DecoderOnly:
@@ -106,6 +111,7 @@ class PreTrainedModel
                     cacheDir: $cacheDir, revision: $revision, fatal: false);
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
+
 
                 return new static($config, $encoderSession, $decoderSession, $modelGroup, $generatorConfig);
             }
@@ -169,7 +175,7 @@ class PreTrainedModel
      * @param GenerationConfig $generationConfig The generation config.
      * @param int $numOutputTokens The number of tokens to generate.
      * @param Tensor|null $inputsAttentionMask The attention mask for the input token ids.
-     * @return array The initial beam for text generation.
+     * @return array{ inputs: Tensor, output_token_ids: Tensor, score: float, done: bool, id: int } The initial beam for text generation.
      *
      */
     public function getStartBeams(
@@ -205,12 +211,11 @@ class PreTrainedModel
      *
      * @param array $beam The beam to update.
      * @param int $newTokenId The new token id to add to the beam.
-     * @return array The updated beam after adding the new token.
      *
      */
-    public function updateBeam(array $beam, int $newTokenId): array
+    public function updateBeam(array &$beam, int $newTokenId): void
     {
-        return $this->modelGroup->updateBeam($this, $beam, $newTokenId);
+        $this->modelGroup->updateBeam($beam, $newTokenId);
     }
 
     /**
@@ -299,17 +304,11 @@ class PreTrainedModel
         try {
             $inputs = $this->validateInputs($session, $inputs);
 
-
             $outputNames = array_map(fn($o) => $o['name'], $session->outputs());
 
             $outputs = $session->run($outputNames, $inputs);
 
-            $outputsAssoc = [];
-            for ($i = 0; $i < count($outputNames); ++$i) {
-                $outputsAssoc[$outputNames[$i]] = Tensor::fromArray($outputs[$i]);
-            }
-
-            return $outputsAssoc;
+            return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
         } catch (\Exception $e) {
             throw ModelExecutionException::make($e->getMessage());
         }
@@ -437,27 +436,249 @@ class PreTrainedModel
         $isPadTokenNotEqualToEosTokenId = ($eosTokenId === null) || !in_array($padTokenId, $eosTokenId);
 
         if ($isPadTokenInInputs && $isPadTokenNotEqualToEosTokenId) {
-            $data = array_map(fn($x) => $x != $padTokenId, $tokens->buffer()->toArray());
+            $mo = Tensor::getMo();
+
+            $data = $mo->f(fn($x) => $x != $padTokenId, $tokens);
+
             return new Tensor($data, $tokens->dtype(), $tokens->shape());
         } else {
             return Tensor::onesLike($tokens);
         }
     }
 
+    /**
+     * Add position IDs to the feeds object.
+     * @param array $inputNames The names of the inputs to the model.
+     * @param array $feeds The input to the model.
+     * @param bool $useCacheBranch Whether to use the cache branch of the model.
+     * @return void
+     */
+    public function preparePositionIds(array $inputNames, array &$feeds, bool $useCacheBranch): void
+    {
+        if (!in_array('position_ids', $inputNames)) {
+            return;
+        }
 
+        // TODO: Verify this works properly!!!
+        $data = array_fill(0, count($feeds['attention_mask']), 0);
+
+        // Compute cumulative sum of the attention mask along the sequence length dimension
+        for ($i = 0; $i < $feeds['attention_mask']['dims'][0]; ++$i) {
+            $start = $i * $feeds['attention_mask']['dims'][1];
+            $sum = 0;
+            for ($j = 0; $j < $feeds['attention_mask']['dims'][1]; ++$j) {
+                $index = $start + $j;
+                if ($feeds['attention_mask']['data'][$index] === 0) {
+                    $data[$index] = 1;
+                } else { // === 1
+                    $data[$index] = $sum;
+                    $sum += $feeds['attention_mask']['data'][$index];
+                }
+            }
+        }
+
+        $feeds['position_ids'] = new Tensor($data, shape: $feeds['attention_mask']->shape());
+
+        if ($useCacheBranch) {
+            // TODO: Fix this
+//            $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1)->unsqueeze_(-1);
+        }
+    }
+
+    /**
+     * Helper function to add attentions to beam.
+     *
+     * @param array $beam
+     * @param array $output
+     * @throws Exception
+     */
+    public function addAttentionsToBeam(array &$beam, array $output): void
+    {
+        if ($this->config->isEncoderDecoder) {
+            if (empty($output['cross_attentions'])) {
+                throw new Exception(
+                    "`output_attentions` is true, but the model did not produce cross-attentions. " .
+                    "This is most likely because the model was not exported with `output_attentions=True`."
+                );
+            }
+            if (!isset($beam['cross_attentions'])) {
+                $beam['cross_attentions'] = [];
+            }
+            $beam['cross_attentions'][] = $output['cross_attentions'];
+        }
+
+        if (empty($output['decoder_attentions'])) {
+            throw new Exception(
+                "`output_attentions` is true, but the model did not produce decoder-attentions. " .
+                "This is most likely because the model was not exported with `output_attentions=True`."
+            );
+        }
+        if (!isset($beam['decoder_attentions'])) {
+            $beam['decoder_attentions'] = [];
+        }
+        $beam['decoder_attentions'][] = $output['decoder_attentions'];
+    }
+
+    /**
+     * Groups an array of beam objects by their ids.
+     *
+     * @param array $beams The array of beam objects to group.
+     * @return array An array of arrays, where each inner array contains beam objects with the same id.
+     */
+    public function groupBeams(array $beams): array
+    {
+        $groups = [];
+
+        foreach ($beams as $obj) {
+//            $groups[$obj['id']][] = $obj;
+            if (!isset($groups[$obj['id']])) {
+                $groups[$obj['id']] = [$obj];
+            } else {
+                $groups[$obj['id']][] = $obj;
+            }
+        }
+
+        return array_values($groups);
+    }
+
+
+    /**
+     * Returns an object containing past key values from the given decoder results object.
+     *
+     * @param array $decoderResults The decoder results object.
+     * @param ?array $pastKeyValues The previous past key values.
+     * @return array An object containing past key values.
+     */
+    public function getPastKeyValues(array $decoderResults, ?array $pastKeyValues): array
+    {
+        $pkvs = [];
+
+        foreach ($decoderResults as $name => $value) {
+            if (str_starts_with($name, 'present')) {
+                $newName = str_replace('present', 'past_key_values', $name);
+
+                if ($pastKeyValues && str_contains($name, 'encoder')) {
+                    // Optimization introduced by optimum to reuse past key values.
+                    // So, we just replace the constant outputs with the previous past key values.
+                    // https://github.com/huggingface/optimum/blob/0bf2c05fb7e1182b52d21b703cfc95fd9e4ea3dc/optimum/onnxruntime/base.py#L677-L704
+                    $pkvs[$newName] = $pastKeyValues[$newName];
+                } else {
+                    $pkvs[$newName] = $value;
+                }
+            }
+        }
+
+        return $pkvs;
+    }
+
+    /**
+     * Returns an object containing attentions from the given decoder results object.
+     *
+     * @param array $decoderResults The decoder results object.
+     * @return array An object containing attentions.
+     */
+    public function getAttentions(array $decoderResults): array
+    {
+        $attns = [];
+
+        foreach (['cross_attentions', 'decoder_attentions'] as $attnName) {
+            $result = [];
+            foreach ($decoderResults as $name => $value) {
+                if (str_starts_with($name, $attnName)) {
+                    $index = intval(substr(strrchr($name, '.'), 1));
+                    $result[$index] = $value;
+                }
+            }
+            $attns[$attnName] = $result;
+        }
+
+        return $attns;
+    }
+
+
+    /**
+     * Adds past key values to the decoder feeds object. If pastKeyValues is null, creates new tensors for past key values.
+     *
+     * @param array $decoderFeeds The decoder feeds object to add past key values to.
+     * @param ?array $pastKeyValues An object containing past key values.
+     */
+    public function addPastKeyValues(array &$decoderFeeds, ?array $pastKeyValues): void
+    {
+        if ($pastKeyValues !== null) {
+            $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
+
+        } else {
+            // TODO support batches (i.e., batch_size > 1)
+            $batch_size = 1;
+
+            if ($this->config->isEncoderDecoder && ($this->addEncoderPkv ?? true)) {
+                $encoderShape = [$batch_size, $this->numEncoderHeads, 1, $this->encoderDimKv];
+                $decoderShape = [$batch_size, $this->numDecoderHeads, 1, $this->decoderDimKv];
+
+
+                for ($i = 0; $i < $this->numDecoderLayers; ++$i) {
+                    $decoderFeeds["past_key_values.$i.encoder.key"]
+                        = $decoderFeeds["past_key_values.$i.encoder.value"]
+                        = new Tensor(null, shape: $encoderShape);
+                    $decoderFeeds["past_key_values.$i.decoder.key"]
+                        = $decoderFeeds["past_key_values.$i.decoder.value"]
+                        = new Tensor(null, shape: $decoderShape);
+                }
+            } else if ($this->config->modelType === 'falcon') {
+                // NOTE: Custom implementation for Falcon
+                $shape = [$batch_size * $this->numHeads, 0, $this->dimKv];
+
+                for ($i = 0; $i < $this->numLayers; ++$i) {
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                }
+            } else if ($this->config['multi_query']) { // e.g., for `gpt_bigcode`
+                $shape = [$batch_size * $this->numHeads, 0, 2 * $this->dimKv];
+
+                for ($i = 0; $i < $this->numLayers; ++$i) {
+                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor(null, shape: $shape);
+                }
+            } else if ($this->config['model_type'] === 'bloom') {
+                // NOTE: Custom implementation for Bloom
+                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 0];
+                $valueShape = [$batch_size * $this->numHeads, 0, $this->dimKv];
+
+                for ($i = 0; $i < $this->numLayers; ++$i) {
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $keyShape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $valueShape);
+                }
+            } else { // Decoder-only
+                $shape = [$batch_size, $this->numHeads, 0, $this->dimKv];
+
+                for ($i = 0; $i < $this->numLayers; ++$i) {
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                }
+            }
+        }
+    }
+
+
+    /** Generates text based on the given inputs and generation configuration using the model.
+     * @param Tensor $inputs The input token ids.
+     * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
+     * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
+     * @param array|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @return array An array of generated output sequences, where each sequence is an array of token IDs.
+     */
     public function generate(
         Tensor               $inputs,
         ?GenerationConfig    $generationConfig = null,
         ?LogitsProcessorList $logitsProcessor = null,
-        array                $inputsAttentionMask = null
+        array                $inputsAttentionMask = null,
+        ?Streamer            $streamer = null,
     ): array
     {
         if (!$this->modelGroup->canGenerate()) {
             $className = get_called_class();
             $errorMsg = "The current model class {$className} is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
-            $modelType = $this->config->modelType;
-            $possibleInfo = ModelGroup::SEQ_2_SEQ_LM_MODELS[$modelType->value] ?? null;
+            $possibleInfo = ModelGroup::SEQ_2_SEQ_LM_MODELS[$this->config->modelType] ?? null;
 
             if ($possibleInfo) {
                 $errorMsg .= " Try using `{$possibleInfo}` instead.";
@@ -466,6 +687,7 @@ class PreTrainedModel
             throw new \Error($errorMsg);
 
         }
+
 
         $inputIdsSeqLength = 0;
 
@@ -501,25 +723,27 @@ class PreTrainedModel
         $maxOutputTokens = $numOutputTokens + ($generationConfig->max_new_tokens ?? INF);
 
         // Only use max length if max_new_tokens is not provided
-        $useMaxLength = is_int($generationConfig->max_length) && is_null($generationConfig->max_new_tokens);
+        $useMaxLength = is_null($generationConfig->max_new_tokens);
+
 
         $sampler = Sampler::getSampler($generationConfig);
 
 
         $beams = $this->getStartBeams($inputs, $generationConfig, $numOutputTokens, $inputsAttentionMask);
 
+
         while (array_reduce($beams, fn($carry, $beam) => $carry || !$beam['done'], false) && $numOutputTokens < $maxOutputTokens) {
-            $newest_beams = [];
+            $newestBeams = [];
             foreach ($beams as $beam) {
                 if ($beam['done']) {
                     // Add this beam back into the pool
-                    $newest_beams[] = $beam;
+                    $newestBeams[] = $beam;
                     continue;
                 }
                 if ($useMaxLength && count($beam['output_token_ids']) >= $generationConfig->max_length) {
                     // Set this beam to done and add it back into the pool
                     $beam['done'] = true;
-                    $newest_beams[] = $beam;
+                    $newestBeams[] = $beam;
                     continue;
                 }
 
@@ -533,12 +757,11 @@ class PreTrainedModel
                 if ($generationConfig->output_scores) {
                     // TODO add
                 }
-
                 // Logits are of the form [batch_size, out_seq_length, vocab_size]
                 // In most cases, this will be [batch_size, 1, vocab_size]
                 // So, we select the last token's logits:
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
-                $logits = array_slice($output['logits'], 0, -1);
+                $logits = $output['logits']->slice(null, -1, null);
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);
@@ -546,7 +769,7 @@ class PreTrainedModel
                 $sampledTokens = $sampler($logits);
                 foreach ($sampledTokens as [$newTokenId, $logProb]) {
                     // use previous beam as a starting point
-                    $newBeam = $beam;
+                    $newBeam = array_merge($beam, []);
 
                     // update new beam
                     $this->updateBeam($newBeam, $newTokenId);
@@ -557,47 +780,63 @@ class PreTrainedModel
                         $newBeam['done'] = true;
                     }
 
-                    $newest_beams[] = $newBeam;
+                    $newestBeams[] = $newBeam;
                 }
+
             }
+
+
             ++$numOutputTokens;
 
-            // Next, we get the best beams, per ID
-            $groupedBeams = $this->groupBeams($newestBeams);
-
-            // Sort and slice within each group
-            $newestBeams = array_map(function ($group) use ($generationConfig) {
-                usort($group, function ($a, $b) {
-                    return $b->score - $a->score; // Sort descending by score
-                });
-
-                return array_slice($group, 0, $generationConfig->num_beams); // Keep top beams
-            }, $groupedBeams);
+            // Group and select best beams
+            $newestBeams = array_merge(...array_map(
+                function ($group) use ($generationConfig) {
+                    uasort($group, fn($a, $b) => $b['score'] - $a['score']);
+                    return array_slice(
+                        $group,
+                        0,
+                        $generationConfig->num_beams
+                    );
+                },
+                $this->groupBeams($newestBeams)
+            ));
 
             // Flatten beams
-            $beams = array_merge(...$newest_beams);
+            $beams = $newestBeams;
 
-            // Run callback
-//            if ($generationConfig['callback_function']) {
-//                $generation_config['callback_function']($beams);
-//            }
+            // Stream the beams if a streamer is provided
+            $streamer?->put($beams);
         }
+
 
         // TODO: Ensure that we can return non-batched outputs
 
         $groupedBeams = $this->groupBeams($beams);
 
         $getFlattened = function ($key) use ($groupedBeams, $generationConfig) {
-            return array_map(function ($batch) use ($generationConfig, $key) {
-                if ($generationConfig->num_return_sequences > 1) {
-                    return array_map(fn($x) => $x[$key], array_slice($batch, 0, $generationConfig->num_return_sequences));
-                } else {
-                    return [$batch[0][$key]];
-                }
-            }, $groupedBeams);
+            $flattened = array_map(
+                function ($batch) use ($key, $generationConfig) {
+                    if ($generationConfig->num_return_sequences > 1) {
+                        return array_slice(
+                            array_map(fn($beam) => $beam[$key], $batch),
+                            0,
+                            $generationConfig->num_return_sequences
+                        );
+                    } else {
+                        // Only extract the first element's key value
+                        return [$batch[0][$key]];
+                    }
+                },
+                $groupedBeams
+            );
+
+            return array_merge(...$flattened); // Flatten the resulting array
         };
 
         $sequences = $getFlattened('output_token_ids'); // [1, seqLength]
+
+        // End the streamer if it was provided
+        $streamer?->end();
 
         if ($generationConfig->return_dict_in_generate) {
             // NOTE: `decoder_attentions` and `cross_attentions` should be:
@@ -624,6 +863,4 @@ class PreTrainedModel
             return $sequences;
         }
     }
-
-
 }

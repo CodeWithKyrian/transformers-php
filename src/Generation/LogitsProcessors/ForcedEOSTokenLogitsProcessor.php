@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\LogitsProcessors;
+namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\LogitsProcessors\LogitsProcessor;
 use Codewithkyrian\Transformers\Utils\Tensor;
 
-class RepetitionPenaltyLogitsProcessor extends LogitsProcessor
+class ForcedEOSTokenLogitsProcessor extends LogitsProcessor
 {
 
     /**

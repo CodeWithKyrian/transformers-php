@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\LogitsProcessors;
+namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
+use Codewithkyrian\Transformers\Utils\Tensor;
 use Traversable;
 
 class LogitsProcessorList implements \IteratorAggregate
@@ -38,13 +39,18 @@ class LogitsProcessorList implements \IteratorAggregate
      * Applies all logits processors in the list to a batch of logits, modifying them in-place.
      *
      * @param array $inputIds The input IDs for the language model.
-     * @param array $batchedLogits A 2D array of logits, where each row corresponds to a single input sequence.
+     * @param Tensor $batchedLogits A 2D array of logits, where each row corresponds to a single input sequence.
      */
-    public function __invoke(array $inputIds, array &$batchedLogits): void
+    public function __invoke(array $inputIds, Tensor &$batchedLogits): void
     {
-        foreach ($batchedLogits as &$logits) {
+//        foreach ($batchedLogits as &$logits) {
+//            foreach ($this->processors as $processor) {
+//                $processor($inputIds, $logits); // Apply processors in-place
+//            }
+//        }
+        for ($i = 0; $i < count($batchedLogits); $i++) {
             foreach ($this->processors as $processor) {
-                $processor($inputIds, $logits); // Apply processors in-place
+                $processor($inputIds, $batchedLogits[$i]); // Apply processors in-place
             }
         }
     }

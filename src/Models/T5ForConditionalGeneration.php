@@ -21,12 +21,12 @@ class T5ForConditionalGeneration extends T5Model
     public function __construct(
         AutoConfig                 $config,
         InferenceSession           $session,
-        public InferenceSession $decoderMergedSessions,
-        ModelGroup                 $modelGroup,
+        public InferenceSession $decoderMergedSession,
+        public ModelGroup                 $modelGroup,
         public GenerationConfig    $generationConfig
     )
     {
-        parent::__construct($config, $session);
+        parent::__construct($config, $session, $modelGroup);
 
         $this->numDecoderLayers = $this->config['num_decoder_layers'];
         $this->numDecoderHeads = $this->config['num_heads'];

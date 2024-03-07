@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Exceptions\HubException;
@@ -111,6 +110,7 @@ class Hub
             'sink' => Utils::tryFopen($partPath, 'w'),
             'progress' => self::downloadProgressCallback($fileName)
         ];
+        dump($remoteURL, $options, $client);
 
         try {
             $client->get($remoteURL, $options);
@@ -158,7 +158,7 @@ class Hub
         return function ($totalDownload, $downloadedBytes) use ($fileName) {
             if ($totalDownload > 0) {
                 $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
-                echo "\rDownloading $fileName: $percent% complete\n";
+                echo "\rDownloading $fileName: $percent% complete";
             }
         };
     }

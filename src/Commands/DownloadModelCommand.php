@@ -26,7 +26,7 @@ class DownloadModelCommand extends Command
 
         $this->addArgument('model', InputArgument::REQUIRED, 'The model to download.');
 
-//        $this->addArgument('task', InputArgument::REQUIRED, 'The task to use the model for.');
+        $this->addArgument('task', InputArgument::OPTIONAL, 'The task to use the model for.');
 
         $this->addOption(
             'cache-dir',
@@ -53,11 +53,13 @@ class DownloadModelCommand extends Command
         $model = $input->getArgument('model');
         $cacheDir = $input->getOption('cache-dir');
         $quantized = $input->getOption('quantized');
+        $task = $input->getArgument('task');
 
         // Download the model
         try {
             $model = AutoModel::fromPretrained(
                 modelNameOrPath: $model,
+                task: $task,
                 quantized: $quantized,
                 cacheDir: $cacheDir
             );

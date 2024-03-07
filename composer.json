@@ -1,53 +1,55 @@
 {
-    "name": "codewithkyrian/transformers",
-    "description": "State-of-the-art Machine Learning for PHP. Run Transformers in PHP",
-    "keywords": [
-        "transformers",
-        "transformers-php",
-        "AI",
-        "machine learning",
-        "nlp",
-        "natural language processing",
-        "php",
-        "codewithkyrian"
-    ],
-    "type": "library",
-    "require": {
-        "php": "^8.1",
-        "guzzlehttp/guzzle": "^7.0",
-        "ankane/onnxruntime": "^0.1.8",
-        "ext-gd": "*",
-        "rindow/rindow-math-matrix": "^1.2"
+  "name": "codewithkyrian/transformers",
+  "description": "State-of-the-art Machine Learning for PHP. Run Transformers in PHP",
+  "keywords": [
+    "transformers",
+    "transformers-php",
+    "AI",
+    "machine learning",
+    "nlp",
+    "natural language processing",
+    "php",
+    "codewithkyrian"
+  ],
+  "type": "library",
+  "require": {
+    "php": "^8.1",
+    "guzzlehttp/guzzle": "^7.0",
+    "ankane/onnxruntime": "^0.1.8",
+    "ext-gd": "*",
+    "rindow/rindow-math-matrix": "^1.2",
+    "spatie/fork": "^1.2"
+  },
+  "require-dev": {
+    "pestphp/pest": "^2.31",
+    "symfony/var-dumper": "^7.0"
+  },
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Codewithkyrian\\Transformers\\": "src/"
     },
-    "require-dev": {
-        "pestphp/pest": "^2.31",
-        "symfony/var-dumper": "^7.0"
-    },
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "Codewithkyrian\\Transformers\\": "src/"
-        },
-        "files": [
-            "src/Functions.php"
-        ]
-    },
-    "authors": [
-        {
-            "name": "Kyrian Obikwelu",
-            "email": "koshnawaza@gmail.com"
-        }
-    ],
-    "config": {
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
-    },
-    "bin": [
-        "bin/transformers"
-    ],
-    "scripts": {
-        "test": "vendor/bin/pest",
-        "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage"
+    "files": [
+      "src/Pipelines/Helper.php",
+      "src/Utils/Functions.php"
+    ]
+  },
+  "authors": [
+    {
+      "name": "Kyrian Obikwelu",
+      "email": "koshnawaza@gmail.com"
     }
+  ],
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "bin": [
+    "bin/transformers"
+  ],
+  "scripts": {
+    "test": "vendor/bin/pest",
+    "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage"
+  }
 }

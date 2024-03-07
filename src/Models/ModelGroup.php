@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Models;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 enum ModelGroup: string
 {
@@ -122,16 +123,16 @@ enum ModelGroup: string
     {
         return match ($this) {
             self::DecoderOnly => $this->decoderStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens, $inputsAttentionMask),
-            self::Seq2SeqLM => $this->seq2seqStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens, $inputsAttentionMask),
+            self::Seq2SeqLM => $this->seq2seqStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens),
             default => throw new \Error('This model type does not support beam search'),
         };
     }
 
-    public function updateBeam(PreTrainedModel $model, array $beam, int $newTokenId): array
+    public function updateBeam(array &$beam, int $newTokenId): void
     {
-        return match ($this) {
-            self::DecoderOnly => $this->decoderUpdatebeam($model, $beam, $newTokenId),
-            self::Seq2SeqLM, self::Vision2Seq => $this->seq2seqUpdatebeam($model, $beam, $newTokenId),
+        match ($this) {
+            self::DecoderOnly => $this->decoderUpdatebeam($beam, $newTokenId),
+            self::Seq2SeqLM, self::Vision2Seq => $this->seq2seqUpdatebeam($beam, $newTokenId),
             default => throw new \Error('This model type does not support beam search'),
         };
     }
@@ -189,9 +190,8 @@ enum ModelGroup: string
         return [];
     }
 
-    protected function decoderUpdatebeam(PreTrainedModel $model, array $beam, int $newTokenId): array
+    protected function decoderUpdatebeam(array &$beam, int $newTokenId)
     {
-        return [];
     }
 
     protected function decoderForward(PreTrainedModel $model, array $modelInputs): array
@@ -218,10 +218,12 @@ enum ModelGroup: string
         // 1. Prepare
         $model_inputs = [
             $inputName => $beam['inputs'],
-            'decoder_input_ids' => Tensor::fromArray($decoderInputIds),
+            'decoder_input_ids' => new Tensor($decoderInputIds, shape: [1, count($decoderInputIds)]),
             'encoder_outputs' => $beam['encoder_outputs'],
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
+
+
 
         if ($beam['attention_mask']) {
             $model_inputs['attention_mask'] = $beam['attention_mask'];
@@ -237,25 +239,113 @@ enum ModelGroup: string
         return $output;
     }
 
+    /** Start the beam search process for the seq2seq model.
+     * @param PreTrainedModel $model The model to use for the beam search.
+     * @param Tensor $inputTokenIds Array of input token ids for each input sequence.
+     * @param GenerationConfig $generationConfig The generation configuration.
+     * @param int $numOutputTokens The maximum number of output tokens for the model.
+     * @return array Array of beam search objects.
+     */
     protected function seq2seqStartBeams(
         PreTrainedModel  $model,
         Tensor           $inputTokenIds,
         GenerationConfig $generationConfig,
         int              $numOutputTokens,
-        Tensor           $inputsAttentionMask = null
     ): array
     {
-        return [];
+        $beams = [];
+        $beamId = 0;
+
+        $requiresAttentionMask = !property_exists($model, 'requiresAttentionMask') || $model->requiresAttentionMask;
+
+        $decoder_input_ids = $generationConfig->decoder_input_ids
+            ?? $generationConfig->decoder_start_token_id
+            ?? $generationConfig->bos_token_id
+            ?? $generationConfig->eos_token_id;
+
+        // TODO support batched decoder_input_ids
+        if (!is_array($decoder_input_ids)) {
+            $decoder_input_ids = [$decoder_input_ids];
+        }
+
+        foreach ($inputTokenIds as $tokens) {
+            // TODO: Improve
+            // Currently, just add back batch dimension.
+            // In future, allow for true parallel execution
+            $tokens = new Tensor($tokens->toArray(), shape: [1, ...$tokens->shape()]);
+
+            // Create beam
+            $start = [
+                'inputs' => $tokens,
+                'encoder_outputs' => null,
+                'prev_model_outputs' => null,
+                'output_token_ids' => $decoder_input_ids,
+                'done' => false,
+                'score' => 0,
+                'id' => $beamId++, // assign unique id to beams
+            ];
+
+            if ($requiresAttentionMask) {
+                $start['attention_mask'] = $model->prepareAttentionMask($tokens);
+            }
+
+            $beams[] = $start;
+        }
+
+        return $beams;
     }
 
-    protected function seq2seqUpdatebeam(PreTrainedModel $model, array $beam, int $newTokenId): array
+    protected function seq2seqUpdatebeam(array &$beam, int $newTokenId): void
     {
-        return [];
+        $beam['output_token_ids'][] = $newTokenId;
     }
 
     protected function seq2seqForward(PreTrainedModel $model, array $modelInputs): array
     {
-        return [];
+
+        ['encoder_outputs' => $encoderOutputs, 'past_key_values' => $pastKeyValues] = $modelInputs;
+
+        if ($encoderOutputs === null) {
+            // Encoder outputs are not given, so we must compute them.
+            $encoderOutputs = $this->encoderForward($model, $modelInputs)['last_hidden_state'];
+        }
+
+
+        $decoderFeeds = [
+            'input_ids' => $modelInputs['decoder_input_ids'],
+            'encoder_hidden_states' => $encoderOutputs,
+        ];
+
+        $useCacheBranch = !!$pastKeyValues;
+
+        $inputNames = array_column($model->decoderMergedSession->inputs, 'name');
+
+
+        if (in_array('use_cache_branch', $inputNames)) {
+            $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], shape: [1]);
+        }
+
+        if (in_array('encoder_attention_mask', $inputNames)) {
+            $decoderFeeds['encoder_attention_mask'] = $modelInputs['attention_mask'];
+        }
+
+        $model->preparePositionIds($inputNames, $decoderFeeds, $useCacheBranch);
+        $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
+
+        $decoderResults = $model->runSession($model->decoderMergedSession, $decoderFeeds);
+
+        $logits = $decoderResults['logits'];
+        $pastKeyValues = $model->getPastKeyValues($decoderResults, $pastKeyValues);
+
+        // Get cross attention and/or decoder attentions if they are present
+        $attns = $model->getAttentions($decoderResults);
+
+        return [
+            'logits' => $logits,
+            'past_key_values' => $pastKeyValues,
+            'encoder_outputs' => $encoderOutputs,
+            ...$attns,
+        ];
     }
 
     //</editor-fold>

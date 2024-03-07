@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers;
+namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\AutoModel;
 use Codewithkyrian\Transformers\Pipelines\Pipeline;
 use Codewithkyrian\Transformers\Pipelines\Task;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
+
 
 /**
  * Utility factory method to build a `Pipeline` object.
@@ -58,30 +59,4 @@ function pipeline(
     $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $token, $revision);
 
     return $task->getPipeline($model, $tokenizer);
-}
-
-
-function memoryUsage(): string
-{
-    $mem = memory_get_usage(true);
-    $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
-}
-
-function memoryPeak(): string
-{
-    $mem = memory_get_peak_usage(true);
-    $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
-}
-
-function timeUsage(bool $milliseconds = false): string
-{
-    $time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-
-    $time = $milliseconds ? $time * 1000 : $time;
-
-    return @round($time, 4) . ($milliseconds ? ' ms' : ' s');
 }

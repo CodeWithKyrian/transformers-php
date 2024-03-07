@@ -14,7 +14,7 @@ class Pipeline
     public function __construct(
         protected string|Task  $task,
         protected PreTrainedModel  $model,
-        protected ?PretrainedTokenizer $tokenizer = null,
+        public ?PretrainedTokenizer $tokenizer = null,
         protected ?string $processor = null,
     )
     {
