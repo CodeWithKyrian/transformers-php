@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\Utils;
 /**
  * Class representing a configuration for a generation task.
  */
-class GenerationConfig
+class GenerationConfig implements \ArrayAccess
 {
     /** @var int The maximum length the generated tokens can have. Corresponds to the length of the input prompt + `max_new_tokens`. Its effect is overridden by `max_new_tokens`, if also set. */
     public int $max_length;
@@ -202,5 +202,29 @@ class GenerationConfig
     public function toArray(): array
     {
         return array_filter(get_object_vars($this), fn($value) => $value !== null);
+    }
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return property_exists($this, $offset) || isset($this->kwargs[$offset]);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->kwargs[$offset] ?? $this->$offset;
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        if (property_exists($this, $offset)) {
+            $this->$offset = $value;
+        } else {
+            $this->kwargs[$offset] = $value;
+        }
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        unset($this->kwargs[$offset]);
     }
 }

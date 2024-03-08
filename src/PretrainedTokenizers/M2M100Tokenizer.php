@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
 use Codewithkyrian\Transformers\Tokenizers\BatchEncoding;
+use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
 
 class M2M100Tokenizer extends PretrainedTokenizer
@@ -20,9 +21,11 @@ class M2M100Tokenizer extends PretrainedTokenizer
         parent::__construct($tokenizerJSON, $tokenizerConfig);
 
 
-        $this->languageCodes = array_filter($this->specialTokens, function ($x) {
-            return preg_match($this->languageRegex, $x);
-        });
+        $this->languageCodes = array_map(
+            fn($token) => substr($token, 2, -2), // Extract language code from token
+            array_filter($this->specialTokens, fn($x) => preg_match($this->languageRegex, $x))
+        );
+
 
         $this->langToToken = fn($x) => "__{$x}__";
     }
@@ -31,18 +34,29 @@ class M2M100Tokenizer extends PretrainedTokenizer
     /**
      * Helper function to build translation inputs for an `MBartTokenizer`.
      *
-     * @param string|string[] $rawInputs The text to tokenize.
-     * @param $tokenizerOptions
-     * @param $generateKwargs
+     * @param string|array $rawInputs The text to tokenize.
+     * @param GenerationConfig $generationConfig The additional arguments for the generation method.
+     * @param bool|string $padding Whether to pad the input sequences.
+     * @param bool $truncation Whether to truncate the input sequences.
+     * @param int|null $maxLength Maximum length of the returned list and optionally padding length.
+     * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
      *
      * @return array{input_ids: Tensor, token_type_ids: Tensor, attention_mask: Tensor}
      * @throws \Exception
      */
-    public function buildTranslationInputs(string|array $rawInputs, $tokenizerOptions, $generateKwargs): array
+    public function buildTranslationInputs(
+        string|array     $rawInputs,
+        GenerationConfig $generationConfig,
+        bool|string      $padding = false,
+        bool             $truncation = false,
+        ?int             $maxLength = null,
+        bool             $addSpecialTokens = true,
+    ): array
     {
 
-        $srcLangToken = $generateKwargs['src_lang'] ?? null;
-        $tgtLangToken = $generateKwargs['tgt_lang'];
+        $srcLangToken = $generationConfig['src_lang'] ?? null;
+        $tgtLangToken = $generationConfig['tgt_lang'];
+
 
         // Check that the target language is valid:
         if (!in_array($tgtLangToken, $this->languageCodes)) {
@@ -58,7 +72,7 @@ class M2M100Tokenizer extends PretrainedTokenizer
 
             // In the same way as the Python library, we override the post-processor
             // to force the source language to be first:
-            foreach ($this->postProcessor->config['single'] as &$item) {
+            foreach ($this->postProcessor->single as &$item) {
                 if (isset($item['SpecialToken']) && preg_match($this->languageRegex, $item['SpecialToken']['id'])) {
                     $item['SpecialToken']['id'] = call_user_func($this->langToToken, $srcLangToken);
                     break;
@@ -68,10 +82,10 @@ class M2M100Tokenizer extends PretrainedTokenizer
         }
 
         // Override the `forced_bos_token_id` to force the correct language
-        $generateKwargs['forced_bos_token_id'] = $this->tokenizer->convertTokensToIds(
+        $generationConfig->forced_bos_token_id = $this->tokenizer->convertTokensToIds(
             [call_user_func($this->langToToken, $tgtLangToken)]
         )[0];
 
-        return $this->__invoke($rawInputs, $tokenizerOptions);
+        return $this->__invoke($rawInputs, padding: $padding, addSpecialTokens: $addSpecialTokens, truncation: $truncation, maxLength: $maxLength);
     }
 }

@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\PostProcessors;
 
 abstract class PostProcessor
 {
-    public function __construct(public readonly array $config)
+    public function __construct(public array $config)
     {
     }
 

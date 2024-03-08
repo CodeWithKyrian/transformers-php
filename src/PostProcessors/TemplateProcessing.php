@@ -14,7 +14,7 @@ class TemplateProcessing extends PostProcessor
     /**
      * @var array The template for a single sequence of tokens.
      */
-    protected array $single;
+    public array $single;
 
     /**
      * @var array The template for a pair of sequences of tokens.

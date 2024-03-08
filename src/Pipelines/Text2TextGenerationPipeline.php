@@ -82,12 +82,6 @@ class Text2TextGenerationPipeline extends Pipeline
         // Generate output token ids
         $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
 
-
-        $response =  array_map(
-            fn($text) => [$this->key => $text],
-            $tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
-        );
-
         // Decode token ids to text
         return array_map(
             fn($text) => [$this->key => $text],

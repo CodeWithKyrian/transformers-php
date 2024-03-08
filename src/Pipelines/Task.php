@@ -20,11 +20,10 @@ enum Task: string
     case Embeddings = 'embeddings';
     case Text2TextGeneration = 'text2text-generation';
     case Summarization = 'summarization';
-
+    case Translation = 'translation';
 
 
     case Ner = 'ner';
-    case Translation_xx_to_yy = 'translation_xx_to_yy';
     case TextGeneration = 'text-generation';
 
     public function getPipeline(PreTrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
@@ -45,6 +44,8 @@ enum Task: string
             self::Text2TextGeneration => new Text2TextGenerationPipeline($this, $model, $tokenizer),
 
             self::Summarization => new SummarizationPipeline($this, $model, $tokenizer),
+
+            self::Translation => new TranslationPipeline($this, $model, $tokenizer),
 
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
@@ -68,6 +69,8 @@ enum Task: string
 
             self::Summarization => 'Xenova/distilbart-cnn-6-6', // Original: 'sshleifer/distilbart-cnn-6-6',
 
+            self::Translation => 'Xenova/t5-small', // Original: 't5-small',
+
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
     }
@@ -84,7 +87,8 @@ enum Task: string
             self::Embeddings => ModelGroup::EncoderOnly,
 
             self::Text2TextGeneration,
-            self::Summarization => ModelGroup::Seq2SeqLM,
+            self::Summarization,
+            self::Translation => ModelGroup::Seq2SeqLM,
 
             default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
         };

@@ -143,7 +143,7 @@ abstract class Tokenizer
      * Converts a list of tokens into a list of token IDs.
      *
      * @param string[] $tokens The tokens to convert.
-     * @return string[] The converted token IDs.
+     * @return int[] The converted token IDs.
      */
     public function convertTokensToIds(array $tokens): array
     {
