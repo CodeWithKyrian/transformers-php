@@ -9,8 +9,8 @@ class MissingModelInputException extends \Exception implements TransformersExcep
 {
     public static function make(array $missingInputs): self
     {
-        $inputs = implode(', ', $missingInputs);
-        return new self("The following model inputs are missing: $inputs");
+        $inputs = implode("\n", $missingInputs);
+        return new self("The following model inputs are missing:\n$inputs");
     }
 
 }

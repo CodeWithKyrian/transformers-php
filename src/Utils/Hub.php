@@ -110,7 +110,6 @@ class Hub
             'sink' => Utils::tryFopen($partPath, 'w'),
             'progress' => self::downloadProgressCallback($fileName)
         ];
-        dump($remoteURL, $options, $client);
 
         try {
             $client->get($remoteURL, $options);

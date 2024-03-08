@@ -19,10 +19,11 @@ enum Task: string
     case FeatureExtraction = 'feature-extraction';
     case Embeddings = 'embeddings';
     case Text2TextGeneration = 'text2text-generation';
+    case Summarization = 'summarization';
+
 
 
     case Ner = 'ner';
-    case Summarization = 'summarization';
     case Translation_xx_to_yy = 'translation_xx_to_yy';
     case TextGeneration = 'text-generation';
 
@@ -43,6 +44,8 @@ enum Task: string
 
             self::Text2TextGeneration => new Text2TextGenerationPipeline($this, $model, $tokenizer),
 
+            self::Summarization => new SummarizationPipeline($this, $model, $tokenizer),
+
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
     }
@@ -53,15 +56,17 @@ enum Task: string
             self::SentimentAnalysis,
             self::TextClassification => 'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
 
-            self::FillMask => 'Xenova/bert-base-uncased',
+            self::FillMask => 'Xenova/bert-base-uncased', // Original: 'bert-base-uncased',
 
             self::QuestionAnswering => 'Xenova/distilbert-base-uncased-distilled-squad',
 
             self::ZeroShotClassification => 'Xenova/distilbert-base-uncased-mnli',
 
-            self::FeatureExtraction, self::Embeddings => 'Xenova/all-MiniLM-L6-v2',
+            self::FeatureExtraction, self::Embeddings => 'Xenova/all-MiniLM-L6-v2', // Original: 'sentence-transformers/all-MiniLM-L6-v2'
 
-            self::Text2TextGeneration => 'Xenova/flan-t5-small',
+            self::Text2TextGeneration => 'Xenova/flan-t5-small', // Original: 'google/flan-t5-small',
+
+            self::Summarization => 'Xenova/distilbart-cnn-6-6', // Original: 'sshleifer/distilbart-cnn-6-6',
 
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
@@ -78,7 +83,8 @@ enum Task: string
             self::FeatureExtraction,
             self::Embeddings => ModelGroup::EncoderOnly,
 
-            self::Text2TextGeneration => ModelGroup::Seq2SeqLM,
+            self::Text2TextGeneration,
+            self::Summarization => ModelGroup::Seq2SeqLM,
 
             default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
         };

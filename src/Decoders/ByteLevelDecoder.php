@@ -5,10 +5,20 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Decoders;
 
+use Codewithkyrian\Transformers\Tokenizers\AddedToken;
+use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 use SplFixedArray;
 
 class ByteLevelDecoder extends Decoder
 {
+    protected array $byteDecoder = [];
+
+    public function __construct(array $config)
+    {
+        parent::__construct($config);
+
+        $this->byteDecoder = Tokenizer::unicodeToBytes();
+    }
 
 
     /**
@@ -20,13 +30,14 @@ class ByteLevelDecoder extends Decoder
     public function convertTokensToString(array $tokens): string
     {
         $text = implode('', $tokens);
-        $byteArray = new SplFixedArray(mb_strlen($text, '8bit'));
 
-        for ($i = 0; $i < mb_strlen($text, '8bit'); ++$i) {
-            $byteArray[$i] = ord($text[$i]);
-        }
+        $textArray = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
 
-        return utf8_decode(implode('', iterator_to_array($byteArray, false)));
+        $byteArray = array_map(fn($x) => $this->byteDecoder[$x], $textArray);
+
+        $binaryString = pack('C*', ...$byteArray);
+
+        return mb_convert_encoding($binaryString, 'ISO-8859-1');
     }
 
     protected function decodeChain(array $tokens): array
@@ -37,8 +48,8 @@ class ByteLevelDecoder extends Decoder
         foreach ($tokens as $token) {
             // No need to check skip_special_tokens since the tokens are already filtered
 
-            $addedToken = array_filter($this->addedTokens, function ($x) use ($token) {
-                return $x['content'] === $token;
+            $addedToken = array_filter($this->addedTokens, function (AddedToken $x) use ($token) {
+                return $x->content === $token;
             });
 
             if (!empty($addedToken)) {

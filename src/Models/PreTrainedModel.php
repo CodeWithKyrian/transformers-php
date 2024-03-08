@@ -298,6 +298,7 @@ class PreTrainedModel
 
     /**
      * @throws ModelExecutionException
+     * @throws MissingModelInputException
      */
     public function runSession(InferenceSession $session, array $inputs): array
     {
@@ -309,7 +310,11 @@ class PreTrainedModel
             $outputs = $session->run($outputNames, $inputs);
 
             return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
-        } catch (\Exception $e) {
+        }
+        catch (MissingModelInputException $e) {
+            throw $e;
+        }
+        catch (\Exception $e) {
             throw ModelExecutionException::make($e->getMessage());
         }
     }
@@ -381,8 +386,8 @@ class PreTrainedModel
             $processors->push(new ForcedBOSTokenLogitsProcessor($generationConfig->forced_bos_token_id));
         }
 
-        if ($generationConfig->forced_eos_token_id !== null) {
-            $processors->push(new ForcedEOSTokenLogitsProcessor($generationConfig->forced_eos_token_id));
+        if ($generationConfig->max_new_tokens == null && $generationConfig->forced_eos_token_id !== null) {
+            $processors->push(new ForcedEOSTokenLogitsProcessor($generationConfig->max_length, $generationConfig->forced_eos_token_id));
         }
 
         if ($generationConfig->begin_suppress_tokens !== null) {
@@ -767,6 +772,7 @@ class PreTrainedModel
                 $logitsProcessor($beam['output_token_ids'], $logits);
 
                 $sampledTokens = $sampler($logits);
+
                 foreach ($sampledTokens as [$newTokenId, $logProb]) {
                     // use previous beam as a starting point
                     $newBeam = array_merge($beam, []);
@@ -791,7 +797,7 @@ class PreTrainedModel
             // Group and select best beams
             $newestBeams = array_merge(...array_map(
                 function ($group) use ($generationConfig) {
-                    uasort($group, fn($a, $b) => $b['score'] - $a['score']);
+                    uasort($group, fn($a, $b) => $b['score'] <=> $a['score']);
                     return array_slice(
                         $group,
                         0,

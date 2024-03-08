@@ -7,8 +7,21 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
-use function Codewithkyrian\Transformers\timeUsage;
 
+/**
+ * A pipeline for generating text using a model that performs text-to-text generation tasks.
+ *
+ * **Example:** Text-to-text generation w/ `Xenova/LaMini-Flan-T5-783M`.
+ * ```php
+ * use function Codewithkyrian\Transformers\Pipelines\pipeline;
+ *
+ * $generator = pipeline('text2text-generation', model: 'Xenova/LaMini-Flan-T5-783M');
+ * $query = 'How many continents are there in the world?';
+ *
+ * $results = $generator($query, maxNewTokens: 128, repetitionPenalty: 1.6);
+ * // ['generated_text' => 'There are 7 continents in the world.']
+ *```
+ */
 class Text2TextGenerationPipeline extends Pipeline
 {
     protected string $key = 'generated_text';
@@ -19,12 +32,10 @@ class Text2TextGenerationPipeline extends Pipeline
 
         $streamer = null;
 
-        if(array_key_exists('streamer', $args))
-        {
+        if (array_key_exists('streamer', $args)) {
             $streamer = $args['streamer'];
             unset($args['streamer']);
         }
-
 
         // Convert the rest of the arguments key names from camelCase to snake_case
         $snakeCasedArgs = [];
@@ -33,6 +44,7 @@ class Text2TextGenerationPipeline extends Pipeline
         }
 
         $generateKwargs = new GenerationConfig($snakeCasedArgs);
+
 
         if (!is_array($texts)) {
             $texts = [$texts];
@@ -69,6 +81,12 @@ class Text2TextGenerationPipeline extends Pipeline
 
         // Generate output token ids
         $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
+
+
+        $response =  array_map(
+            fn($text) => [$this->key => $text],
+            $tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
+        );
 
         // Decode token ids to text
         return array_map(

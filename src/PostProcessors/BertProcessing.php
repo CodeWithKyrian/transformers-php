@@ -11,14 +11,14 @@ namespace Codewithkyrian\Transformers\PostProcessors;
 class BertProcessing extends PostProcessor
 {
     /**
-     * @var string[] The special tokens to add to the beginning of the input.
+     * @var string The special token to add to the beginning of the input.
      */
-    protected array $cls;
+    protected string $cls;
 
     /**
-     * @var string[] The special tokens to add to the end of the input.
+     * @var string The special token to add to the end of the input.
      */
-    protected array $sep;
+    protected string $sep;
 
     /**
      * @param array $config
@@ -42,7 +42,7 @@ class BertProcessing extends PostProcessor
     public function postProcess(array $tokens, array $tokenPair = null, bool $addSpecialTokens = true): PostProcessedOutput
     {
         if ($addSpecialTokens) {
-            $tokens = array_merge($this->cls, $tokens, $this->sep);
+            $tokens = array_merge([$this->cls], $tokens, [$this->sep]);
         }
 
         $tokenTypeIds = array_fill(0, count($tokens), 0);

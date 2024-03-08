@@ -77,7 +77,6 @@ class PretrainedTokenizer
      */
     public function __construct(protected array $tokenizerJSON, protected array $tokenizerConfig)
     {
-
         // Construct parts of the tokenizer from the JSON
         $this->normalizer = Normalizer::fromConfig($this->tokenizerJSON['normalizer']);
         $this->preTokenizer = PreTokenizer::fromConfig($this->tokenizerJSON['pre_tokenizer']);
@@ -256,6 +255,7 @@ class PretrainedTokenizer
                     $text,
                     array_keys($text)
                 );
+
             } else {
                 $encodedTokens = array_map(
                     function ($x) use ($addSpecialTokens) {
@@ -263,6 +263,7 @@ class PretrainedTokenizer
                     },
                     $text
                 );
+
             }
         } else {
             if (is_array($textPair)) {
@@ -275,6 +276,7 @@ class PretrainedTokenizer
                 $textPair,
                 addSpecialTokens: $addSpecialTokens)
             ];
+
         }
 
         // At this point, tokens is batched: [batch_size, tokens]

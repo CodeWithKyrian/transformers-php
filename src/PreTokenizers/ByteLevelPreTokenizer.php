@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PreTokenizers;
 
+use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+
 /**
  * A pre-tokenizer that splits text into Byte-Pair-Encoding (BPE) subwords.
  */
@@ -40,10 +42,13 @@ class ByteLevelPreTokenizer extends PreTokenizer
         $this->useRegex = $config['use_regex'] ?? true;
 
         if ($this->useRegex) {
-            $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu";
+//            $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu";
+            $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/u";
+
+
         }
 
-        $this->byteEncoder = $this->bytesToUnicode();
+        $this->byteEncoder = Tokenizer::bytesToUnicode();
     }
 
     protected function preTokenizeText(array|string $text, array $options): array
@@ -61,44 +66,17 @@ class ByteLevelPreTokenizer extends PreTokenizer
             $tokens = [$text];
         }
 
+
         // Maps all our bytes to unicode strings, avoiding control tokens of the BPE (spaces in our case)
         return array_map(function ($token) {
             $utf8Bytes = mb_convert_encoding($token, 'UTF-8');
             $bytes = array_map(function ($byte) {
                 return $this->byteEncoder[$byte];
             }, unpack('C*', $utf8Bytes));
+
             return implode('', $bytes);
         }, $tokens);
 
-    }
-
-    /**
-     * Returns list of utf-8 byte and a mapping to unicode strings.
-     * Specifically avoids mapping to whitespace/control characters the BPE code barfs on.
-     * @returns array Object with utf-8 byte keys and unicode string values.
-     */
-    protected function bytesToUnicode(): array
-    {
-        // Returns list of utf-8 byte and a mapping to unicode strings.
-        // Specifically avoids mapping to whitespace/control characters the bpe code barfs on.
-
-        $bs = array_merge(
-            range(ord('!'), ord('~')),
-            range(ord('¡'), ord('¬')),
-            range(ord('®'), ord('ÿ'))
-        );
-
-        $cs = $bs;
-        $n = 0;
-        for ($b = 0; $b < 256; ++$b) {
-            if (!in_array($b, $bs)) {
-                $bs[] = $b;
-                $cs[] = 256 + $n;
-                $n += 1;
-            }
-        }
-        $ccs = array_map('chr', $cs);
-        return array_combine($bs, $ccs);
     }
 
 }

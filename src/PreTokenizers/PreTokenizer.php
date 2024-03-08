@@ -23,7 +23,7 @@ abstract class PreTokenizer
             'Sequence' => new PreTokenizerSequence($config),
             'WhitespaceSplit' => new WhitespaceSplit($config),
             'Metaspace' => new MetaspacePreTokenizer($config),
-            'ByteLevelPostProcessor' => new ByteLevelPreTokenizer($config),
+            'ByteLevel' => new ByteLevelPreTokenizer($config),
             'Split' => new SplitPreTokenizer($config),
             'Punctuation' => new PunctuationPreTokenizer($config),
             'Digits' => new DigitsPreTokenizer($config),

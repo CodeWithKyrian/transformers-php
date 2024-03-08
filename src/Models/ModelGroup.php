@@ -30,6 +30,7 @@ enum ModelGroup: string
 
     const ENCODER_DECODER_MODELS = [
         "t5" => T5Model::class,
+        "bart" => BartModel::class,
     ];
 
     const DECODER_ONLY_MODELS = [
@@ -38,6 +39,7 @@ enum ModelGroup: string
 
     const SEQ_2_SEQ_LM_MODELS = [
         "t5" => T5ForConditionalGeneration::class,
+        "bart" => BartForConditionalGeneration::class,
     ];
 
     //</editor-fold>

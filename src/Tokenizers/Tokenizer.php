@@ -56,6 +56,7 @@ abstract class Tokenizer
         return match ($config['type'] ?? null) {
             'WordPiece' => new WordpieceTokenizer($config),
             'Unigram' => new UnigramTokenizer($config, ...$args),
+            'BPE' => new BPETokenizer($config),
             default => (function () use ($config, $args) {
                 if ($config['vocab'] ?? false) {
                     return new LegacyTokenizer($config, ...$args);
@@ -255,7 +256,7 @@ abstract class Tokenizer
     public static function cleanUpTokenization(string|int $text): string
     {
         if (is_int($text)) {
-           $text = (string) $text;
+            $text = (string)$text;
         }
 
         $text = preg_replace('/ \./', '.', $text);
@@ -276,5 +277,50 @@ abstract class Tokenizer
         $arrayObject = new \ArrayObject($arr);
 
         return $arrayObject->getArrayCopy();
+    }
+
+    /**
+     * Returns list of utf-8 byte and a mapping to unicode strings.
+     * Specifically avoids mapping to whitespace/control characters the BPE code barfs on.
+     * @returns array Object with utf-8 byte keys and unicode string values.
+     */
+    public static function bytesToUnicode(): array
+    {
+        $bs = array_merge(
+            range(ord('!'), ord('~')),
+            range(ord('¡'), ord('¬')),
+            range(ord('®'), ord('ÿ'))
+        );
+
+        $cs = $bs;
+
+        // Adjust to correctly add missing bytes and map them starting from extended ASCII
+        $n = 0;
+        for ($b = 0; $b < 256; ++$b) {
+            if (!in_array($b, $bs)) {
+                $bs[] = $b;
+                // Here we start mapping to code points beyond the standard ASCII range
+                $cs[] = 256 + $n;
+                $n += 1;
+            }
+        }
+
+        // Convert $cs array elements to their corresponding Unicode characters
+        $ccs = array_map(function ($codePoint) {
+            if ($codePoint < 128) {
+                // Standard ASCII range
+                return chr($codePoint);
+            } else {
+                // Use mb_convert_encoding to handle code points beyond ASCII
+                return mb_convert_encoding('&#' . intval($codePoint) . ';', 'UTF-8', 'HTML-ENTITIES');
+            }
+        }, $cs);
+
+        return array_combine($bs, $ccs);
+    }
+
+    public static function unicodeToBytes() : array
+    {
+        return array_flip(self::bytesToUnicode());
     }
 }

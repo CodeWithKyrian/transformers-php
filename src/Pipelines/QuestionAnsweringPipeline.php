@@ -12,7 +12,7 @@ use Codewithkyrian\Transformers\Utils\Math;
  *
  * *Example:** Extractive question-answering w/ `Xenova/distilbert-base-uncased-distilled-squad`.
  * ```php
- * use function Codewithkyrian\Transformers\pipeline;
+ * use function Codewithkyrian\Transformers\Pipelines\pipeline;
  *
  * $qa = pipeline('question-answering', 'Xenova/distilbert-base-uncased-distilled-squad');
  *

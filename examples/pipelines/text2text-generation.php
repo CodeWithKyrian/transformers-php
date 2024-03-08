@@ -14,9 +14,10 @@ $generator = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
 $streamer = StdOutStreamer::make($generator->tokenizer);
 
 $query = 'Please let me know your thoughts on the given place and why you think it deserves to be visited: \n"Barcelona, Spain"';
+//$query = 'How many continents are in the world? List out those continents';
 //$query = 'What is the capital of Nigeria? When was it changed from Lagos?';
 //$query = 'In 5 steps, give me a guide on how to make a simple cake.';
 
-$output = $generator($query, streamer: $streamer, maxNewTokens: 256, doSample: true);
+$output = $generator($query, streamer: $streamer, maxNewTokens: 256, doSample: true, repetitionPenalty: 1.6);
 
 dd('Done', timeUsage(), memoryUsage());
