@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Models\ModelGroup;
-use Codewithkyrian\Transformers\Models\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 
 enum Task: string
@@ -21,10 +20,10 @@ enum Task: string
     case Text2TextGeneration = 'text2text-generation';
     case Summarization = 'summarization';
     case Translation = 'translation';
+    case TextGeneration = 'text-generation';
 
 
     case Ner = 'ner';
-    case TextGeneration = 'text-generation';
 
     public function getPipeline(PreTrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
     {
@@ -46,6 +45,8 @@ enum Task: string
             self::Summarization => new SummarizationPipeline($this, $model, $tokenizer),
 
             self::Translation => new TranslationPipeline($this, $model, $tokenizer),
+
+            self::TextGeneration => new TextGenerationPipeline($this, $model, $tokenizer),
 
             default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
         };
@@ -71,27 +72,9 @@ enum Task: string
 
             self::Translation => 'Xenova/t5-small', // Original: 't5-small',
 
+            self::TextGeneration => 'Xenova/gpt2', // Original: 'gpt2',
+
             default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
         };
     }
-
-    public function modelGroup(): ModelGroup
-    {
-        return match ($this) {
-            self::FillMask,
-            self::QuestionAnswering,
-            self::TextClassification,
-            self::SentimentAnalysis,
-            self::ZeroShotClassification,
-            self::FeatureExtraction,
-            self::Embeddings => ModelGroup::EncoderOnly,
-
-            self::Text2TextGeneration,
-            self::Summarization,
-            self::Translation => ModelGroup::Seq2SeqLM,
-
-            default => throw new \Error("Model group for task {$this->value} is not implemented yet."),
-        };
-    }
-
 }

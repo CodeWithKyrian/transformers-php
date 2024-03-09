@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\Models;
+namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
@@ -20,13 +20,15 @@ use Codewithkyrian\Transformers\Generation\LogitsProcessors\RepetitionPenaltyLog
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\SuppressTokensAtBeginLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\Samplers\Sampler;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
+use Codewithkyrian\Transformers\Models\ModelArchitecture;
+use Codewithkyrian\Transformers\Models\Output\BaseModelOutput;
+use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use Exception;
 use OnnxRuntime\InferenceSession;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -40,10 +42,10 @@ class PreTrainedModel
      * @param mixed $session The ONNX session.
      */
     public function __construct(
-        public readonly AutoConfig $config,
-        public InferenceSession    $session,
-        public ModelGroup          $modelGroup = ModelGroup::EncoderOnly,
-                                   ...$args
+        public AutoConfig        $config,
+        public InferenceSession  $session,
+        public ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
+                                 ...$args
     )
     {
     }
@@ -66,19 +68,19 @@ class PreTrainedModel
      * @param string|null $token The token to use as an authorization to download from private model repos.
      * @param string $revision The specific model version to use. It can be a branch name, a tag name,
      * @param string|null $modelFilename The name of the model file to load. If not provided, will default to the
-     * @param ModelGroup $modelGroup
+     * @param ModelArchitecture $modelArchitecture
      * @return self The model instantiated from the configuration.
      * @throws HubException
      */
     public static function fromPretrained(
-        string           $modelNameOrPath,
-        bool             $quantized = true,
-        array|AutoConfig $config = null,
-        ?string          $cacheDir = null,
-        ?string          $token = null,
-        string           $revision = 'main',
-        ?string          $modelFilename = null,
-        ModelGroup       $modelGroup = ModelGroup::EncoderOnly
+        string            $modelNameOrPath,
+        bool              $quantized = true,
+        array|AutoConfig  $config = null,
+        ?string           $cacheDir = null,
+        ?string           $token = null,
+        string            $revision = 'main',
+        ?string           $modelFilename = null,
+        ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly
     ): self
     {
         if (is_array($config)) {
@@ -86,20 +88,22 @@ class PreTrainedModel
         }
 
 
-        switch ($modelGroup) {
-            case ModelGroup::DecoderOnly:
+        switch ($modelArchitecture) {
+            case ModelArchitecture::DecoderOnly:
             {
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: $modelFilename ?? 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
 
-                $generatorConfig = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generator_config.json',
+                $generatorConfigArr = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generation_config.json',
                     cacheDir: $cacheDir, revision: $revision, fatal: false);
 
-                return new static($config, $session, $modelGroup, $generatorConfig);
+                $generatorConfig = new GenerationConfig($generatorConfigArr);
+
+                return new static($config, $session, $modelArchitecture, $generatorConfig);
             }
 
-            case ModelGroup::Seq2SeqLM:
-            case ModelGroup::Vision2Seq:
+            case ModelArchitecture::Seq2SeqLM:
+            case ModelArchitecture::Vision2Seq:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
@@ -113,10 +117,10 @@ class PreTrainedModel
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
 
-                return new static($config, $encoderSession, $decoderSession, $modelGroup, $generatorConfig);
+                return new static($config, $encoderSession, $decoderSession, $modelArchitecture, $generatorConfig);
             }
 
-            case ModelGroup::MaskGeneration:
+            case ModelArchitecture::MaskGeneration:
             {
                 $visionEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'vision_encoder', cacheDir: $cacheDir, revision: $revision);
@@ -124,10 +128,10 @@ class PreTrainedModel
                 $promptMaskEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'prompt_encoder_mask_decoder', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $visionEncoder, $promptMaskEncoder, $modelGroup);
+                return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
             }
 
-            case ModelGroup::EncoderDecoder:
+            case ModelArchitecture::EncoderDecoder:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
@@ -135,24 +139,24 @@ class PreTrainedModel
                 $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $encoderSession, $decoderSession, $modelGroup);
+                return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
             }
 
             default:
             {
-                if ($modelGroup != ModelGroup::EncoderOnly) {
-                    echo "WARNING: {$modelGroup->value} is not a valid model group. Defaulting to EncoderOnly.";
+                if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
+                    echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
                 }
 
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'model', cacheDir: $cacheDir, revision: $revision);
 
-                return new static($config, $session, $modelGroup);
+                return new static($config, $session, $modelArchitecture);
             }
         }
     }
 
-    public function __invoke(array $modelInputs): array
+    public function __invoke(array $modelInputs): array|ModelOutput
     {
         return $this->forward($modelInputs);
     }
@@ -165,7 +169,7 @@ class PreTrainedModel
      */
     public function forward(array $modelInputs): array
     {
-        return $this->modelGroup->forward($this, $modelInputs);
+        return $this->modelArchitecture->forward($this, $modelInputs);
     }
 
     /**
@@ -185,7 +189,7 @@ class PreTrainedModel
         Tensor           $inputsAttentionMask = null
     ): array
     {
-        return $this->modelGroup->startBeams(
+        return $this->modelArchitecture->startBeams(
             $this,
             $inputTokenIds,
             $generationConfig,
@@ -203,7 +207,7 @@ class PreTrainedModel
      */
     public function runBeam(array &$beam): array
     {
-        return $this->modelGroup->runBeam($this, $beam);
+        return $this->modelArchitecture->runBeam($this, $beam);
     }
 
     /**
@@ -215,7 +219,7 @@ class PreTrainedModel
      */
     public function updateBeam(array &$beam, int $newTokenId): void
     {
-        $this->modelGroup->updateBeam($beam, $newTokenId);
+        $this->modelArchitecture->updateBeam($beam, $newTokenId);
     }
 
     /**
@@ -310,11 +314,9 @@ class PreTrainedModel
             $outputs = $session->run($outputNames, $inputs);
 
             return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
-        }
-        catch (MissingModelInputException $e) {
+        } catch (MissingModelInputException $e) {
             throw $e;
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             throw ModelExecutionException::make($e->getMessage());
         }
     }
@@ -679,11 +681,11 @@ class PreTrainedModel
         ?Streamer            $streamer = null,
     ): array
     {
-        if (!$this->modelGroup->canGenerate()) {
+        if (!$this->modelArchitecture->canGenerate()) {
             $className = get_called_class();
             $errorMsg = "The current model class {$className} is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
-            $possibleInfo = ModelGroup::SEQ_2_SEQ_LM_MODELS[$this->config->modelType] ?? null;
+            $possibleInfo = ModelArchitecture::SEQ_2_SEQ_LM_MODELS[$this->config->modelType] ?? null;
 
             if ($possibleInfo) {
                 $errorMsg .= " Try using `{$possibleInfo}` instead.";

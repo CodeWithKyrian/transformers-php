@@ -3,13 +3,17 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\Models;
+namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use OnnxRuntime\InferenceSession;
 
-class T5ForConditionalGeneration extends T5Model
+/**
+ * T5Model is a class representing a T5 model for conditional generation.
+ */
+class T5ForConditionalGeneration extends T5PreTrainedModel
 {
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;
@@ -19,14 +23,14 @@ class T5ForConditionalGeneration extends T5Model
     protected mixed $encoderDimKv;
 
     public function __construct(
-        AutoConfig                 $config,
-        InferenceSession           $session,
-        public InferenceSession $decoderMergedSession,
-        public ModelGroup                 $modelGroup,
-        public GenerationConfig    $generationConfig
+        AutoConfig               $config,
+        InferenceSession         $session,
+        public InferenceSession  $decoderMergedSession,
+        public ModelArchitecture $modelArchitecture,
+        public GenerationConfig  $generationConfig
     )
     {
-        parent::__construct($config, $session, $modelGroup);
+        parent::__construct($config, $session, $modelArchitecture);
 
         $this->numDecoderLayers = $this->config['num_decoder_layers'];
         $this->numDecoderHeads = $this->config['num_heads'];

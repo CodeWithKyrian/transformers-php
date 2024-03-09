@@ -65,7 +65,7 @@ class PretrainedTokenizer
     protected bool $cleanUpTokenizationSpaces;
     protected bool $doLowerCaseAndRemoveAccent;
 
-    protected string $paddingSide;
+    public string $paddingSide;
     protected bool $legacy;
 
     protected mixed $chatTemplate;

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models;
 
-use Codewithkyrian\Transformers\Utils\AutoConfig;
+use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
-enum ModelGroup: string
+enum ModelArchitecture: string
 {
     case EncoderDecoder = 'EncoderDecoder';
     case EncoderOnly = 'EncoderOnly';
@@ -18,85 +17,6 @@ enum ModelGroup: string
     case Vision2Seq = 'Vision2Seq';
     case MaskGeneration = 'MaskGeneration';
 
-    // <editor-fold desc="Model classes">
-
-    const ENCODER_ONLY_MODELS = [
-        "bert" => BertModel::class,
-        "distilbert" => DistilBertModel::class,
-        "mobilebert" => MobileBertModel::class,
-        "deberta-v2" => DebertaV2Model::class,
-        "roformer" => RoFormerModel::class,
-    ];
-
-    const ENCODER_DECODER_MODELS = [
-        "t5" => T5Model::class,
-        "bart" => BartModel::class,
-        "m2m_100" => M2M100Model::class,
-    ];
-
-    const DECODER_ONLY_MODELS = [
-        "gpt2" => GPT2Model::class,
-    ];
-
-    const SEQ_2_SEQ_LM_MODELS = [
-        "t5" => T5ForConditionalGeneration::class,
-        "bart" => BartForConditionalGeneration::class,
-        "m2m_100" => M2M100ForConditionalGeneration::class,
-    ];
-
-    //</editor-fold>
-
-    // <editor-fold desc="Initialization">
-    /**
-     * @param string $modelType
-     * @return class-string<PreTrainedModel>
-     */
-    public function getModelClass(string $modelType): string
-    {
-        return match ($this) {
-            self::EncoderOnly => self::ENCODER_ONLY_MODELS[$modelType],
-            self::EncoderDecoder => self::ENCODER_DECODER_MODELS[$modelType],
-            self::DecoderOnly => self::DECODER_ONLY_MODELS[$modelType],
-            self::Seq2SeqLM => self::SEQ_2_SEQ_LM_MODELS[$modelType],
-            default => throw new \Error("Model group {$this->value} does not contain a model for type {$modelType}."),
-        };
-    }
-
-    public function constructModel(
-        string     $modelNameOrPath,
-        bool       $quantized = true,
-        AutoConfig $config = null,
-        ?string    $cacheDir = null,
-        ?string    $token = null,
-        string     $revision = 'main',
-        ?string    $modelFilename = null)
-    {
-        $modelClass = $this->getModelClass($config->modelType);
-
-        return $modelClass::fromPretrained(
-            modelNameOrPath: $modelNameOrPath,
-            quantized: $quantized,
-            config: $config,
-            cacheDir: $cacheDir,
-            token: $token,
-            revision: $revision,
-            modelFilename: $modelFilename,
-            modelGroup: $this
-        );
-    }
-
-    public static function inferFromModelType(string $modelType): self
-    {
-        return match (true) {
-            isset(self::ENCODER_ONLY_MODELS[$modelType]) => self::EncoderOnly,
-            isset(self::ENCODER_DECODER_MODELS[$modelType]) => self::EncoderDecoder,
-            isset(self::DECODER_ONLY_MODELS[$modelType]) => self::DecoderOnly,
-            isset(self::SEQ_2_SEQ_LM_MODELS[$modelType]) => self::Seq2SeqLM,
-            default => throw new \Error("Model group for model type {$modelType} is not implemented yet."),
-        };
-    }
-
-    //</editor-fold>
 
     // <editor-fold desc="Abstract methods">
 
@@ -226,7 +146,6 @@ enum ModelGroup: string
             'encoder_outputs' => $beam['encoder_outputs'],
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
-
 
 
         if ($beam['attention_mask']) {

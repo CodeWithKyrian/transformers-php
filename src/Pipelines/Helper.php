@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
-use Codewithkyrian\Transformers\Models\AutoModel;
-use Codewithkyrian\Transformers\Pipelines\Pipeline;
-use Codewithkyrian\Transformers\Pipelines\Task;
+use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 
 
@@ -54,7 +52,7 @@ function pipeline(
 
     $modelName ??= $task->defaultModel();
 
-    $model = AutoModel::fromPretrained($modelName, $task, $quantized, $config, $cacheDir, $token, $revision);
+    $model = AutoModel::fromPretrained($modelName, $quantized, $config, $cacheDir, $token, $revision);
 
     $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $token, $revision);
 

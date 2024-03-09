@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\Models;
+namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use OnnxRuntime\InferenceSession;
 
-class BartForConditionalGeneration extends BartModel
+class M2M100ForConditionalGeneration extends M2M100PreTrainedModel
 {
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;
@@ -19,14 +20,14 @@ class BartForConditionalGeneration extends BartModel
     protected mixed $encoderDimKv;
 
     public function __construct(
-        AutoConfig                 $config,
-        InferenceSession           $session,
-        public InferenceSession $decoderMergedSession,
-        public ModelGroup                 $modelGroup,
-        public GenerationConfig    $generationConfig
+        AutoConfig               $config,
+        InferenceSession         $session,
+        public InferenceSession  $decoderMergedSession,
+        public ModelArchitecture $modelArchitecture,
+        public GenerationConfig  $generationConfig
     )
     {
-        parent::__construct($config, $session, $modelGroup);
+        parent::__construct($config, $session, $modelArchitecture);
 
         $this->numDecoderLayers = $this->config['decoder_layers'];
         $this->numDecoderHeads = $this->config['decoder_attention_heads'];
@@ -36,4 +37,5 @@ class BartForConditionalGeneration extends BartModel
         $this->numEncoderHeads = $this->config['encoder_attention_heads'];
         $this->encoderDimKv = $this->config['d_model'] / $this->numEncoderHeads;
     }
+
 }

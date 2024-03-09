@@ -14,7 +14,7 @@ class AutoConfig implements \ArrayAccess
 
     protected array $architectures = [];
 
-    protected int $padTokenId;
+    public int $padTokenId;
 
     protected int $vocabSize;
 
@@ -60,11 +60,11 @@ class AutoConfig implements \ArrayAccess
 
     public function offsetSet(mixed $offset, mixed $value): void
     {
-        throw new \BadMethodCallException("Config is read-only");
+        $this->config[$offset] = $value;
     }
 
     public function offsetUnset(mixed $offset): void
     {
-        throw new \BadMethodCallException("Config is read-only");
+        unset($this->config[$offset]);
     }
 }

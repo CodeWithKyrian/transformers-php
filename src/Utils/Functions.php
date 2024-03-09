@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
-use Codewithkyrian\Transformers\Models\AutoModel;
-use Codewithkyrian\Transformers\Pipelines\Pipeline;
-use Codewithkyrian\Transformers\Pipelines\Task;
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
-
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);

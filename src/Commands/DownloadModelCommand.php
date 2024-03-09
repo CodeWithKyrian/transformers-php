@@ -5,7 +5,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Commands;
 
-use Codewithkyrian\Transformers\Models\AutoModel;
+use Codewithkyrian\Transformers\Models\Auto\AutoModel;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -55,14 +58,16 @@ class DownloadModelCommand extends Command
         $quantized = $input->getOption('quantized');
         $task = $input->getArgument('task');
 
+
         // Download the model
         try {
-            $model = AutoModel::fromPretrained(
-                modelNameOrPath: $model,
-                task: $task,
-                quantized: $quantized,
-                cacheDir: $cacheDir
-            );
+            // TODO: Verify the tasks and corresponding AutoModel classes
+            $model = match ($task) {
+                'text-generation' => AutoModelForCausalLM::fromPretrained($model, $quantized, $cacheDir),
+                'text-classification', 'sentiment-analysis' => AutoModelForSequenceClassification::fromPretrained($model, $quantized, $cacheDir),
+                'translation' => AutoModelForSeq2SeqLM::fromPretrained($model, $quantized, $cacheDir),
+                default => AutoModel::fromPretrained($model, $quantized, $cacheDir),
+            };
 
             $output->writeln('✔ Model downloaded successfully.');
 

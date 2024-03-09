@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Models\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
 

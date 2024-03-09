@@ -25,7 +25,7 @@ abstract class PostProcessor
 
         return match ($config['type']) {
             'BertProcessing' => new BertProcessing($config),
-            'ByteLevelPostProcessor' => new ByteLevelPostProcessor($config),
+            'ByteLevel' => new ByteLevelPostProcessor($config),
             'TemplateProcessing' => new TemplateProcessing($config),
             'RobertaProcessing' => new RobertaProcessing($config),
             default => throw new \InvalidArgumentException("Unknown post-processor type {$config['type']}"),
