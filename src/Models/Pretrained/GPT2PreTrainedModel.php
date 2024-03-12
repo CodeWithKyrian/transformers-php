@@ -14,7 +14,7 @@ class GPT2PreTrainedModel extends PreTrainedModel
 {
     protected int $numHeads;
     protected int $numLayers;
-    protected float $dimKv;
+    protected int $dimKv;
 
     public function __construct(
         AutoConfig               $config,

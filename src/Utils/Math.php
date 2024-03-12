@@ -52,6 +52,7 @@ class Math
 
     public static function getTopItems(\Traversable|array $items, int $top_k = -1): array
     {
+//        dd(count($items));
         // if top == 0, return all
 
         // Convert Traversable to array
@@ -69,7 +70,30 @@ class Math
             $items = array_slice($items, 0, $top_k, true);
         }
 
+
         return $items;
+
+//        // if top_k == 0, return all
+//        if ($top_k === 0) {
+//            return $items;
+//        }
+//
+//        // Get indices ([index, value]) and sort by value
+//        $indexedItems = [];
+//        foreach ($items as $index => $value) {
+//            $indexedItems[] = [$index, $value];
+//        }
+//
+//        usort($indexedItems, function($a, $b) {
+//            return $b[1] <=> $a[1]; // Sort by value in descending order
+//        });
+//
+//        // Get top k items if top_k > 0
+//        if ($top_k !== null && $top_k > 0) {
+//            $indexedItems = array_slice($indexedItems, 0, $top_k);
+//        }
+//
+//        return $indexedItems;
     }
 
 

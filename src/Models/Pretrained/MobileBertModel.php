@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
-class MobileBertModel extends PreTrainedModel
+class MobileBertModel extends MobileBertPreTrainedModel
 {
 
 }

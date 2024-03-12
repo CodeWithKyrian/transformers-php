@@ -49,10 +49,8 @@ use Codewithkyrian\Transformers\Utils\GenerationConfig;
  */
 class TextGenerationPipeline extends Pipeline
 {
-    public function __invoke(...$args): array
+    public function __invoke(array|string $texts, ...$args): array
     {
-        $texts = array_shift($args);
-
         $streamer = null;
 
         if (array_key_exists('streamer', $args)) {

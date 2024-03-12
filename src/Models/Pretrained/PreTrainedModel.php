@@ -20,6 +20,8 @@ use Codewithkyrian\Transformers\Generation\LogitsProcessors\RepetitionPenaltyLog
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\SuppressTokensAtBeginLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\Samplers\Sampler;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\BaseModelOutput;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
@@ -29,6 +31,7 @@ use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use Exception;
 use OnnxRuntime\InferenceSession;
+use function Codewithkyrian\Transformers\Utils\array_some;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -263,12 +266,12 @@ class PreTrainedModel
      * @return Tensor[]
      * @throws MissingModelInputException
      */
-    public function validateInputs(InferenceSession $session, array $inputs): array
+    public function validateInputs(array $inputNames, array $inputs): array
     {
         $checkedInputs = [];
         $missingInputs = [];
 
-        foreach ($session->inputs as ['name' => $inputName]) {
+        foreach ($inputNames as $inputName) {
             $tensor = $inputs[$inputName];
 
             // Check if the input is an instance of Tensor
@@ -286,13 +289,13 @@ class PreTrainedModel
         }
 
         $numInputsProvided = count($inputs);
-        $numInputsNeeded = count($session->inputs);
+        $numInputsNeeded = count($inputNames);
 
 
         if ($numInputsProvided > $numInputsNeeded) {
             // No missing inputs, but too many inputs were provided.
             // Warn the user and ignore the extra inputs.
-            $ignored = array_diff(array_keys($inputs), $session->inputs);
+            $ignored = array_diff(array_keys($inputs), $inputNames);
             echo 'WARNING: Too many inputs were provided (' . $numInputsProvided . ' > ' . $numInputsNeeded . '). 
             The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
         }
@@ -307,9 +310,11 @@ class PreTrainedModel
     public function runSession(InferenceSession $session, array $inputs): array
     {
         try {
-            $inputs = $this->validateInputs($session, $inputs);
+            $inputNames = array_column($session->inputs, 'name');
 
-            $outputNames = array_map(fn($o) => $o['name'], $session->outputs());
+            $inputs = $this->validateInputs($inputNames, $inputs);
+
+            $outputNames = array_column($session->outputs, 'name');
 
             $outputs = $session->run($outputNames, $inputs);
 
@@ -613,7 +618,6 @@ class PreTrainedModel
     {
         if ($pastKeyValues !== null) {
             $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
-
         } else {
             // TODO support batches (i.e., batch_size > 1)
             $batch_size = 1;
@@ -633,29 +637,29 @@ class PreTrainedModel
                 }
             } else if ($this->config->modelType === 'falcon') {
                 // NOTE: Custom implementation for Falcon
-                $shape = [$batch_size * $this->numHeads, 0, $this->dimKv];
+                $shape = [$batch_size * $this->numHeads, 1, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
                     $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
                 }
-            } else if ($this->config['multi_query']) { // e.g., for `gpt_bigcode`
-                $shape = [$batch_size * $this->numHeads, 0, 2 * $this->dimKv];
+            } else if ($this->config['multi_query'] ?? null) { // e.g., for `gpt_bigcode`
+                $shape = [$batch_size * $this->numHeads, 1, 2 * $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.key_value"] = new Tensor(null, shape: $shape);
                 }
             } else if ($this->config['model_type'] === 'bloom') {
                 // NOTE: Custom implementation for Bloom
-                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 0];
-                $valueShape = [$batch_size * $this->numHeads, 0, $this->dimKv];
+                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 1];
+                $valueShape = [$batch_size * $this->numHeads, 1, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $keyShape);
                     $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $valueShape);
                 }
             } else { // Decoder-only
-                $shape = [$batch_size, $this->numHeads, 0, $this->dimKv];
+                $shape = [$batch_size, $this->numHeads, 1, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
@@ -685,7 +689,10 @@ class PreTrainedModel
             $className = get_called_class();
             $errorMsg = "The current model class {$className} is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
-            $possibleInfo = ModelArchitecture::SEQ_2_SEQ_LM_MODELS[$this->config->modelType] ?? null;
+            $possibleInfo =
+                AutoModelForCausalLM::MODEL_CLASS_MAPPING[$this->config->modelType]
+                ?? AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING[$this->config->modelType]
+                ?? null;
 
             if ($possibleInfo) {
                 $errorMsg .= " Try using `{$possibleInfo}` instead.";
@@ -717,10 +724,10 @@ class PreTrainedModel
         // Update logits processor
         $logitsProcessor = $this->getLogitsProcessor($generationConfig, $inputIdsSeqLength, $logitsProcessor);
 
-        $eos_token_ids = $generationConfig->eos_token_id;
+        $eosTokenIds = $generationConfig->eos_token_id;
 
-        if ($eos_token_ids !== null && !is_array($eos_token_ids)) {
-            $eos_token_ids = [$eos_token_ids];
+        if ($eosTokenIds !== null && !is_array($eosTokenIds)) {
+            $eosTokenIds = [$eosTokenIds];
         }
 
         // TODO implement early_stopping
@@ -732,14 +739,13 @@ class PreTrainedModel
         // Only use max length if max_new_tokens is not provided
         $useMaxLength = is_null($generationConfig->max_new_tokens);
 
-
         $sampler = Sampler::getSampler($generationConfig);
 
 
         $beams = $this->getStartBeams($inputs, $generationConfig, $numOutputTokens, $inputsAttentionMask);
 
 
-        while (array_reduce($beams, fn($carry, $beam) => $carry || !$beam['done'], false) && $numOutputTokens < $maxOutputTokens) {
+        while (array_some($beams, fn($beam) => !$beam['done']) && $numOutputTokens < $maxOutputTokens) {
             $newestBeams = [];
             foreach ($beams as $beam) {
                 if ($beam['done']) {
@@ -761,14 +767,17 @@ class PreTrainedModel
                     $this->addAttentionsToBeam($beam, $output);
                 }
 
+
                 if ($generationConfig->output_scores) {
                     // TODO add
                 }
+
                 // Logits are of the form [batch_size, out_seq_length, vocab_size]
                 // In most cases, this will be [batch_size, 1, vocab_size]
                 // So, we select the last token's logits:
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
                 $logits = $output['logits']->slice(null, -1, null);
+//                $logits = $output['logits'];
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);
@@ -777,14 +786,14 @@ class PreTrainedModel
 
                 foreach ($sampledTokens as [$newTokenId, $logProb]) {
                     // use previous beam as a starting point
-                    $newBeam = array_merge($beam, []);
+                    $newBeam = $beam;
 
                     // update new beam
                     $this->updateBeam($newBeam, $newTokenId);
 
                     $newBeam['score'] += $logProb;
 
-                    if ($eos_token_ids && in_array($newTokenId, $eos_token_ids, true)) {
+                    if ($eosTokenIds && in_array($newTokenId, $eosTokenIds, true)) {
                         $newBeam['done'] = true;
                     }
 
@@ -799,7 +808,7 @@ class PreTrainedModel
             // Group and select best beams
             $newestBeams = array_merge(...array_map(
                 function ($group) use ($generationConfig) {
-                    uasort($group, fn($a, $b) => $b['score'] <=> $a['score']);
+                    usort($group, fn($a, $b) => $b['score'] <=> $a['score']);
                     return array_slice(
                         $group,
                         0,
@@ -808,6 +817,7 @@ class PreTrainedModel
                 },
                 $this->groupBeams($newestBeams)
             ));
+
 
             // Flatten beams
             $beams = $newestBeams;
@@ -845,6 +855,7 @@ class PreTrainedModel
 
         // End the streamer if it was provided
         $streamer?->end();
+
 
         if ($generationConfig->return_dict_in_generate) {
             // NOTE: `decoder_attentions` and `cross_attentions` should be:

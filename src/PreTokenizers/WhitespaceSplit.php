@@ -11,8 +11,9 @@ class WhitespaceSplit extends PreTokenizer
     public function __construct(protected array $config)
     {
     }
+
     public function preTokenizeText(string|array $text, array $options): array
     {
-        return preg_split('/\s+/', $text);
+        return explode(' ', $text);
     }
 }

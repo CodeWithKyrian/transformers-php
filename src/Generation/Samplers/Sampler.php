@@ -74,14 +74,17 @@ abstract class Sampler
         // Return index of chosen item
         $sumProbabilities = array_reduce($probabilities, fn($acc, $curr) => $acc + $curr, 0);
 
-        $r = mt_rand() * $sumProbabilities;
+        // Generate a random number between 0 and the sum of probabilities
+        $r = mt_rand() / mt_getrandmax() * $sumProbabilities;
 
         foreach ($probabilities as $i => $probability) {
             $r -= $probability;
+
             if ($r <= 0) {
                 return $i;
             }
         }
+
         return 0; // return first (most probable) as a fallback
     }
 

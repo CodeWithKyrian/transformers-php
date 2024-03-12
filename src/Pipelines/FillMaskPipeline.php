@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 use Codewithkyrian\Transformers\Pipelines\Pipeline;
 use Codewithkyrian\Transformers\Utils\Math;
 
@@ -31,38 +32,38 @@ use Codewithkyrian\Transformers\Utils\Math;
  */
 class FillMaskPipeline extends Pipeline
 {
-    public function __invoke(...$args): array
+    public function __invoke(array|string $texts, ...$args): array
     {
-        $texts = $args[0];
         $topk = $args["topk"] ?? 5;
 
         $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
 
+        /** @var MaskedLMOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);
 
         $toReturn = [];
 
         for ($i = 0; $i < $modelInputs['input_ids']->shape()[0]; ++$i) {
-            $ids = $modelInputs['input_ids']->toArray()[$i];
-            $mask_token_index = array_search($this->tokenizer->maskTokenId, $ids);
+            $ids = $modelInputs['input_ids'][$i]->toArray();
+            $maskTokenIndex = array_search($this->tokenizer->maskTokenId, $ids);
 
-            if ($mask_token_index === false) {
+            if ($maskTokenIndex === false) {
                 throw new \Error("Mask token ({$this->tokenizer->maskToken}) not found in text.");
             }
 
-            $logits = $outputs["logits"]->toArray()[$i];
-            $itemLogits = $logits[$mask_token_index];
+            $logits = $outputs->logits[$i]->toArray();
+            $itemLogits = $logits[$maskTokenIndex];
 
             $scores = Math::getTopItems(Math::softmax($itemLogits), $topk);
 
-            $toReturn[] = array_map(function ($key, $value) use ($ids, $mask_token_index) {
+            $toReturn[] = array_map(function ($key, $value) use ($ids, $maskTokenIndex) {
                 $sequence = $ids;
-                $sequence[$mask_token_index] = $key;
+                $sequence[$maskTokenIndex] = $key;
 
                 return [
                     'score' => $value,
                     'token' => $key,
-                    'token_str' => $this->tokenizer->tokenizer->vocab[$key],
+                    'token_str' => $this->tokenizer->decode([$key], skipSpecialTokens: true),
                     'sequence' => $this->tokenizer->decode($sequence, skipSpecialTokens: true),
                 ];
             }, array_keys($scores), $scores);

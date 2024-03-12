@@ -33,6 +33,8 @@ abstract class Tokenizer
 
     public ?string $endOfWordSuffix = null;
 
+    public ?string $continuingSubwordPrefix = null;
+
     public const SPECIAL_TOKEN_ATTRIBUTES = [
         'bos_token',
         'eos_token',
@@ -46,6 +48,10 @@ abstract class Tokenizer
 
     public function __construct(protected array $config)
     {
+        $this->continuingSubwordPrefix = $config['continuing_subword_prefix'] ?? null;
+        if ($this->continuingSubwordPrefix == "") {
+            $this->continuingSubwordPrefix = null;
+        }
     }
 
     /**
@@ -287,9 +293,9 @@ abstract class Tokenizer
     public static function bytesToUnicode(): array
     {
         $bs = array_merge(
-            range(ord('!'), ord('~')),
-            range(ord('¡'), ord('¬')),
-            range(ord('®'), ord('ÿ'))
+            range(mb_ord('!'), mb_ord('~')),
+            range(mb_ord('¡'), mb_ord('¬')),
+            range(mb_ord('®'), mb_ord('ÿ'))
         );
 
         $cs = $bs;
@@ -306,20 +312,12 @@ abstract class Tokenizer
         }
 
         // Convert $cs array elements to their corresponding Unicode characters
-        $ccs = array_map(function ($codePoint) {
-            if ($codePoint < 128) {
-                // Standard ASCII range
-                return chr($codePoint);
-            } else {
-                // Use mb_convert_encoding to handle code points beyond ASCII
-                return mb_convert_encoding('&#' . intval($codePoint) . ';', 'UTF-8', 'HTML-ENTITIES');
-            }
-        }, $cs);
+        $cs = array_map(fn($code) => mb_chr($code), $cs);
 
-        return array_combine($bs, $ccs);
+        return array_combine($bs, $cs);
     }
 
-    public static function unicodeToBytes() : array
+    public static function unicodeToBytes(): array
     {
         return array_flip(self::bytesToUnicode());
     }

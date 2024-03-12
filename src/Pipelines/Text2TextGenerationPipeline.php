@@ -26,10 +26,8 @@ class Text2TextGenerationPipeline extends Pipeline
 {
     protected string $key = 'generated_text';
 
-    public function __invoke(...$args): array
+    public function __invoke(array|string $texts, ...$args): array
     {
-        $texts = array_shift($args);
-
         $streamer = null;
 
         if (array_key_exists('streamer', $args)) {

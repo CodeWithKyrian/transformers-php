@@ -9,6 +9,6 @@ class UnsupportedModelTypeException extends \Exception implements TransformersEx
 {
     public static function make(string $modelType): self
     {
-        return new self("The model type `$modelType` is not supported. Please check for typos or refer to the documentation for the list of supported model types.");
+        return new self("The model type `$modelType` is not supported for this task. Please check for typos or refer to the documentation for the list of supported model types.");
     }
 }

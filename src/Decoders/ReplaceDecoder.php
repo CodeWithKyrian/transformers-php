@@ -23,7 +23,7 @@ class ReplaceDecoder extends Decoder
         return $pattern == null ?
             $tokens :
             array_map(function ($token) use ($pattern) {
-                return preg_replace($pattern, $this->config['content'], $token);
+                return str_replace($pattern, $this->config['content'], $token);
             }, $tokens);
     }
 }

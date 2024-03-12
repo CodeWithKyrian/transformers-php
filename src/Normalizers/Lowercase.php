@@ -11,7 +11,6 @@ namespace Codewithkyrian\Transformers\Normalizers;
 class Lowercase extends Normalizer
 {
 
-
     public function normalize(string $text): string
     {
         return mb_strtolower($text);

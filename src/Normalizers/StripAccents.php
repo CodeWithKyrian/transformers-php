@@ -13,7 +13,6 @@ use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 class StripAccents extends Normalizer
 {
 
-
     public function normalize(string $text): string
     {
         return Tokenizer::removeAccents($text);

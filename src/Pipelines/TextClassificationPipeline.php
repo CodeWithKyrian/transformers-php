@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Utils\Math;
 use Codewithkyrian\Transformers\Utils\Tensor;
 
@@ -57,14 +58,14 @@ use Codewithkyrian\Transformers\Utils\Tensor;
  */
 class TextClassificationPipeline extends Pipeline
 {
-    public function __invoke(...$args): array
+    public function __invoke(array|string $texts, ...$args): array
     {
-        $texts = $args[0];
         $topk = $args["topk"] ?? 1;
 
 
         $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
 
+        /** @var SequenceClassifierOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);
 
         // Define function to apply based on problem type
@@ -77,7 +78,7 @@ class TextClassificationPipeline extends Pipeline
         $id2label = $this->model->config['id2label'];
         $toReturn = [];
 
-        foreach ($outputs['logits'] as $batch) {
+        foreach ($outputs->logits as $batch) {
             $output = $activationFunction(Tensor::fromNdArray($batch));
 
             $scores = Math::getTopItems($output, $topk);

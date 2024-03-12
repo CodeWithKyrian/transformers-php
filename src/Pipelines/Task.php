@@ -2,9 +2,15 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Models\Auto\AutoModel;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForMaskedLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 
@@ -21,8 +27,7 @@ enum Task: string
     case Summarization = 'summarization';
     case Translation = 'translation';
     case TextGeneration = 'text-generation';
-
-
+    case TokenClassification = 'token-classification';
     case Ner = 'ner';
 
     public function getPipeline(PreTrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
@@ -48,11 +53,12 @@ enum Task: string
 
             self::TextGeneration => new TextGenerationPipeline($this, $model, $tokenizer),
 
-            default => throw new \Error("Pipeline for task {$this->value} is not implemented yet."),
+            self::TokenClassification,
+            self::Ner => new TokenClassificationPipeline($this, $model, $tokenizer),
         };
     }
 
-    public function defaultModel(): string
+    public function defaultModelName(): string
     {
         return match ($this) {
             self::SentimentAnalysis,
@@ -74,7 +80,40 @@ enum Task: string
 
             self::TextGeneration => 'Xenova/gpt2', // Original: 'gpt2',
 
-            default => throw new \Error("Default model for task {$this->value} is not implemented yet."),
+            self::TokenClassification, self::Ner => 'Xenova/bert-base-multilingual-cased-ner-hrl', // Original: 'Davlan/bert-base-multilingual-cased-ner-hrl',
+        };
+    }
+
+    public function pretrainedModel(
+        string  $modelNameOrPath,
+        bool    $quantized = true,
+        ?array  $config = null,
+        ?string $cacheDir = null,
+        ?string $token = null,
+        string  $revision = 'main',
+        mixed   $legacy = null,
+    ): PreTrainedModel
+    {
+        return match ($this) {
+            self::SentimentAnalysis,
+            self::TextClassification,
+            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::FeatureExtraction,
+            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::Text2TextGeneration,
+            self::Translation,
+            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+
+            self::TokenClassification,
+            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
         };
     }
 }

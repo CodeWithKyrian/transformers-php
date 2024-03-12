@@ -35,3 +35,25 @@ function timeUsage(bool $milliseconds = false, bool $sinceLastCall = false): str
 
     return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
 }
+
+function array_some(array $array, callable $callback): bool
+{
+    foreach ($array as $key => $value) {
+        if ($callback($value, $key)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function array_every(array $array, callable $callback): bool
+{
+    foreach ($array as $key => $value) {
+        if (!$callback($value, $key)) {
+            return false;
+        }
+    }
+
+    return true;
+}

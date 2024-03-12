@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Auto;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
+use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 
@@ -54,9 +55,10 @@ abstract class PretrainedMixin
         foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {
             $modelClass = $modelClassMapping[$config->modelType] ?? null;
 
+
             if ($modelClass === null) continue;
 
-            $modelArchitecture = AutoModel::getModelArchitecture($modelClass);
+            $modelArchitecture = self::getModelArchitecture($modelClass);
 
             return $modelClass::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,
@@ -85,5 +87,22 @@ abstract class PretrainedMixin
         } else {
             throw UnsupportedModelTypeException::make($config->modelType);
         }
+    }
+
+    protected static function getModelArchitecture($modelClass): ModelArchitecture
+    {
+        return match (true) {
+            in_array($modelClass, AutoModel::ENCODER_ONLY_MODEL_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModel::ENCODER_DECODER_MODEL_MAPPING) => ModelArchitecture::EncoderDecoder,
+            in_array($modelClass, AutoModel::DECODER_ONLY_MODEL_MAPPING) => ModelArchitecture::DecoderOnly,
+            in_array($modelClass, AutoModelForSequenceClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING) => ModelArchitecture::Seq2SeqLM,
+            in_array($modelClass, AutoModelForCausalLM::MODEL_CLASS_MAPPING) => ModelArchitecture::DecoderOnly,
+            in_array($modelClass, AutoModelForTokenClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForQuestionAnswering::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForMaskedLM::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+
+            default => ModelArchitecture::EncoderOnly,
+        };
     }
 }

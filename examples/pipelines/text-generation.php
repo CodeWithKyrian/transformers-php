@@ -11,10 +11,26 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 ini_set('memory_limit', -1);
 
-$generator = pipeline('text-generation', 'Xenova/distilgpt2');
+//$generator = pipeline('text-generation', 'Xenova/gpt2');
+//
+//$streamer = StdOutStreamer::make($generator->tokenizer);
+//
+//$output = $generator('The Black man worked as a',
+//    streamer: $streamer,
+//    maxNewTokens: 128,
+//    doSample: true,
+//    temperature: 0.7,
+//    repetitionPenalty: 1.3,
+//    earlyStopping: true
+//);
 
+$generator = pipeline('text-generation', 'Xenova/codegen-350M-mono');
 $streamer = StdOutStreamer::make($generator->tokenizer);
 
-$output = $generator('I enjoy walking with my cute dog,', streamer: $streamer, maxNewTokens: 50, temperature: 2);
+$output = $generator(
+    'def slugify(text: str) -> str:',
+    streamer: $streamer,
+    maxNewTokens: 50,
+);
 
-dd($output, timeUsage(), memoryUsage());
+dd("done", timeUsage(), memoryUsage());

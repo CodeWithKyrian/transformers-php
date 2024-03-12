@@ -30,12 +30,13 @@ together a model with its necessary preprocessing and postprocessing steps.
 
 <table>
 <tr>
-<th align="center"><b>Python (original)</b></th>
 
-[//]: # (<th align="center"><b>Javascript &#40;Xenova&#41;</b></th>)
+<th align="center"><b>Python (original)</b></th>
 <th align="center"><b>PHP (ours)</b></th>
+<th align="center"><b>Javascript (Xenova)</b></th>
 
 </tr>
+
 <tr>
 <td>
 
@@ -50,36 +51,10 @@ out = pipe('I love transformers!')
 ```
 
 </td>
-
-[//]: # (<td>)
-
-[//]: # ()
-
-[//]: # (```javascript)
-
-[//]: # (import { pipeline } from '@xenova/transformers';)
-
-[//]: # ()
-
-[//]: # (// Allocate a pipeline for sentiment-analysis)
-
-[//]: # (let pipe = await pipeline&#40;'sentiment-analysis'&#41;;)
-
-[//]: # ()
-
-[//]: # (let out = await pipe&#40;'I love transformers!'&#41;;)
-
-[//]: # (// [{'label': 'POSITIVE', 'score': 0.999817686}])
-
-[//]: # (```)
-
-[//]: # ()
-
-[//]: # (</td>)
 <td>
 
 ```php
-use function Codewithkyrian\Transformers\pipeline;
+use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 // Allocate a pipeline for sentiment-analysis
 $pipe = pipeline('sentiment-analysis');
@@ -87,7 +62,19 @@ $pipe = pipeline('sentiment-analysis');
 $out = $pipe('I love transformers!');
 // [{'label': 'POSITIVE', 'score': 0.999808732}]
 ```
+</td>
+<td>
 
+```javascript
+import { pipeline } from '@xenova/transformers';
+
+// Allocate a pipeline for sentiment-analysis
+let pipe = await pipeline('sentiment-analysis');
+
+let out = await pipe('I love transformers!');
+// [{'label': 'POSITIVE', 'score': 0.999817686}]
+```
+</td>
 </tr>
 </table>
 
@@ -95,7 +82,7 @@ You can also use a different model by specifying the model id or path as the sec
 For example:
 
 ```php
-use function Codewithkyrian\Transformers\pipeline;
+use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 // Allocate a pipeline for translation
 $pipe = pipeline('translation', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
@@ -137,11 +124,35 @@ Transformers::configure()
 
 You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values.
 
-### Convert your models to ONNX
+## Convert your models to ONNX
 
 Transformers PHP only works with ONNX models, therefore, you must convert your PyTorch, TensorFlow or JAX models to
 ONNX. It is recommended to use [🤗 Optimum](https://huggingface.co/docs/optimum) to perform the conversion and
 quantization of your model.
+
+## Pre-Download Models
+
+By default, Transformers PHP automatically retrieves model weights (ONNX format) from the Hugging Face model hub when
+you first use a pipeline or pretrained model. This can lead to a slight delay during the initial use. To improve the
+user experience, it's recommended to pre-download the models you intend to use before running them in your PHP
+application, especially for larger models. One way to do that is run the request once manually, but Transformers PHP
+also comes with a command line tool to help you do just that:
+
+```bash
+./vendor/bin/transformers download <model_identifier> [<task>] [options]
+```
+
+Explanation of Arguments:
+
+- **<model_identifier>**: This specifies the model you want to download. You can find model identifiers by browsing the
+  Hugging Face model hub (https://huggingface.co/models?library=transformers.js).
+- **[\<task\>]**: (Optional) This parameter allows for downloading task-specific configurations and weights. This can be
+  helpful if you know the specific task you'll be using the model for (e.g., "text2text-generation").
+- **[options]**: (Optional) You can further customize the download process with additional options:
+  - **--cache_dir=\<directory\>**: Specify a directory to store downloaded models (defaults to the configured cache). You can
+    use -c as a shortcut in the command.
+  - **--quantized=\<true|false\>**: Download the quantized model version if available (defaults to true). Quantized models are
+    smaller and faster, but may have slightly lower accuracy. Use -q as a shortcut in the command.
 
 ## Supported tasks/models
 
@@ -153,16 +164,15 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 
 | Task                                                                                                   | ID                                            | Description                                                                                    | Supported? |
 |--------------------------------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------|------------|
-| [Conversational](https://huggingface.co/tasks/conversational)                                          | `conversational`                              | Generating conversational text that is relevant, coherent and knowledgable given a prompt.     | ❌          |
 | [Fill-Mask](https://huggingface.co/tasks/fill-mask)                                                    | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
 | [Question Answering](https://huggingface.co/tasks/question-answering)                                  | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
 | [Sentence Similarity](https://huggingface.co/tasks/sentence-similarity)                                | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
 | [Summarization](https://huggingface.co/tasks/summarization)                                            | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
 | [Table Question Answering](https://huggingface.co/tasks/table-question-answering)                      | `table-question-answering`                    | Answering a question about information from a given table.                                     | ❌          |
 | [Text Classification](https://huggingface.co/tasks/text-classification)                                | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
-| [Text Generation](https://huggingface.co/tasks/text-generation#completion-generation-models)           | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ❌          |
+| [Text Generation](https://huggingface.co/tasks/text-generation#completion-generation-models)           | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
 | [Text-to-text Generation](https://huggingface.co/tasks/text-generation#text-to-text-generation-models) | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
-| [Token Classification](https://huggingface.co/tasks/token-classification)                              | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ❌          |
+| [Token Classification](https://huggingface.co/tasks/token-classification)                              | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
 | [Translation](https://huggingface.co/tasks/translation)                                                | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
 | [Zero-Shot Classification](https://huggingface.co/tasks/zero-shot-classification)                      | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
 
@@ -216,18 +226,100 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 
 ### Models
 
-1. **[ALBERT](https://huggingface.co/docs/transformers/model_doc/albert)** (from Google Research and the Toyota Technological Institute at Chicago) released with the paper [ALBERT: A Lite BERT for Self-supervised Learning of Language Representations](https://arxiv.org/abs/1909.11942), by Zhenzhong Lan, Mingda Chen, Sebastian Goodman, Kevin Gimpel, Piyush Sharma, Radu Soricut.
-1. **[BERT](https://huggingface.co/docs/transformers/model_doc/bert)** (from Google) released with the paper [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805) by Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova.
-1. **[BERT For Sequence Generation](https://huggingface.co/docs/transformers/model_doc/bert-generation)** (from Google) released with the paper [Leveraging Pre-trained Checkpoints for Sequence Generation Tasks](https://arxiv.org/abs/1907.12461) by Sascha Rothe, Shashi Narayan, Aliaksei Severyn.
-1. **[BERTweet](https://huggingface.co/docs/transformers/model_doc/bertweet)** (from VinAI Research) released with the paper [BERTweet: A pre-trained language model for English Tweets](https://aclanthology.org/2020.emnlp-demos.2/) by Dat Quoc Nguyen, Thanh Vu and Anh Tuan Nguyen.
-1. **[BigBird-Pegasus](https://huggingface.co/docs/transformers/model_doc/bigbird_pegasus)** (from Google Research) released with the paper [Big Bird: Transformers for Longer Sequences](https://arxiv.org/abs/2007.14062) by Manzil Zaheer, Guru Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti, Santiago Ontanon, Philip Pham, Anirudh Ravula, Qifan Wang, Li Yang, Amr Ahmed.
-1. **[BigBird-RoBERTa](https://huggingface.co/docs/transformers/model_doc/big_bird)** (from Google Research) released with the paper [Big Bird: Transformers for Longer Sequences](https://arxiv.org/abs/2007.14062) by Manzil Zaheer, Guru Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti, Santiago Ontanon, Philip Pham, Anirudh Ravula, Qifan Wang, Li Yang, Amr Ahmed.
-1. **[ConvBERT](https://huggingface.co/docs/transformers/model_doc/convbert)** (from YituTech) released with the paper [ConvBERT: Improving BERT with Span-based Dynamic Convolution](https://arxiv.org/abs/2008.02496) by Zihang Jiang, Weihao Yu, Daquan Zhou, Yunpeng Chen, Jiashi Feng, Shuicheng Yan.
-1. **[DeBERTa](https://huggingface.co/docs/transformers/model_doc/deberta)** (from Microsoft) released with the paper [DeBERTa: Decoding-enhanced BERT with Disentangled Attention](https://arxiv.org/abs/2006.03654) by Pengcheng He, Xiaodong Liu, Jianfeng Gao, Weizhu Chen.
-1. **[DeBERTa-v2](https://huggingface.co/docs/transformers/model_doc/deberta-v2)** (from Microsoft) released with the paper [DeBERTa: Decoding-enhanced BERT with Disentangled Attention](https://arxiv.org/abs/2006.03654) by Pengcheng He, Xiaodong Liu, Jianfeng Gao, Weizhu Chen.
-1. **[ELECTRA](https://huggingface.co/docs/transformers/model_doc/electra)** (from Google Research/Stanford University) released with the paper [ELECTRA: Pre-training text encoders as discriminators rather than generators](https://arxiv.org/abs/2003.10555) by Kevin Clark, Minh-Thang Luong, Quoc V. Le, Christopher D. Manning.
-1. **[RoBERTa](https://huggingface.co/docs/transformers/model_doc/roberta)** (from Facebook), released together with the paper [RoBERTa: A Robustly Optimized BERT Pretraining Approach](https://arxiv.org/abs/1907.11692) by Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, Veselin Stoyanov.
-1. **[RoBERTa-PreLayerNorm](https://huggingface.co/docs/transformers/model_doc/roberta-prelayernorm)** (from Facebook) released with the paper [fairseq: A Fast, Extensible Toolkit for Sequence Modeling](https://arxiv.org/abs/1904.01038) by Myle Ott, Sergey Edunov, Alexei Baevski, Angela Fan, Sam Gross, Nathan Ng, David Grangier, Michael Auli.
+1. **[ALBERT](https://huggingface.co/docs/transformers/model_doc/albert)** (from Google Research and the Toyota
+   Technological Institute at Chicago) released with the
+   paper [ALBERT: A Lite BERT for Self-supervised Learning of Language Representations](https://arxiv.org/abs/1909.11942),
+   by Zhenzhong Lan, Mingda Chen, Sebastian Goodman, Kevin Gimpel, Piyush Sharma, Radu Soricut.
+1. **[BART](https://huggingface.co/docs/transformers/model_doc/bart)** (from Facebook) released with the
+   paper [BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension](https://arxiv.org/abs/1910.13461)
+   by Mike Lewis, Yinhan Liu, Naman Goyal, Marjan Ghazvininejad, Abdelrahman Mohamed, Omer Levy, Ves Stoyanov and Luke
+   Zettlemoyer.
+1. **[BERT](https://huggingface.co/docs/transformers/model_doc/bert)** (from Google) released with the
+   paper [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/abs/1810.04805)
+   by Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova.
+1. **[BERT For Sequence Generation](https://huggingface.co/docs/transformers/model_doc/bert-generation)** (from Google)
+   released with the
+   paper [Leveraging Pre-trained Checkpoints for Sequence Generation Tasks](https://arxiv.org/abs/1907.12461) by Sascha
+   Rothe, Shashi Narayan, Aliaksei Severyn.
+1. **[BERTweet](https://huggingface.co/docs/transformers/model_doc/bertweet)** (from VinAI Research) released with the
+   paper [BERTweet: A pre-trained language model for English Tweets](https://aclanthology.org/2020.emnlp-demos.2/) by
+   Dat Quoc Nguyen, Thanh Vu and Anh Tuan Nguyen.
+1. **[BigBird-Pegasus](https://huggingface.co/docs/transformers/model_doc/bigbird_pegasus)** (from Google Research)
+   released with the paper [Big Bird: Transformers for Longer Sequences](https://arxiv.org/abs/2007.14062) by Manzil
+   Zaheer, Guru Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti, Santiago Ontanon, Philip Pham, Anirudh Ravula,
+   Qifan Wang, Li Yang, Amr Ahmed.
+1. **[BigBird-RoBERTa](https://huggingface.co/docs/transformers/model_doc/big_bird)** (from Google Research) released
+   with the paper [Big Bird: Transformers for Longer Sequences](https://arxiv.org/abs/2007.14062) by Manzil Zaheer, Guru
+   Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti, Santiago Ontanon, Philip Pham, Anirudh Ravula, Qifan Wang,
+   Li Yang, Amr Ahmed.
+1. **[CodeGen](https://huggingface.co/docs/transformers/model_doc/codegen)** (from Salesforce) released with the
+   paper [A Conversational Paradigm for Program Synthesis](https://arxiv.org/abs/2203.13474) by Erik Nijkamp, Bo Pang,
+   Hiroaki Hayashi, Lifu Tu, Huan Wang, Yingbo Zhou, Silvio Savarese, Caiming Xiong.
+1. **[ConvBERT](https://huggingface.co/docs/transformers/model_doc/convbert)** (from YituTech) released with the
+   paper [ConvBERT: Improving BERT with Span-based Dynamic Convolution](https://arxiv.org/abs/2008.02496) by Zihang
+   Jiang, Weihao Yu, Daquan Zhou, Yunpeng Chen, Jiashi Feng, Shuicheng Yan.
+1. **[DeBERTa](https://huggingface.co/docs/transformers/model_doc/deberta)** (from Microsoft) released with the
+   paper [DeBERTa: Decoding-enhanced BERT with Disentangled Attention](https://arxiv.org/abs/2006.03654) by Pengcheng
+   He, Xiaodong Liu, Jianfeng Gao, Weizhu Chen.
+1. **[DeBERTa-v2](https://huggingface.co/docs/transformers/model_doc/deberta-v2)** (from Microsoft) released with the
+   paper [DeBERTa: Decoding-enhanced BERT with Disentangled Attention](https://arxiv.org/abs/2006.03654) by Pengcheng
+   He, Xiaodong Liu, Jianfeng Gao, Weizhu Chen.
+1. **[DistilBERT](https://huggingface.co/docs/transformers/model_doc/distilbert)** (from HuggingFace), released together
+   with the
+   paper [DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter](https://arxiv.org/abs/1910.01108)
+   by Victor Sanh, Lysandre Debut and Thomas Wolf. The same method has been applied to compress GPT2
+   into [DistilGPT2](https://github.com/huggingface/transformers/tree/main/examples/research_projects/distillation),
+   RoBERTa
+   into [DistilRoBERTa](https://github.com/huggingface/transformers/tree/main/examples/research_projects/distillation),
+   Multilingual BERT
+   into [DistilmBERT](https://github.com/huggingface/transformers/tree/main/examples/research_projects/distillation) and
+   a German version of DistilBERT.
+1. **[ELECTRA](https://huggingface.co/docs/transformers/model_doc/electra)** (from Google Research/Stanford University)
+   released with the
+   paper [ELECTRA: Pre-training text encoders as discriminators rather than generators](https://arxiv.org/abs/2003.10555)
+   by Kevin Clark, Minh-Thang Luong, Quoc V. Le, Christopher D. Manning.
+1. **[FLAN-T5](https://huggingface.co/docs/transformers/model_doc/flan-t5)** (from Google AI) released in the
+   repository [google-research/t5x](https://github.com/google-research/t5x/blob/main/docs/models.md#flan-t5-checkpoints)
+   by Hyung Won Chung, Le Hou, Shayne Longpre, Barret Zoph, Yi Tay, William Fedus, Eric Li, Xuezhi Wang, Mostafa
+   Dehghani, Siddhartha Brahma, Albert Webson, Shixiang Shane Gu, Zhuyun Dai, Mirac Suzgun, Xinyun Chen, Aakanksha
+   Chowdhery, Sharan Narang, Gaurav Mishra, Adams Yu, Vincent Zhao, Yanping Huang, Andrew Dai, Hongkun Yu, Slav Petrov,
+   Ed H. Chi, Jeff Dean, Jacob Devlin, Adam Roberts, Denny Zhou, Quoc V. Le, and Jason Wei
+1. **[GPT-2](https://huggingface.co/docs/transformers/model_doc/gpt2)** (from OpenAI) released with the
+   paper [Language Models are Unsupervised Multitask Learners](https://blog.openai.com/better-language-models/) by Alec
+   Radford*, Jeffrey Wu*, Rewon Child, David Luan, Dario Amodei** and Ilya Sutskever**.
+1. **[GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj)** (from EleutherAI) released in the
+   repository [kingoflolz/mesh-transformer-jax](https://github.com/kingoflolz/mesh-transformer-jax/) by Ben Wang and
+   Aran Komatsuzaki.
+1. **[GPTBigCode](https://huggingface.co/docs/transformers/model_doc/gpt_bigcode)** (from BigCode) released with the
+   paper [SantaCoder: don't reach for the stars!](https://arxiv.org/abs/2301.03988) by Loubna Ben Allal, Raymond Li,
+   Denis Kocetkov, Chenghao Mou, Christopher Akiki, Carlos Munoz Ferrandis, Niklas Muennighoff, Mayank Mishra, Alex Gu,
+   Manan Dey, Logesh Kumar Umapathi, Carolyn Jane Anderson, Yangtian Zi, Joel Lamy Poirier, Hailey Schoelkopf, Sergey
+   Troshin, Dmitry Abulkhanov, Manuel Romero, Michael Lappert, Francesco De Toni, Bernardo García del Río, Qian Liu,
+   Shamik Bose, Urvashi Bhattacharyya, Terry Yue Zhuo, Ian Yu, Paulo Villegas, Marco Zocca, Sourab Mangrulkar, David
+   Lansky, Huu Nguyen, Danish Contractor, Luis Villa, Jia Li, Dzmitry Bahdanau, Yacine Jernite, Sean Hughes, Daniel
+   Fried, Arjun Guha, Harm de Vries, Leandro von Werra.
+1. **[M2M100](https://huggingface.co/docs/transformers/model_doc/m2m_100)** (from Facebook) released with the
+   paper [Beyond English-Centric Multilingual Machine Translation](https://arxiv.org/abs/2010.11125) by Angela Fan,
+   Shruti Bhosale, Holger Schwenk, Zhiyi Ma, Ahmed El-Kishky, Siddharth Goyal, Mandeep Baines, Onur Celebi, Guillaume
+   Wenzek, Vishrav Chaudhary, Naman Goyal, Tom Birch, Vitaliy Liptchinsky, Sergey Edunov, Edouard Grave, Michael Auli,
+   Armand Joulin.
+1. **[MobileBERT](https://huggingface.co/docs/transformers/model_doc/mobilebert)** (from CMU/Google Brain) released with
+   the paper [MobileBERT: a Compact Task-Agnostic BERT for Resource-Limited Devices](https://arxiv.org/abs/2004.02984)
+   by Zhiqing Sun, Hongkun Yu, Xiaodan Song, Renjie Liu, Yiming Yang, and Denny Zhou.
+1. **[RoBERTa](https://huggingface.co/docs/transformers/model_doc/roberta)** (from Facebook), released together with the
+   paper [RoBERTa: A Robustly Optimized BERT Pretraining Approach](https://arxiv.org/abs/1907.11692) by Yinhan Liu, Myle
+   Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, Veselin Stoyanov.
+1. **[RoBERTa-PreLayerNorm](https://huggingface.co/docs/transformers/model_doc/roberta-prelayernorm)** (from Facebook)
+   released with the paper [fairseq: A Fast, Extensible Toolkit for Sequence Modeling](https://arxiv.org/abs/1904.01038)
+   by Myle Ott, Sergey Edunov, Alexei Baevski, Angela Fan, Sam Gross, Nathan Ng, David Grangier, Michael Auli.
+1. **[T5](https://huggingface.co/docs/transformers/model_doc/t5)** (from Google AI) released with the
+   paper [Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer](https://arxiv.org/abs/1910.10683)
+   by Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi
+   Zhou and Wei Li and Peter J. Liu.
+1. **[T5v1.1](https://huggingface.co/docs/transformers/model_doc/t5v1.1)** (from Google AI) released in the
+   repository [google-research/text-to-text-transfer-transformer](https://github.com/google-research/text-to-text-transfer-transformer/blob/main/released_checkpoints.md#t511)
+   by Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi
+   Zhou and Wei Li and Peter J. Liu.
 
 
 

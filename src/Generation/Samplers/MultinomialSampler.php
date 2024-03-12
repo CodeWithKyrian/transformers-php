@@ -21,6 +21,7 @@ class MultinomialSampler extends Sampler
     {
         $shape = $logits->shape();
         $k = end($shape); // defaults to vocab size
+
         if ($this->generationConfig->top_k > 0) {
             $k = min($this->generationConfig->top_k, $k);
         }

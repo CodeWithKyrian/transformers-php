@@ -24,8 +24,8 @@ class PreTokenizerSequence extends PreTokenizer
     {
         return array_reduce(
             $this->preTokenizers,
-            fn(string $text, PreTokenizer $preTokenizer) => $preTokenizer->preTokenizeText($text, $options),
-            $text
+            fn($text, PreTokenizer $preTokenizer) => $preTokenizer->preTokenize($text, $options),
+            [$text]
         );
     }
 }

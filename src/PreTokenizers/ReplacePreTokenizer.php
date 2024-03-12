@@ -22,6 +22,6 @@ class ReplacePreTokenizer extends PreTokenizer
             return [$text];
         }
 
-        return preg_replace($this->pattern, $this->content, $text);
+        return str_replace($this->pattern, $this->content, $text);
     }
 }

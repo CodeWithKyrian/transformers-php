@@ -30,8 +30,8 @@
       "Codewithkyrian\\Transformers\\": "src/"
     },
     "files": [
-      "src/Pipelines/Helper.php",
-      "src/Utils/Functions.php"
+      "src/Pipelines/Pipeline.php",
+      "src/Utils/Helpers.php"
     ]
   },
   "authors": [

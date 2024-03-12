@@ -11,7 +11,6 @@ use Codewithkyrian\Transformers\PostProcessors\PostProcessedOutput;
 use Codewithkyrian\Transformers\PostProcessors\PostProcessor;
 use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
-use Codewithkyrian\Transformers\Tokenizers\BatchEncoding;
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 use Codewithkyrian\Transformers\Utils\Tensor;
 
@@ -407,11 +406,9 @@ class PretrainedTokenizer
                     $x = Tokenizer::lowerCaseAndRemoveAccents($x);
                 }
 
-
                 if ($this->normalizer !== null) {
                     $x = $this->normalizer->normalize($x);
                 }
-
 
                 $sectionTokens = ($this->preTokenizer !== null)
                     ? $this->preTokenizer->preTokenize($x, ['section_index' => $sectionIndex])
@@ -529,12 +526,14 @@ class PretrainedTokenizer
 
         // Slight hack, but prevents having to pass `skip_special_tokens` to
         // each call to `decode`, which would lead to code duplication.
-        if ($this->decoder?->endOfWordSuffix) {
+        if ($this->decoder?->endOfWordSuffix !== null) {
+
             $decoded = str_replace($this->decoder->endOfWordSuffix, ' ', $decoded);
             if ($skipSpecialTokens) {
                 $decoded = trim($decoded);
             }
         }
+
 
         if ($cleanUpTokenizationSpaces ?? $this->cleanUpTokenizationSpaces) {
             $decoded = Tokenizer::cleanUpTokenization($decoded);

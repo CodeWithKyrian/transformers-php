@@ -20,7 +20,7 @@ class NormalizerSequence extends Normalizer
         parent::__construct($config);
 
         $this->normalizers = array_map(
-            fn (array $config) => Normalizer::fromConfig($config),
+            fn(array $config) => Normalizer::fromConfig($config),
             $config['normalizers']
         );
     }
@@ -29,7 +29,7 @@ class NormalizerSequence extends Normalizer
     {
         return array_reduce(
             $this->normalizers,
-            fn (string $text, Normalizer $normalizer) => $normalizer->normalize($text),
+            fn(string $text, Normalizer $normalizer) => $normalizer->normalize($text),
             $text
         );
     }

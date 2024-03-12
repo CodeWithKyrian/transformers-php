@@ -11,6 +11,7 @@ class SplitPreTokenizer extends PreTokenizer
 
     public function __construct(protected array $config)
     {
+        $this->pattern = $config['pattern'];
     }
 
     /**
@@ -19,6 +20,8 @@ class SplitPreTokenizer extends PreTokenizer
     public function preTokenizeText(string|array $text, array $options): array
     {
         // TODO: Consider $config['invert'] option
-        return preg_split($this->config['pattern'], $text);
+//        return preg_split($this->pattern, $text);
+
+        return explode($this->pattern, $text);
     }
 }

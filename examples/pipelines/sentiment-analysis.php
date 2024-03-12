@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use function Codewithkyrian\Transformers\Pipelines\pipeline;
+
 require_once './vendor/autoload.php';
 
-use function Codewithkyrian\Transformers\pipeline;
 
 $classifier = pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
 

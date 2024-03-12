@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
@@ -77,11 +78,9 @@ class ZeroShotClassificationPipeline extends Pipeline
         }
     }
 
-    public function __invoke(...$args): array
+    public function __invoke(array|string $texts, ...$args): array
     {
-
-        $texts = $args[0];
-        $candidateLabels = $args[1];
+        $candidateLabels = $args[0];
         $multiLabel = $args['multiLabel'] ?? false;
         $hypothesisTemplate = $args['hypothesisTemplate'] ?? "This example is {}.";
 
@@ -110,15 +109,17 @@ class ZeroShotClassificationPipeline extends Pipeline
 
             foreach ($hypotheses as $hypothesis) {
                 $inputs = $this->tokenizer->__invoke($premise, textPair: $hypothesis, padding: true, truncation: true);
+
+                /** @var SequenceClassifierOutput $outputs */
                 $outputs = $this->model->__invoke($inputs);
 
                 if ($softmaxEach) {
                     $entailsLogits[] = [
-                        $outputs['logits']->buffer()[$this->contradictionId],
-                        $outputs['logits']->buffer()[$this->entailmentId]
+                        $outputs->logits->buffer()[$this->contradictionId],
+                        $outputs->logits->buffer()[$this->entailmentId]
                     ];
                 } else {
-                    $entailsLogits[] = $outputs['logits']->buffer()[$this->entailmentId];
+                    $entailsLogits[] = $outputs->logits->buffer()[$this->entailmentId];
                 }
             }
 
