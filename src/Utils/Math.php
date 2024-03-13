@@ -50,50 +50,23 @@ class Math
      * @return array The top k items, sorted by descending order
      */
 
-    public static function getTopItems(\Traversable|array $items, int $topK = -1): array
+    public static function getTopItems(array $items, int $topK = -1): array
     {
-//        dd(count($items));
-        // if top == 0, return all
-
-        // Convert Traversable to array
-        if ($items instanceof \Traversable) {
-            $items = iterator_to_array($items);
+        $indexedItems = [];
+        foreach ($items as $index => $value) {
+            $indexedItems[] = [$index, $value];
         }
 
-        // Sort the array while preserving keys
-        uasort($items, function ($a, $b) {
-            return $b <=> $a;
+        usort($indexedItems, function ($a, $b) {
+            return $b[1] <=> $a[1];
         });
 
-        // Slice the array while preserving keys
+        // Get top k items if top_k > 0
         if ($topK !== -1 && $topK > 0) {
-            $items = array_slice($items, 0, $topK, true);
+            $indexedItems = array_slice($indexedItems, 0, $topK);
         }
 
-
-        return $items;
-
-//        // if top_k == 0, return all
-//        if ($top_k === 0) {
-//            return $items;
-//        }
-//
-//        // Get indices ([index, value]) and sort by value
-//        $indexedItems = [];
-//        foreach ($items as $index => $value) {
-//            $indexedItems[] = [$index, $value];
-//        }
-//
-//        usort($indexedItems, function($a, $b) {
-//            return $b[1] <=> $a[1]; // Sort by value in descending order
-//        });
-//
-//        // Get top k items if top_k > 0
-//        if ($top_k !== null && $top_k > 0) {
-//            $indexedItems = array_slice($indexedItems, 0, $top_k);
-//        }
-//
-//        return $indexedItems;
+        return $indexedItems;
     }
 
 

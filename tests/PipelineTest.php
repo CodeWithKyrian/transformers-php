@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Pipelines\FeatureExtractionPipeline;
 use Codewithkyrian\Transformers\Transformers;
-use function Codewithkyrian\Transformers\pipeline;
+use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 beforeAll(function () {
     Transformers::configure()

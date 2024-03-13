@@ -31,6 +31,7 @@ $output = $generator(
     'def fib(n):',
     streamer: $streamer,
     maxNewTokens: 50,
+    doSample: true
 );
 
 dd("done", timeUsage(), memoryUsage());

@@ -52,11 +52,7 @@ it('gets top k items correctly', function () {
 
     expect($topItems)->toBeArray()
         ->and($topItems)->toBe([
-            5 => 9,
-            7 => 6,
-            4 => 5,
-            8 => 5,
-            10 => 5
+            [5, 9], [7, 6], [4, 5], [8, 5], [10, 5]
         ]);
 });
 
@@ -66,17 +62,7 @@ it('gets all items when top k is 0', function () {
 
     expect($topItems)->toBeArray()
         ->and($topItems)->toBe([
-            5 => 9,
-            7 => 6,
-            4 => 5,
-            8 => 5,
-            10 => 5,
-            2 => 4,
-            0 => 3,
-            9 => 3,
-            6 => 2,
-            1 => 1,
-            3 => 1
+            [5, 9], [7, 6], [4, 5], [8, 5], [10, 5], [2, 4], [0, 3], [9, 3], [6, 2], [1, 1], [3, 1]
         ]);
 });
 
@@ -96,13 +82,10 @@ it('gets top k items correctly from an associative array', function () {
     ];
     $topItems = Math::getTopItems($inputArray, 5);
 
+
     expect($topItems)->toBeArray()
         ->and($topItems)->toBe([
-            'f' => 9,
-            'h' => 6,
-            'e' => 5,
-            'i' => 5,
-            'k' => 5
+            ['f', 9], ['h', 6], ['e', 5], ['i', 5], ['k', 5]
         ]);
 });
 

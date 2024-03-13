@@ -56,17 +56,17 @@ class FillMaskPipeline extends Pipeline
 
             $scores = Math::getTopItems(Math::softmax($itemLogits), $topK);
 
-            $toReturn[] = array_map(function ($key, $value) use ($ids, $maskTokenIndex) {
+            $toReturn[] = array_map(function ($score) use ($ids, $maskTokenIndex) {
                 $sequence = $ids;
-                $sequence[$maskTokenIndex] = $key;
+                $sequence[$maskTokenIndex] = $score[0];
 
                 return [
-                    'score' => $value,
-                    'token' => $key,
-                    'token_str' => $this->tokenizer->decode([$key], skipSpecialTokens: true),
+                    'score' => $score[1],
+                    'token' => $score[0],
+                    'token_str' => $this->tokenizer->decode([$score[0]], skipSpecialTokens: true),
                     'sequence' => $this->tokenizer->decode($sequence, skipSpecialTokens: true),
                 ];
-            }, array_keys($scores), $scores);
+            }, $scores);
         }
 
         return is_array($texts) ? $toReturn : $toReturn[0];

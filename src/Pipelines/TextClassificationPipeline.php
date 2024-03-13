@@ -83,12 +83,12 @@ class TextClassificationPipeline extends Pipeline
 
             $scores = Math::getTopItems($output, $topK);
 
-            $values = array_map(function ($x, $i) use ($id2label) {
+            $values = array_map(function ($score) use ($id2label) {
                 return [
-                    'label' => $id2label[$i],
-                    'score' => $x,
+                    'label' => $id2label[$score[0]],
+                    'score' => $score[1],
                 ];
-            }, $scores, array_keys($scores));
+            }, $scores);
 
             if ($topK === 1) {
                 $toReturn = $values;

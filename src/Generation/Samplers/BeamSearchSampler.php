@@ -32,7 +32,6 @@ class BeamSearchSampler extends Sampler
 
         // Get top k tokens
         $topLogits = Math::getTopItems($logs, $k);
-        $topLogits = array_map(fn($x, $i) => [$i, $x], $topLogits, array_keys($topLogits));
 
         // Compute softmax over logits
         $probabilities = Math::softmax(array_column($topLogits, 1));
