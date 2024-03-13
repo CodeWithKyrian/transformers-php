@@ -7,5 +7,5 @@
 *.swo
 playground/*
 .idea
-models/*
+.transformers-cache/*
 tests/models/*

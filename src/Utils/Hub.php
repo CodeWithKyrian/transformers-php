@@ -58,8 +58,8 @@ class Hub
     ): ?string
     {
         # Local cache and file paths
-        $cacheDir ??= Transformers::$defaultCacheDir;
-        $filePath = self::joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
+        $cacheDir ??= Transformers::$cacheDir;
+        $filePath = joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
 
         # Check if file already exists
         if (file_exists($filePath)) {
@@ -91,7 +91,7 @@ class Hub
         }
 
         # Create directory structure if needed
-        self::ensureDirectory($filePath);
+        ensureDirectory($filePath);
 
         $headers = [
             'User-Agent' => Transformers::$userAgent
@@ -159,12 +159,7 @@ class Hub
         };
     }
 
-    public static function ensureDirectory($filePath): void
-    {
-        if (!is_dir(dirname($filePath))) {
-            mkdir(dirname($filePath), 0755, true);
-        }
-    }
+
 
     public static function combinePartFiles($filePath, $partBasePath, $partCount): void
     {
@@ -179,19 +174,6 @@ class Hub
         fclose($fileHandle);
     }
 
-
-    public static function joinPaths(): ?string
-    {
-        $paths = array();
-
-        foreach (func_get_args() as $arg) {
-            if ($arg !== '') {
-                $paths[] = $arg;
-            }
-        }
-
-        return preg_replace('#/+#', '/', join(DIRECTORY_SEPARATOR, $paths));
-    }
 
     /**
      * @throws HubException
@@ -215,10 +197,10 @@ class Hub
 
         $remotePath = str_replace(
             ['{model}', '{revision}', '{file}'],
-            [$pathOrRepoID, $revision, self::joinPaths($subFolder, $fileName)],
+            [$pathOrRepoID, $revision, joinPaths($subFolder, $fileName)],
             Transformers::$remotePathTemplate
         );
 
-        return self::joinPaths($remoteHost, $remotePath);
+        return joinPaths($remoteHost, $remotePath);
     }
 }

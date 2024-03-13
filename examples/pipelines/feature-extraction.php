@@ -5,7 +5,7 @@ declare(strict_types=1);
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 use function Codewithkyrian\Transformers\Utils\{memoryUsage, timeUsage};
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 
 //$extractor = pipeline('feature-extraction', 'Xenova/bert-base-uncased');

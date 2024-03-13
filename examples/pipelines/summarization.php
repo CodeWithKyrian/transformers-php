@@ -6,7 +6,7 @@ use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 use function Codewithkyrian\Transformers\Utils\{memoryUsage, timeUsage};
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 
 ini_set('memory_limit', -1);

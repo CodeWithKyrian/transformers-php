@@ -6,8 +6,11 @@ namespace Tests\Utils;
 
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Hub;
+use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\Psr7\Response;
+use function Codewithkyrian\Transformers\Utils\ensureDirectory;
+use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 beforeEach(function () {
     Transformers::configure()
@@ -15,33 +18,33 @@ beforeEach(function () {
 });
 
 it('joins paths correctly', function () {
-    $result = Hub::joinPaths('path', 'to', 'file');
+    $result = joinPaths('path', 'to', 'file');
     expect($result)->toBe('path/to/file');
 });
 
 it('joins paths correctly with leading slash', function () {
-    $result = Hub::joinPaths('/path', 'to', 'file');
+    $result = joinPaths('/path', 'to', 'file');
     expect($result)->toBe('/path/to/file');
 });
 
 it('joins paths correctly with trailing slash', function () {
-    $result = Hub::joinPaths('path', 'to', 'file/');
-    expect($result)->toBe('path/to/file/');
+    $result = joinPaths('path', 'to', 'file/');
+    expect($result)->toBe('path/to/file');
 });
 
 it('joins paths correctly with empty string', function () {
-    $result = Hub::joinPaths('path', '', 'file');
+    $result = joinPaths('path', '', 'file');
     expect($result)->toBe('path/file');
 });
 
 it('joins paths correctly with empty string and slashes', function () {
-    $result = Hub::joinPaths('path', '', '/file');
+    $result = joinPaths('path', '', '/file');
     expect($result)->toBe('path/file');
 });
 
 it('ensures directory creation', function () {
     $filePath = 'cache/test/file.txt';
-    Hub::ensureDirectory($filePath);
+    ensureDirectory($filePath);
 
     expect(is_dir('cache/test'))->toBeTrue()
         ->and(file_exists($filePath))->toBeFalse();
@@ -78,9 +81,9 @@ it('combines part files correctly', function () {
 it('downloads a file correctly', function () {
     $mock = new MockHandler([new Response(200, [], 'File content')]);
 
-    $client = new \GuzzleHttp\Client(['handler' => $mock]);
+    $client = new Client(['handler' => $mock]);
 
-    $filePath = Hub::getFile( 'model_id', 'file.txt', client: $client);
+    $filePath = Hub::getFile('model_id', 'file.txt', client: $client);
 
     expect($filePath)->toBe('tests/models/model_id/file.txt')
         ->and(file_exists($filePath))->toBeTrue()

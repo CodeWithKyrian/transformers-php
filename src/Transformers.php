@@ -5,9 +5,15 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
+use OnnxRuntime\FFI;
+use OnnxRuntime\Vendor;
+use function Codewithkyrian\Transformers\Utils\joinPaths;
+
 class Transformers
 {
-    public static string $defaultCacheDir = 'models';
+    public const ONNX_VERSION = '1.16.0';
+
+    public static string $cacheDir = '.transformers-cache';
 
     public static string $remoteHost = 'https://huggingface.co';
 
@@ -15,11 +21,20 @@ class Transformers
 
     public static ?string $authToken = null;
 
-    public static ?string $userAgent = 'codewithkyrian/transformers-php/0.1.0';
+    public static ?string $userAgent = 'transformers-php/0.1.0';
 
     public static function configure(): static
     {
+        FFI::$lib = self::libFile();
+
         return new static;
+    }
+
+    public static function libFile(): string
+    {
+        $template = joinPaths(Transformers::$cacheDir, self::platform('file'), 'lib', self::platform('lib'));
+
+        return str_replace('{{version}}', self::ONNX_VERSION, $template);
     }
 
     /**
@@ -29,7 +44,7 @@ class Transformers
      */
     public function setCacheDir(string $cacheDir): static
     {
-        self::$defaultCacheDir = $cacheDir;
+        self::$cacheDir = $cacheDir;
 
         return $this;
     }
@@ -84,5 +99,15 @@ class Transformers
         self::$userAgent = $userAgent;
 
         return $this;
+    }
+
+    public static function platform($key): string
+    {
+        $platformKey = match (PHP_OS_FAMILY) {
+            'Windows' => 'x64-windows',
+            'Darwin' => php_uname('m') == 'x86_64' ? 'x86_64-darwin' : 'arm64-darwin',
+            default => php_uname('m') == 'x86_64' ? 'x86_64-linux' : 'aarch64-linux',
+        };
+        return Vendor::PLATFORMS[$platformKey][$key];
     }
 }

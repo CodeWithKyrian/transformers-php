@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Commands;
 
+use Codewithkyrian\Transformers\Transformers;
 use OnnxRuntime\Exception;
 use OnnxRuntime\Vendor;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -11,6 +12,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use function Codewithkyrian\Transformers\Utils\ensureDirectory;
+use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 #[AsCommand(
     name: 'init',
@@ -27,7 +30,43 @@ class InitCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            Vendor::check();
+            if (file_exists(Transformers::libFile())) {
+                $output->writeln("✔ Transformer has been formerly initialized");
+
+                return Command::SUCCESS;
+            }
+
+            ensureDirectory(Transformers::$cacheDir);
+
+            echo "◌ Downloading ONNX Runtime...\n";
+
+            $file = Transformers::platform('file');
+            $ext = Transformers::platform('ext');
+
+            $urlTemplate = "https://github.com/microsoft/onnxruntime/releases/download/v{{version}}/$file.$ext";
+            $url = str_replace('{{version}}', Transformers::ONNX_VERSION, $urlTemplate);
+
+            $contents = @file_get_contents($url);
+
+            if (!$contents) {
+                throw new \Exception("Something went wrong");
+            }
+
+            $checksum = hash('sha256', $contents);
+            if ($checksum != Transformers::platform('checksum')) {
+                throw new Exception("Bad checksum: $checksum");
+            }
+
+            $tempDest = tempnam(sys_get_temp_dir(), 'onnxruntime') . '.' . $ext;
+
+            file_put_contents($tempDest, $contents);
+
+            $archive = new \PharData($tempDest);
+            if ($ext != 'zip') {
+                $archive = $archive->decompress();
+            }
+
+            $archive->extractTo(Transformers::$cacheDir);
 
             $output->writeln('✔ Initialized Transformers successfully.');
 
@@ -40,6 +79,7 @@ class InitCommand extends Command
             return Command::FAILURE;
         }
     }
+
 
     protected function askToStar(InputInterface $input, OutputInterface $output): void
     {

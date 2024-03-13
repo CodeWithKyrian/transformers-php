@@ -5,7 +5,7 @@ declare(strict_types=1);
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 use function Codewithkyrian\Transformers\Utils\memoryUsage;
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 
 //$classifier = pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli');

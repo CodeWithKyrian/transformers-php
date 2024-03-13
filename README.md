@@ -111,9 +111,11 @@ You can configure the behaviour of the Transformers PHP library as follows:
 use Codewithkyrian\Transformers\Transformers;
 
 Transformers::configure()
-    ->setCacheDir('...') // Set the default cache directory for transformers models. Defaults to `models`
+    ->setCacheDir('...') // Set the default cache directory for transformers models. Defaults to `.transformers-cache/models`
     ->setRemoteHost('...') // Set the remote host for downloading models. Defaults to `https://huggingface.co`
-    ->setRemotePathTemplate('...'); // Set the remote path template for downloading models. Defaults to `{model}/resolve/{revision}/{file}`
+    ->setRemotePathTemplate('...') // Set the remote path template for downloading models. Defaults to `{model}/resolve/{revision}/{file}`
+    ->setAuthToken('...') // Set the auth token for downloading models. Defaults to `null`
+    ->setUserAgent('...'); // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
 ```
 
 You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values.

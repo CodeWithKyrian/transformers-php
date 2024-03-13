@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 
 //$question = "What is a good example of a question answering dataset?";

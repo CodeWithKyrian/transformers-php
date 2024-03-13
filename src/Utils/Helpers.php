@@ -57,3 +57,30 @@ function array_every(array $array, callable $callback): bool
 
     return true;
 }
+
+
+function joinPaths(string ...$args): string
+{
+    $paths = [];
+
+    foreach ($args as $key => $path) {
+        if ($path === '') {
+            continue;
+        } elseif ($key === 0) {
+            $paths[$key] = rtrim($path, '/');
+        } elseif ($key === count($paths) - 1) {
+            $paths[$key] = ltrim($path, '/');
+        } else {
+            $paths[$key] = trim($path, '/');
+        }
+    }
+
+    return preg_replace('#/+#', '/', implode(DIRECTORY_SEPARATOR, $paths));
+}
+
+function ensureDirectory($filePath): void
+{
+    if (!is_dir(dirname($filePath))) {
+        mkdir(dirname($filePath), 0755, true);
+    }
+}

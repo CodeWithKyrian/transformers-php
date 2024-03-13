@@ -253,7 +253,7 @@ class PreTrainedModel
     {
         $modelFileName = sprintf('onnx/%s%s.onnx', $fileName, $quantized ? '_quantized' : '');
 
-        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $token, $revision, $subFolder, $fatal);
+        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal);
 
         if ($file === null) return null;
 

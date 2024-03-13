@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 
 //$pipeline = pipeline('fill-mask', 'Xenova/bert-base-uncased');

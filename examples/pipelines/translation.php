@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once './vendor/autoload.php';
+require_once './bootstrap.php';
 
 use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
