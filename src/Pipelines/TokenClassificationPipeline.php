@@ -47,6 +47,10 @@ class TokenClassificationPipeline extends Pipeline
         $ignoreLabels = $args['ignoreLabels'] ?? ['O'];
         $aggregationStrategy = $args['aggregationStrategy'] ?? AggregationStrategy::NONE;
 
+        $aggregationStrategy = $aggregationStrategy instanceof AggregationStrategy
+            ? $aggregationStrategy
+            : AggregationStrategy::from($aggregationStrategy);
+
         $isBatched = is_array($texts);
         if (!$isBatched) {
             $texts = [$texts];
@@ -122,7 +126,7 @@ class TokenClassificationPipeline extends Pipeline
      */
     protected function aggregateWords(array $entities, AggregationStrategy $aggregationStrategy): array
     {
-        if (in_array($aggregationStrategy, [AggregationStrategy::NONE, AggregationStrategy::SIMPLE])) {
+        if ($aggregationStrategy == AggregationStrategy::NONE) {
             return $entities;
         }
 

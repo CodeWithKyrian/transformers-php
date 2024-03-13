@@ -5,11 +5,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-enum AggregationStrategy
+enum AggregationStrategy: string
 {
-    case NONE;
-    case SIMPLE;
-    case FIRST;
-    case AVERAGE;
-    case MAX;
+    case NONE = 'none';
+    case FIRST = 'first';
+    case AVERAGE = 'average';
+    case MAX = 'max';
 }

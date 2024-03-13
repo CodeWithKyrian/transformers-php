@@ -27,7 +27,7 @@ class QuestionAnsweringPipeline extends Pipeline
     {
         $question = $texts;
         $context = $args[0] ?? $args["context"];
-        $topk = $args["topk"] ?? 1;
+        $topK = $args["topK"] ?? 1;
 
         $inputs = $this->tokenizer->__invoke($question, $context, padding: true, truncation: true);
 
@@ -79,7 +79,7 @@ class QuestionAnsweringPipeline extends Pipeline
                 return $b[2] <=> $a[2];
             });
 
-            $minLength = min(count($options), $topk);
+            $minLength = min(count($options), $topK);
 
             for ($k = 0; $k < $minLength; ++$k) {
                 [$start, $end, $score] = $options[$k];
@@ -92,6 +92,6 @@ class QuestionAnsweringPipeline extends Pipeline
             }
         }
 
-        return $topk === 1 ? $toReturn[0] : $toReturn;
+        return $topK === 1 ? $toReturn[0] : $toReturn;
     }
 }

@@ -60,7 +60,7 @@ class TextClassificationPipeline extends Pipeline
 {
     public function __invoke(array|string $texts, ...$args): array
     {
-        $topk = $args["topk"] ?? 1;
+        $topK = $args["topK"] ?? 1;
 
 
         $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
@@ -81,7 +81,7 @@ class TextClassificationPipeline extends Pipeline
         foreach ($outputs->logits as $batch) {
             $output = $activationFunction(Tensor::fromNdArray($batch));
 
-            $scores = Math::getTopItems($output, $topk);
+            $scores = Math::getTopItems($output, $topK);
 
             $values = array_map(function ($x, $i) use ($id2label) {
                 return [
@@ -90,7 +90,7 @@ class TextClassificationPipeline extends Pipeline
                 ];
             }, $scores, array_keys($scores));
 
-            if ($topk === 1) {
+            if ($topK === 1) {
                 $toReturn = $values;
             } else {
                 $toReturn[] = $values;

@@ -34,7 +34,7 @@ class FillMaskPipeline extends Pipeline
 {
     public function __invoke(array|string $texts, ...$args): array
     {
-        $topk = $args["topk"] ?? 5;
+        $topK = $args["topK"] ?? 5;
 
         $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
 
@@ -54,7 +54,7 @@ class FillMaskPipeline extends Pipeline
             $logits = $outputs->logits[$i]->toArray();
             $itemLogits = $logits[$maskTokenIndex];
 
-            $scores = Math::getTopItems(Math::softmax($itemLogits), $topk);
+            $scores = Math::getTopItems(Math::softmax($itemLogits), $topK);
 
             $toReturn[] = array_map(function ($key, $value) use ($ids, $maskTokenIndex) {
                 $sequence = $ids;

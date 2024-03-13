@@ -87,7 +87,7 @@ class FeatureExtractionPipeline extends Pipeline
                 break;
 
             default:
-                throw new \Error("Pooling method not supported. Please use 'mean', 'max', 'first', 'cls', or 'none'.");
+                throw new \Error("Pooling method not supported. Please use 'mean',  'cls', or 'none'.");
         }
 
         if ($normalize) {

@@ -28,7 +28,7 @@ $generator = pipeline('text-generation', 'Xenova/codegen-350M-mono');
 $streamer = StdOutStreamer::make($generator->tokenizer);
 
 $output = $generator(
-    'def slugify(text: str) -> str:',
+    'def fib(n):',
     streamer: $streamer,
     maxNewTokens: 50,
 );

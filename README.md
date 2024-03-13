@@ -1,12 +1,6 @@
-<p align="center">
-    <br/>
-    <picture> 
-        <source media="(prefers-color-scheme: dark)" srcset="https://huggingface.co/datasets/Xenova/transformers.js-docs/raw/main/transformersjs-dark.svg" width="500" style="max-width: 100%;">
-        <source media="(prefers-color-scheme: light)" srcset="https://huggingface.co/datasets/Xenova/transformers.js-docs/raw/main/transformersjs-light.svg" width="500" style="max-width: 100%;">
-        <img alt="transformers.js javascript library logo" src="https://huggingface.co/datasets/Xenova/transformers.js-docs/raw/main/transformersjs-light.svg" width="500" style="max-width: 100%;">
-    </picture>
-    <br/>
-</p>
+<h1 align="center">
+   Transformers PHP
+</h1>
 
 <h3 align="center">
     <p>State-of-the-art Machine Learning for PHP</p>

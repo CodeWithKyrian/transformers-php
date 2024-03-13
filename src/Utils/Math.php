@@ -46,11 +46,11 @@ class Math
     /**
      * Get the top k items from an iterable, sorted by descending order
      * @param array|\Traversable $items The items to be sorted
-     * @param int $top_k The number of top items to return (default: 0 = return all)
+     * @param int $topK The number of top items to return (default: 0 = return all)
      * @return array The top k items, sorted by descending order
      */
 
-    public static function getTopItems(\Traversable|array $items, int $top_k = -1): array
+    public static function getTopItems(\Traversable|array $items, int $topK = -1): array
     {
 //        dd(count($items));
         // if top == 0, return all
@@ -66,8 +66,8 @@ class Math
         });
 
         // Slice the array while preserving keys
-        if ($top_k !== -1 && $top_k > 0) {
-            $items = array_slice($items, 0, $top_k, true);
+        if ($topK !== -1 && $topK > 0) {
+            $items = array_slice($items, 0, $topK, true);
         }
 
 

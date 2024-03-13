@@ -14,8 +14,9 @@ ini_set('memory_limit', -1);
 $classifier = pipeline('token-classification', 'Xenova/bert-base-NER');
 
 $output = $classifier(
-    'My name is Kyrian and I live in Onitsha',
-    aggregationStrategy: AggregationStrategy::FIRST
+    'My name is Kyrian and I live in United States of America',
+//    aggregationStrategy: AggregationStrategy::FIRST
+    ignoreLabels: []
 );
 
 dd($output, timeUsage(), memoryUsage());

@@ -15,8 +15,8 @@ $translator = pipeline('translation', 'Xenova/m2m100_418M');
 
 $streamer = StdOutStreamer::make($translator->tokenizer);
 
-//$output = $translator('生活就像一盒巧克力。', streamer: $streamer, tgtLang: 'en');
+$output = $translator('生活就像一盒巧克力。', streamer: $streamer, tgtLang: 'en');
 //$output = $translator('जीवन एक चॉकलेट बॉक्स की तरह है।', streamer: $streamer, tgtLang: 'fr');
-$output = $translator('संयुक्त राष्ट्र के प्रमुख का कहना है कि सीरिया में कोई सैन्य समाधान नहीं है', streamer: $streamer, tgtLang: 'fr', maxNewTokens: 256);
+//$output = $translator('संयुक्त राष्ट्र के प्रमुख का कहना है कि सीरिया में कोई सैन्य समाधान नहीं है', streamer: $streamer, tgtLang: 'fr', maxNewTokens: 256);
 
 dd("done", timeUsage(), memoryUsage());
