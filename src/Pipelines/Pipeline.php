@@ -48,7 +48,6 @@ class Pipeline
  * default to `false`. Only available for some models.
  * @param array|null $config The configuration to use for the pipeline.
  * @param string|null $cacheDir The directory in which the pre-trained models will be cached. Will default to the Transformers cache directory
- * @param string|null $token The secret API token to use for the model's inference API.
  * @param string $revision The specific model version to use. It can be a branch name, a tag name, or a commit id, since we use a git-based
  * system for storing models and other artifacts on huggingface.co, so ``revision`` can be any identifier allowed by git.
  * @return Pipeline
@@ -60,7 +59,6 @@ function pipeline(
     bool        $quantized = true,
     ?array      $config = null,
     ?string     $cacheDir = null,
-    ?string     $token = null,
     string      $revision = 'main',
 ): Pipeline
 {
@@ -75,9 +73,9 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $token, $revision);
+    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision);
 
-    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $token, $revision);
+    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision);
 
     return $task->getPipeline($model, $tokenizer);
 }

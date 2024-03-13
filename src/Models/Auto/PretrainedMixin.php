@@ -35,7 +35,6 @@ abstract class PretrainedMixin
      * @param bool $quantized Whether to use a quantized model.
      * @param array|null $config The configuration for the model.
      * @param string|null $cacheDir The cache directory to save the model in.
-     * @param string|null $token The API token to use.
      * @param string $revision The revision of the model.
      * @param string|null $modelFilename The filename of the model.
      * @return PreTrainedModel The instantiated pretrained model.
@@ -45,7 +44,6 @@ abstract class PretrainedMixin
         bool    $quantized = true,
         ?array  $config = null,
         ?string $cacheDir = null,
-        ?string $token = null,
         string  $revision = 'main',
         ?string $modelFilename = null,
     ): PreTrainedModel
@@ -65,7 +63,6 @@ abstract class PretrainedMixin
                 quantized: $quantized,
                 config: $config,
                 cacheDir: $cacheDir,
-                token: $token,
                 revision: $revision,
                 modelFilename: $modelFilename,
                 modelArchitecture: $modelArchitecture
@@ -80,7 +77,6 @@ abstract class PretrainedMixin
                 quantized: $quantized,
                 config: $config,
                 cacheDir: $cacheDir,
-                token: $token,
                 revision: $revision,
                 modelFilename: $modelFilename
             );

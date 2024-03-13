@@ -6,11 +6,9 @@ namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Transformers;
-use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Utils;
-use GuzzleHttp\RequestOptions;
 
 /**
  * Utility class to download files from the Hugging Face Hub
@@ -40,7 +38,6 @@ class Hub
      * @param string|null $cacheDir Path to a directory in which a downloaded pretrained model configuration should
      * be cached if the standard cache should not be used.
      * the cached versions if they exist. Defaults to false.
-     * @param string|null $token The token to use as an authorization to download from private model repos.
      * @param string $revision The specific model version to use. It can be a branch name, a tag name,
      * or a commit id. Defaults to 'main'.
      * @param string $subFolder In case the relevant files are located inside a subfolder of the model repo or
@@ -54,7 +51,6 @@ class Hub
         string  $pathOrRepoID,
         string  $fileName,
         ?string $cacheDir = null,
-        ?string $token = null,
         string  $revision = 'main',
         string  $subFolder = '',
         bool    $fatal = true,
@@ -97,13 +93,15 @@ class Hub
         # Create directory structure if needed
         self::ensureDirectory($filePath);
 
-        # Create client and progress callback
-        $client ??= new Client([
-            'headers' => [
-                'User-Agent' => 'transformers-php',
-                'Authorization' => 'Bearer ' . $token,
-            ]
-        ]);
+        $headers = [
+            'User-Agent' => Transformers::$userAgent
+        ];
+
+        if (Transformers::$authToken) {
+            $headers['Authorization'] = 'Bearer ' . Transformers::$authToken;
+        }
+
+        $client ??= new Client(['headers' => $headers]);
 
         $options = [
             'headers' => ['Range' => 'bytes=' . $downloadedBytes . '-'],
@@ -136,13 +134,12 @@ class Hub
         string  $pathOrRepoID,
         string  $fileName,
         ?string $cacheDir = null,
-        ?string $token = null,
         string  $revision = 'main',
         string  $subFolder = '',
         bool    $fatal = true
     ): ?array
     {
-        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $token, $revision, $subFolder, $fatal);
+        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal);
 
         if ($file === null) {
             return null;

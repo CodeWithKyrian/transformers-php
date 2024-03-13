@@ -13,6 +13,10 @@ class Transformers
 
     public static string $remotePathTemplate = '{model}/resolve/{revision}/{file}';
 
+    public static ?string $authToken = null;
+
+    public static ?string $userAgent = 'codewithkyrian/transformers-php/0.1.0';
+
     public static function configure(): static
     {
         return new static;
@@ -52,6 +56,32 @@ class Transformers
     public function setRemotePathTemplate(string $remotePathTemplate): static
     {
         self::$remotePathTemplate = $remotePathTemplate;
+
+        return $this;
+    }
+
+    /**
+     * Set the authentication token for downloading models and tokenizers. This is useful for using a private model
+     * repository in Hugging Face
+     * @param string $authToken
+     * @return $this
+     */
+    public function setAuthToken(string $authToken): static
+    {
+        self::$authToken = $authToken;
+
+        return $this;
+    }
+
+    /**
+     * Set the user agent for downloading models and tokenizers. This is useful for using a custom user agent
+     * for downloading models and tokenizers
+     * @param string $userAgent
+     * @return $this
+     */
+    public function setUserAgent(string $userAgent): static
+    {
+        self::$userAgent = $userAgent;
 
         return $this;
     }

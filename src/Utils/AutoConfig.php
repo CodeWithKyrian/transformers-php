@@ -5,7 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-class AutoConfig implements \ArrayAccess
+use ArrayAccess;
+
+class AutoConfig implements ArrayAccess
 {
 
     public string $modelType;

@@ -82,7 +82,6 @@ class AutoTokenizer
         bool    $quantized = true,
         ?array  $config = null,
         ?string $cacheDir = null,
-        ?string $token = null,
         string  $revision = 'main',
         mixed   $legacy = null,
 

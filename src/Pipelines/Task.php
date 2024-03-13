@@ -89,31 +89,29 @@ enum Task: string
         bool    $quantized = true,
         ?array  $config = null,
         ?string $cacheDir = null,
-        ?string $token = null,
         string  $revision = 'main',
-        mixed   $legacy = null,
     ): PreTrainedModel
     {
         return match ($this) {
             self::SentimentAnalysis,
             self::TextClassification,
-            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
-            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
-            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
             self::FeatureExtraction,
-            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
             self::Text2TextGeneration,
             self::Translation,
-            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
-            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
 
             self::TokenClassification,
-            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $token, $revision),
+            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
         };
     }
 }
