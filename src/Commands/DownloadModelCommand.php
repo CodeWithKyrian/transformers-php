@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
+use Codewithkyrian\Transformers\Transformers;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -35,8 +36,7 @@ class DownloadModelCommand extends Command
             'cache-dir',
             'c',
             InputOption::VALUE_OPTIONAL,
-            'The directory to cache the model in.',
-            'models'
+            'The directory to cache the model in.'
         );
 
         $this->addOption(
@@ -51,6 +51,8 @@ class DownloadModelCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        Transformers::configure();
+
         $output->writeln('✔ Downloading model...');
 
         $model = $input->getArgument('model');
@@ -63,10 +65,10 @@ class DownloadModelCommand extends Command
         try {
             // TODO: Verify the tasks and corresponding AutoModel classes
             $model = match ($task) {
-                'text-generation' => AutoModelForCausalLM::fromPretrained($model, $quantized, $cacheDir),
-                'text-classification', 'sentiment-analysis' => AutoModelForSequenceClassification::fromPretrained($model, $quantized, $cacheDir),
-                'translation' => AutoModelForSeq2SeqLM::fromPretrained($model, $quantized, $cacheDir),
-                default => AutoModel::fromPretrained($model, $quantized, $cacheDir),
+                'text-generation' => AutoModelForCausalLM::fromPretrained($model, $quantized, cacheDir: $cacheDir),
+                'text-classification', 'sentiment-analysis' => AutoModelForSequenceClassification::fromPretrained($model, $quantized, cacheDir: $cacheDir),
+                'translation' => AutoModelForSeq2SeqLM::fromPretrained($model, $quantized, cacheDir: $cacheDir),
+                default => AutoModel::fromPretrained($model, $quantized, cacheDir: $cacheDir),
             };
 
             $output->writeln('✔ Model downloaded successfully.');

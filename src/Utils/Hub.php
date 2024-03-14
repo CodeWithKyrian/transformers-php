@@ -59,6 +59,7 @@ class Hub
     {
         # Local cache and file paths
         $cacheDir ??= Transformers::$cacheDir;
+
         $filePath = joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
 
         # Check if file already exists

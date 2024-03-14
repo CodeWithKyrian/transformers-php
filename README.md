@@ -164,6 +164,10 @@ Explanation of Arguments:
       models are
       smaller and faster, but may have slightly lower accuracy. Use -q as a shortcut in the command.
 
+> [!DANGER]
+> Remember to add your cache directory to your `.gitignore` file to avoid committing the downloaded models to your git
+> repository.
+
 ## Supported tasks/models
 
 This package is a WIP, but here's a list of tasks and architectures currently tested and supported by Transformers PHP.
