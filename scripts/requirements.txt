@@ -2,4 +2,4 @@ onnxruntime<1.16.0
 transformers[torch]==4.33.2
 optimum==1.13.2
 tqdm
-onnx==1.13.1
+onnx==1.13
