@@ -16,6 +16,9 @@ Transformers PHP uses [ONNX Runtime](https://onnxruntime.ai/) to run the models,
 engine for Open Neural Network Exchange (ONNX) models. You can easily convert any PyTorch or TensorFlow model to ONNX
 and use it with Transformers PHP using [🤗 Optimum](https://github.com/huggingface/optimum#onnx--onnx-runtime).
 
+TO learn more about the library and how it works, head over to
+our [extensive documentation](https://codewithkyrian.github.io/transformers-docs/docs).
+
 ## Quick tour
 
 Because Transformers PHP is designed to be functionally equivalent to the Python library, it's super easy to learn from
@@ -56,11 +59,12 @@ $pipe = pipeline('sentiment-analysis');
 $out = $pipe('I love transformers!');
 // [{'label': 'POSITIVE', 'score': 0.999808732}]
 ```
+
 </td>
 <td>
 
 ```javascript
-import { pipeline } from '@xenova/transformers';
+import {pipeline} from '@xenova/transformers';
 
 // Allocate a pipeline for sentiment-analysis
 let pipe = await pipeline('sentiment-analysis');
@@ -68,6 +72,7 @@ let pipe = await pipeline('sentiment-analysis');
 let out = await pipe('I love transformers!');
 // [{'label': 'POSITIVE', 'score': 0.999817686}]
 ```
+
 </td>
 </tr>
 </table>
@@ -97,6 +102,11 @@ Next, you must run the installation/initialize command to download the shared li
 ./vendor/bin/transformers install
 ```
 
+## Documentation
+
+For more detailed information on how to use the library, check out the
+documentation : [https://codewithkyrian.github.io/transformers-docs/](https://codewithkyrian.github.io/transformers-docs/)
+
 ## Usage
 
 By default, Transformers PHP uses hosted pretrained ONNX models. For supported tasks, models that have been converted to
@@ -118,7 +128,9 @@ Transformers::configure()
     ->setUserAgent('...'); // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
 ```
 
-You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values.
+You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For
+more information on the configuration options and what they mean, checkout
+the [documentation](https://codewithkyrian.github.io/transformers-docs/docs/configuration).
 
 ## Convert your models to ONNX
 
@@ -145,10 +157,12 @@ Explanation of Arguments:
 - **[\<task\>]**: (Optional) This parameter allows for downloading task-specific configurations and weights. This can be
   helpful if you know the specific task you'll be using the model for (e.g., "text2text-generation").
 - **[options]**: (Optional) You can further customize the download process with additional options:
-  - **--cache_dir=\<directory\>**: Specify a directory to store downloaded models (defaults to the configured cache). You can
-    use -c as a shortcut in the command.
-  - **--quantized=\<true|false\>**: Download the quantized model version if available (defaults to true). Quantized models are
-    smaller and faster, but may have slightly lower accuracy. Use -q as a shortcut in the command.
+    - **--cache_dir=\<directory\>**: Specify a directory to store downloaded models (defaults to the configured cache).
+      You can
+      use -c as a shortcut in the command.
+    - **--quantized=\<true|false\>**: Download the quantized model version if available (defaults to true). Quantized
+      models are
+      smaller and faster, but may have slightly lower accuracy. Use -q as a shortcut in the command.
 
 ## Supported tasks/models
 
@@ -316,7 +330,5 @@ This package is a WIP, but here's a list of tasks and architectures currently te
    repository [google-research/text-to-text-transfer-transformer](https://github.com/google-research/text-to-text-transfer-transformer/blob/main/released_checkpoints.md#t511)
    by Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi
    Zhou and Wei Li and Peter J. Liu.
-
-
 
 [//]: # (docker run  -e QUANTIZE=true -e MODEL_ID="sentence-transformers/paraphrase-albert-base-v2" -v ./models:/app/models onnx-converter )
