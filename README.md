@@ -319,4 +319,4 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 
 
 
-
+[//]: # (docker run  -e QUANTIZE=true -e MODEL_ID="sentence-transformers/paraphrase-albert-base-v2" -v ./models:/app/models onnx-converter )

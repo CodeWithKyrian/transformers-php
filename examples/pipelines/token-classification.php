@@ -11,12 +11,12 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 ini_set('memory_limit', -1);
 
-$classifier = pipeline('token-classification', 'Xenova/bert-base-NER');
+//$classifier = pipeline('token-classification', 'Xenova/bert-base-NER');
+$classifier = pipeline('token-classification', 'codewithkyrian/bert-english-uncased-finetuned-pos');
 
 $output = $classifier(
-    'My name is Kyrian and I live in United States of America',
-//    aggregationStrategy: AggregationStrategy::FIRST
-    ignoreLabels: []
+    'My name is Kyrian and I live in Onitsha',
+    aggregationStrategy: AggregationStrategy::FIRST
 );
 
 dd($output, timeUsage(), memoryUsage());
