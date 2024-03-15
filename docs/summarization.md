@@ -56,7 +56,7 @@ $summary = $summarizer($article, maxNewTokens: 512, temperature: 0.7);
 
 ## Pipeline Input Options
 
-All options available for the standard [Text-To-Text generation](/docs/text-to-text-generation#pipeline-input-options)
+All options available for the standard [Text-To-Text generation](/text-to-text-generation#pipeline-input-options)
 are
 also available for the summarization pipeline.
 
