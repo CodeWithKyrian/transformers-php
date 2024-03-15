@@ -8,8 +8,9 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 
 beforeAll(function () {
-    Transformers::configure()
-        ->setCacheDir('tests/models');
+    Transformers::setup()
+        ->setCacheDir('tests/models')
+        ->apply();
 });
 
 it('can tokenize a text', function ($textToTokenize, $expectedTokens) {

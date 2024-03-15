@@ -10,6 +10,7 @@ use OnnxRuntime\Vendor;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use function Codewithkyrian\Transformers\Utils\ensureDirectory;
@@ -25,10 +26,23 @@ class InitCommand extends Command
     protected function configure(): void
     {
         $this->setHelp('This command initializes Transformers PHP and downloads the required shared libraries.');
+
+        $this->addOption(
+            'cache-dir',
+            'c',
+            InputOption::VALUE_OPTIONAL,
+            'The directory to cache the libraries in.'
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $cacheDir = $input->getOption('cache-dir');
+
+        if ($cacheDir != null) {
+            Transformers::$cacheDir = $cacheDir;
+        }
+
         try {
             if (file_exists(Transformers::libFile())) {
                 $output->writeln("✔ Transformer has been formerly initialized");

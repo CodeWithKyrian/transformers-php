@@ -102,6 +102,30 @@ Next, you must run the installation/initialize command to download the shared li
 ./vendor/bin/transformers install
 ```
 
+> [!CAUTION]
+> These shared libraries to be downloaded are platform-specific, so it's important to run this command on the target
+> platform where the code will be executed. For example, if you're using a Docker container, run the `install` command
+> inside that container.
+
+## PHP FFI Extension
+
+Transformers PHP uses the PHP FFI extension to interact with the ONNX runtime. The FFI extension is included by default
+in PHP 7.4 and later, but it may not be enabled by default. If the FFI extension is not enabled, you can enable it by
+uncommenting(remove the `;` from the beginning of the line) the
+following line in your `php.ini` file:
+
+```ini
+extension = ffi
+```
+
+Also, you need to set the `ffi.enable` directive to `true` in your `php.ini` file:
+
+```ini
+ffi.enable = true
+```
+
+After making these changes, restart your web server or PHP-FPM service, and you should be good to go.
+
 ## Documentation
 
 For more detailed information on how to use the library, check out the
@@ -120,12 +144,13 @@ You can configure the behaviour of the Transformers PHP library as follows:
 ```php
 use Codewithkyrian\Transformers\Transformers;
 
-Transformers::configure()
+Transformers::setup()
     ->setCacheDir('...') // Set the default cache directory for transformers models. Defaults to `.transformers-cache/models`
     ->setRemoteHost('...') // Set the remote host for downloading models. Defaults to `https://huggingface.co`
     ->setRemotePathTemplate('...') // Set the remote path template for downloading models. Defaults to `{model}/resolve/{revision}/{file}`
     ->setAuthToken('...') // Set the auth token for downloading models. Defaults to `null`
-    ->setUserAgent('...'); // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
+    ->setUserAgent('...') // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
+    ->apply(); // Apply the configuration
 ```
 
 You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For

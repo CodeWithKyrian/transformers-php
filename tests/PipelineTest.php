@@ -8,8 +8,9 @@ use Codewithkyrian\Transformers\Transformers;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 beforeAll(function () {
-    Transformers::configure()
-        ->setCacheDir('tests/models');
+    Transformers::setup()
+        ->setCacheDir('tests/models')
+        ->apply();
 });
 
 it('can create a pipeline for a task', function () {

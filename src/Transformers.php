@@ -23,11 +23,14 @@ class Transformers
 
     public static ?string $userAgent = 'transformers-php/0.1.0';
 
-    public static function configure(): static
+    public static function setup(): static
+    {
+        return new static;
+    }
+
+    public function apply(): void
     {
         FFI::$lib = self::libFile();
-
-        return new static;
     }
 
     public static function libFile(): string
@@ -42,9 +45,9 @@ class Transformers
      * @param string $cacheDir
      * @return $this
      */
-    public function setCacheDir(string $cacheDir): static
+    public function setCacheDir(?string $cacheDir): static
     {
-        self::$cacheDir = $cacheDir;
+        if ($cacheDir != null) self::$cacheDir = $cacheDir;
 
         return $this;
     }

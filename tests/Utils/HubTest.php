@@ -13,8 +13,9 @@ use function Codewithkyrian\Transformers\Utils\ensureDirectory;
 use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 beforeEach(function () {
-    Transformers::configure()
-        ->setCacheDir('tests/models');
+    Transformers::setup()
+        ->setCacheDir('tests/models')
+        ->apply();
 });
 
 it('joins paths correctly', function () {

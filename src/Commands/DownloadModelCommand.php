@@ -10,6 +10,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Pipelines\Task;
+use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -53,8 +54,6 @@ class DownloadModelCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        Transformers::configure();
-
         $output->writeln('✔ Downloading model...');
 
         $model = $input->getArgument('model');
@@ -62,15 +61,18 @@ class DownloadModelCommand extends Command
         $quantized = $input->getOption('quantized');
         $task = $input->getArgument('task');
 
+        Transformers::setup()
+            ->setCacheDir($cacheDir)
+            ->apply();
 
-        // Download the model
         try {
             $task = $task ? Task::tryFrom($task) : null;
 
             if ($task != null) {
                 pipeline($task, $model);
             } else {
-                AutoModel::fromPretrained($model, $quantized, cacheDir: $cacheDir);
+                AutoTokenizer::fromPretrained($model, $quantized);
+                AutoModel::fromPretrained($model, $quantized);
             }
 
 
