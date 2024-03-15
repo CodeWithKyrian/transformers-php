@@ -120,6 +120,8 @@ class Hub
                 rename($partPath, $filePath);
             }
 
+            chmod($filePath, 0644);
+
             return $filePath;
         } catch (GuzzleException $e) {
             self::handleException($e->getCode(), $remoteURL, $fatal);

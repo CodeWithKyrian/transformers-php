@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
+use Codewithkyrian\Transformers\Pipelines\Task;
 use Codewithkyrian\Transformers\Transformers;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -16,6 +17,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 #[AsCommand(
     name: 'download-model',
@@ -63,13 +65,14 @@ class DownloadModelCommand extends Command
 
         // Download the model
         try {
-            // TODO: Verify the tasks and corresponding AutoModel classes
-            $model = match ($task) {
-                'text-generation' => AutoModelForCausalLM::fromPretrained($model, $quantized, cacheDir: $cacheDir),
-                'text-classification', 'sentiment-analysis' => AutoModelForSequenceClassification::fromPretrained($model, $quantized, cacheDir: $cacheDir),
-                'translation' => AutoModelForSeq2SeqLM::fromPretrained($model, $quantized, cacheDir: $cacheDir),
-                default => AutoModel::fromPretrained($model, $quantized, cacheDir: $cacheDir),
-            };
+            $task = Task::tryFrom($task);
+
+            if ($task != null) {
+                pipeline($task, $model);
+            } else {
+                AutoModel::fromPretrained($model, $quantized, cacheDir: $cacheDir);
+            }
+
 
             $output->writeln('✔ Model downloaded successfully.');
 
