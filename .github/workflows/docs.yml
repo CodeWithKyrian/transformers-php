@@ -31,19 +31,18 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Navigate to docs directory
-        run: cd docs
-
       - name: Install dependencies
+        working-directory: docs
         run: bun install
 
       - name: Build with VitePress
+        working-directory: docs
         run: bun run docs:build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .vitepress/dist
+          path: docs/.vitepress/dist
 
   deploy:
     environment:
