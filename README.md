@@ -17,7 +17,7 @@ engine for Open Neural Network Exchange (ONNX) models. You can easily convert an
 and use it with Transformers PHP using [🤗 Optimum](https://github.com/huggingface/optimum#onnx--onnx-runtime).
 
 TO learn more about the library and how it works, head over to
-our [extensive documentation](https://codewithkyrian.github.io/transformers-docs/docs).
+our [extensive documentation](https://codewithkyrian.github.io/transformers-php/introduction).
 
 ## Quick tour
 
@@ -129,7 +129,7 @@ After making these changes, restart your web server or PHP-FPM service, and you 
 ## Documentation
 
 For more detailed information on how to use the library, check out the
-documentation : [https://codewithkyrian.github.io/transformers-docs/](https://codewithkyrian.github.io/transformers-docs/)
+documentation : [https://codewithkyrian.github.io/transformers-php](https://codewithkyrian.github.io/transformers-php)
 
 ## Usage
 
@@ -155,7 +155,7 @@ Transformers::setup()
 
 You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For
 more information on the configuration options and what they mean, checkout
-the [documentation](https://codewithkyrian.github.io/transformers-docs/docs/configuration).
+the [documentation](https://codewithkyrian.github.io/transformers-php/configuration).
 
 ## Convert your models to ONNX
 
