@@ -177,4 +177,4 @@ public function boot()
 
 Now that you've learned how to configure Transformers PHP, you can start using the library to download and use
 pre-trained ONNX models. For more information on how to use the library, check out
-the [Getting Started](./getting-started.md) guide.
+the [Getting Started](getting-started.md) guide.

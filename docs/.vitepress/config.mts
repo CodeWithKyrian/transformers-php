@@ -4,12 +4,12 @@ import {defineConfig} from 'vitepress'
 export default defineConfig({
     title: "Transformers PHP",
     description: "State-of-the-art Machine Learning for PHP. Run Transformers in PHP",
-    base: "/transformers-docs/",
+    base: "/transformers-php/",
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         nav: [
             {text: 'Home', link: '/'},
-            {text: 'Docs', link: '/docs/'},
+            {text: 'Docs', link: '/introduction'},
             {
                 text: '0.1.x',
                 items: [
@@ -30,42 +30,42 @@ export default defineConfig({
                 text: 'Getting Started',
                 collapsed: false,
                 items: [
-                    {text: 'Introduction', link: '/docs/'},
-                    {text: 'Getting Started', link: '/docs/getting-started'},
-                    {text: 'Basic Usage', link: '/docs/basic-usage'},
-                    {text: 'Configuration', link: '/docs/configuration'},
+                    {text: 'Introduction', link: '/introduction'},
+                    {text: 'Getting Started', link: '/getting-started'},
+                    {text: 'Basic Usage', link: '/basic-usage'},
+                    {text: 'Configuration', link: '/configuration'},
                 ]
             },
             {
                 text: 'Pipelines',
                 collapsed: false,
-                link: '/docs/pipelines',
+                link: '/pipelines',
                 items: [
-                    {text: 'Text Classification', link: '/docs/text-classification'},
-                    {text: 'Fill Mask', link: '/docs/fill-mask'},
-                    {text: 'Zero Shot Classification', link: '/docs/zero-shot-classification'},
-                    {text: 'Question Answering', link: '/docs/question-answering'},
-                    {text: 'Token Classification', link: '/docs/token-classification'},
-                    {text: 'Feature Extraction', link: '/docs/feature-extraction'},
-                    {text: 'Text to Text Generation', link: '/docs/text-to-text-generation'},
-                    {text: 'Translation', link: '/docs/translation'},
-                    {text: 'Summarization', link: '/docs/summarization'},
-                    {text: 'Text Generation', link: '/docs/text-generation'},
+                    {text: 'Text Classification', link: '/text-classification'},
+                    {text: 'Fill Mask', link: '/fill-mask'},
+                    {text: 'Zero Shot Classification', link: '/zero-shot-classification'},
+                    {text: 'Question Answering', link: '/question-answering'},
+                    {text: 'Token Classification', link: '/token-classification'},
+                    {text: 'Feature Extraction', link: '/feature-extraction'},
+                    {text: 'Text to Text Generation', link: '/text-to-text-generation'},
+                    {text: 'Translation', link: '/translation'},
+                    {text: 'Summarization', link: '/summarization'},
+                    {text: 'Text Generation', link: '/text-generation'},
                 ]
             },
             {
                 text: 'Advanced Usage',
                 collapsed: false,
                 items: [
-                    {text: 'Auto Models', link: '/docs/auto-models'},
-                    {text: 'Auto Tokenizers', link: '/docs/auto-tokenizers'},
+                    {text: 'Auto Models', link: '/auto-models'},
+                    {text: 'Auto Tokenizers', link: '/auto-tokenizers'},
                 ]
             },
             {
                 text: 'Utilities',
                 collapsed: false,
                 items: [
-                    {text: 'Generation', link: '/docs/generation'},
+                    {text: 'Generation', link: '/generation'},
                 ]
             }
         ],

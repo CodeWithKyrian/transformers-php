@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /docs/
+      link: /introduction
     - theme: alt
       text: View on GitHub
       link: https://github.com/CodeWithKyrian/transformers-php

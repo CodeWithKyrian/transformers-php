@@ -20,10 +20,10 @@ foundational for many NLP applications.
 
 Text-to-Text Generation is applicable in various scenarios, including but not limited to:
 
-- **Language Translation:** Translating text from one language to another (it's recommended to use the [translation](/docs/translation)
+- **Language Translation:** Translating text from one language to another (it's recommended to use the [translation](/translation)
   pipeline for this task though).
 - **Summarization:** Condensing long documents into shorter versions while retaining the essential information (it's
-  recommended to use the [summarization](/docs/summarization) pipeline for this task though).
+  recommended to use the [summarization](/summarization) pipeline for this task though).
 - **Content Generation:** Creating new content based on given prompts or rewriting existing text.
 
 ## Running a Pipeline Session
@@ -54,7 +54,7 @@ When running the `text2text-generation` pipeline, you can the following options:
 - ### `streamer` *(Streamer)*
   [Optional] This is an instance of the `Streamer` class and is used to stream the output of the pipeline. It's useful
   when you want to process the output in real-time or when the output is too large to fit into memory. Visit the
-  [Streamers](/docs/generation#streamers) documentation for more information on how to use streamers.
+  [Streamers](/generation#streamers) documentation for more information on how to use streamers.
 
     ```php
     use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
@@ -90,7 +90,7 @@ When running the `text2text-generation` pipeline, you can the following options:
 `maxNewTokens`, `doSample`, `numBeams`, `temperature`, and `repetitionPenalty` are few out of the many possible
 arguments used to either control the length of the output, or the generation strategy used, or the manipulation process
 for the output logits, or the nature of the output, or the special tokens to be used. They are only valid for pipelines
-that use the `generate`,  For a complete list of all possible arguments, refer to the [generation documentation](/docs/generation).
+that use the `generate`,  For a complete list of all possible arguments, refer to the [generation documentation](/generation).
 
 ```php
 $output = $generator(

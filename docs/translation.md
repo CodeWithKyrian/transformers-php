@@ -46,7 +46,7 @@ $output = $translator('संयुक्त राष्ट्र के प्
 
 ## Pipeline Input Options
 
-In addition to the standard [Text-To-Text generation](/docs/text-to-text-generation#pipeline-input-options) inputs, the translation pipeline includes:
+In addition to the standard [Text-To-Text generation](/text-to-text-generation#pipeline-input-options) inputs, the translation pipeline includes:
 
 - ### `texts` *(string|array)*
   The input text to translate. It's the first argument so there's no need to pass it as a named argument. You can pass a
@@ -73,7 +73,7 @@ In addition to the standard [Text-To-Text generation](/docs/text-to-text-generat
   $output = $translator('Je suis un développeur', srcLang: 'fr', tgtLang: 'en');
   ```
   
-All other options are the same as the ones in the [text2text-generation](/docs/text-to-text-generation#pipeline-input-options) pipeline.
+All other options are the same as the ones in the [text2text-generation](/text-to-text-generation#pipeline-input-options) pipeline.
 
 
 ## Pipeline Outputs

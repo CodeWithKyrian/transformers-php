@@ -24,7 +24,7 @@ analysis on-the-fly. This initial setup might take a bit, but subsequent runs wi
 
 > [!TIP]
 > To avoid any wait time or possible hiccups with on-the-fly model downloads, it's a good idea to pre-download
-> your models. Check out the section on [pre-downloading models](/docs/getting-started#pre-download-models) for how to
+> your models. Check out the section on [pre-downloading models](/getting-started#pre-download-models) for how to
 > do this.
 
 ## Using a different model

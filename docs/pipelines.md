@@ -38,7 +38,7 @@ of these options for better clarity:
 ### `task`
 
 Specifies the task you wish the pipeline to execute. Refer to
-the [list of supported tasks](/docs/pipelines#supported-tasks) for available options.
+the [list of supported tasks](/pipelines#supported-tasks) for available options.
 
 ### `modelName`
 
@@ -63,7 +63,7 @@ s requirements.
 
 ### `cacheDir`
 
-While it's typically recommended to [set the cache directory globally](/docs/configuration#setcachedir-string-cachedir),
+While it's typically recommended to [set the cache directory globally](/configuration#setcachedir-string-cachedir),
 this allows you to modify the cache directory to save and look for models for this pipelie instance.
 
 ### `revision`
@@ -143,17 +143,17 @@ and for the translation task:
 
 | Task                                                                              | ID                                            | Description                                                                                    | Supported? |
 |-----------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------|------------|
-| [Fill-Mask](/docs/fill-mask)                                                      | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
-| [Question Answering](/docs/question-answering)                                    | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
-| [Sentence Similarity](/docs/feature-extraction)                                   | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
-| [Summarization](/docs/summarization)                                              | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
+| [Fill-Mask](/fill-mask)                                                      | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
+| [Question Answering](/question-answering)                                    | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
+| [Sentence Similarity](/feature-extraction)                                   | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
+| [Summarization](/summarization)                                              | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
 | [Table Question Answering](https://huggingface.co/tasks/table-question-answering) | `table-question-answering`                    | Answering a question about information from a given table.                                     | ❌          |
-| [Text Classification](/docs/text-classification)                                  | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
-| [Text Generation](/docs/text-generation)                                          | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
-| [Text-to-text Generation](/docs/text-to-text-generation)                          | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
-| [Token Classification](/docs/token-classification)                                | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
-| [Translation](/docs/translation)                                                  | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
-| [Zero-Shot Classification](/docs/zero-shot-classification)                        | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
+| [Text Classification](/text-classification)                                  | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
+| [Text Generation](/text-generation)                                          | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
+| [Text-to-text Generation](/text-to-text-generation)                          | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
+| [Token Classification](/token-classification)                                | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
+| [Translation](/translation)                                                  | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
+| [Zero-Shot Classification](/zero-shot-classification)                        | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
 
 ## Supported Model Architectures
 
