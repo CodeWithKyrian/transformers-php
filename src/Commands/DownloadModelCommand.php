@@ -65,7 +65,7 @@ class DownloadModelCommand extends Command
 
         // Download the model
         try {
-            $task = Task::tryFrom($task);
+            $task = $task ? Task::tryFrom($task) : null;
 
             if ($task != null) {
                 pipeline($task, $model);
