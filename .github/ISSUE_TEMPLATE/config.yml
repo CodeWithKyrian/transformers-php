@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+version: 2.1
+contact_links:
+  - name: Documentation
+    url: https://codewithkyrian.github.io/transformers-php
+    about: Read the Transformers PHP documentation

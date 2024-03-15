@@ -1,0 +1,28 @@
+name: "❓ Question about Transformers PHP"
+description: Ask your questions about using Transformers PHP
+labels: [ "question" ]
+body:
+  - type: textarea
+    id: question
+    validations:
+      required: true
+    attributes:
+      label: Your question
+      description: Please clearly state your question about using Transformers PHP. The more details you provide, the better we can assist you.
+      placeholder: "For example, I'm having trouble understanding how to use the [Model Name] model for sentiment analysis. Can you please provide some guidance?"
+
+  - type: textarea
+    id: context
+    validations:
+      required: false  # Optional field
+    attributes:
+      label: Context (optional)
+      description: If necessary, provide additional context about your question. This could include - The specific functionality you're trying to achieve, any code snippets you're working with, or error messages you're encountering (if applicable).
+
+  - type: input
+    id: reference
+    validations:
+      required: false  # Optional field
+    attributes:
+      label: Reference (optional)
+      description: If your question relates to specific documentation or code examples, please provide a link here.

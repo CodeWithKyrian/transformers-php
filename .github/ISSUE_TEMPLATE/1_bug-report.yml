@@ -1,0 +1,57 @@
+name: "🐛 Bug Report"
+description: Submit a bug report to help us improve Transformers PHP.
+labels: [ "bug" ]
+body:
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: Please share your system info with us. This may include your operating system, Server software, Framework/CMS (if applicable) and its version (e.g., Laravel, Symfony), and any other relevant information.
+      placeholder: "Operating System, Server Software, Framework/CMS, Framework/CMS Version, etc."
+    validations:
+      required: true
+
+  - type: input
+    id: php-version
+    attributes:
+      label: PHP Version
+      description: What version of PHP are you running? Please be as specific as possible
+      placeholder: 8.1.20
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: environment-or-platform
+    attributes:
+      label: Environment/Platform
+      description: "The environment I am running in:"
+      options:
+        - label: "Command-line application"
+        - label: "Web application"
+        - label: "Serverless"
+        - label: "Other (please specify)"
+
+  - type: textarea
+    id: description
+    validations:
+      required: true
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug, as well as what you expected to happen.
+
+  - type: textarea
+    id: reproduction
+    validations:
+      required: true
+    attributes:
+      label: Reproduction
+      description: |
+        Please provide a code sample that reproduces the problem you ran into. If you have code snippets, error messages, or stack traces, please provide them here as well.
+        Important! Use [code tags](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks#syntax-highlighting) to correctly format your code.
+
+      placeholder: |
+        Steps to reproduce the behavior:
+        
+          1.
+          2.
+          3.
