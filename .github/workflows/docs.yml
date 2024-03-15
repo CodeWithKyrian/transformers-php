@@ -1,0 +1,58 @@
+name: Deploy Docs site to Pages
+
+on:
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Not needed if lastUpdated is not enabled
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1 # Uncomment this if you're using Bun
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Navigate to docs directory
+        run: cd docs
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build with VitePress
+        run: bun run docs:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .vitepress/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
