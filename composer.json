@@ -15,7 +15,7 @@
   "require": {
     "php": "^8.1",
     "guzzlehttp/guzzle": "^7.0",
-    "ankane/onnxruntime": "^0.1.8",
+    "ankane/onnxruntime": "^0.2.0",
     "ext-gd": "*",
     "rindow/rindow-math-matrix": "^1.2",
     "spatie/fork": "^1.2"

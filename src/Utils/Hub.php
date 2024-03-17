@@ -9,6 +9,8 @@ use Codewithkyrian\Transformers\Transformers;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Utils;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Utility class to download files from the Hugging Face Hub
@@ -48,13 +50,14 @@ class Hub
      */
 
     public static function getFile(
-        string  $pathOrRepoID,
-        string  $fileName,
-        ?string $cacheDir = null,
-        string  $revision = 'main',
-        string  $subFolder = '',
-        bool    $fatal = true,
-        Client  $client = null
+        string           $pathOrRepoID,
+        string           $fileName,
+        ?string          $cacheDir = null,
+        string           $revision = 'main',
+        string           $subFolder = '',
+        bool             $fatal = true,
+        Client           $client = null,
+        ?OutputInterface $output = null
     ): ?string
     {
         # Local cache and file paths
@@ -86,10 +89,6 @@ class Hub
             }
         }
 
-        if ($downloadedBytes > 0) {
-            echo "Previously downloaded " .
-                round($downloadedBytes / 1024 / 1024, 2) . "MB. Resuming download...\n";
-        }
 
         # Create directory structure if needed
         ensureDirectory($filePath);
@@ -107,11 +106,25 @@ class Hub
         $options = [
             'headers' => ['Range' => 'bytes=' . $downloadedBytes . '-'],
             'sink' => Utils::tryFopen($partPath, 'w'),
-            'progress' => self::downloadProgressCallback($fileName)
         ];
+
+        if ($output != null) {
+            ProgressBar::setFormatDefinition('hub', '%filename% : [%bar%] %percent:3s%%');
+
+            $progressBar = new ProgressBar($output, 100);
+            $progressBar->setFormat('hub');
+            $progressBar->setBarCharacter('<fg=green>•</>');
+            $progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
+            $progressBar->setProgressCharacter('<fg=green>➤</>');
+            $progressBar->setMessage("✔ Downloading $fileName", 'filename');
+
+            $options['progress'] = self::onProgress($progressBar);
+        }
 
         try {
             $client->get($remoteURL, $options);
+
+            if($output != null) echo "\n"; // New line to since Symphony ProgressBar doesn't add a new line.
 
             # Combine part files if necessary
             if ($partCounter > 1) {
@@ -132,15 +145,16 @@ class Hub
      * @throws HubException
      */
     public static function getJson(
-        string  $pathOrRepoID,
-        string  $fileName,
-        ?string $cacheDir = null,
-        string  $revision = 'main',
-        string  $subFolder = '',
-        bool    $fatal = true
+        string           $pathOrRepoID,
+        string           $fileName,
+        ?string          $cacheDir = null,
+        string           $revision = 'main',
+        string           $subFolder = '',
+        bool             $fatal = true,
+        ?OutputInterface $output = null
     ): ?array
     {
-        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal);
+        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
 
         if ($file === null) {
             return null;
@@ -150,16 +164,15 @@ class Hub
     }
 
 
-    private static function downloadProgressCallback($fileName): callable
+    private static function onProgress(ProgressBar $progressBar): callable
     {
-        return function ($totalDownload, $downloadedBytes) use ($fileName) {
-            if ($totalDownload > 0) {
-                $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
-                echo "\rDownloading $fileName: $percent% complete";
-            }
+        return function ($totalDownload, $downloadedBytes) use ($progressBar) {
+            if ($totalDownload == 0) return;
+
+            $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
+            $progressBar->setProgress((int)$percent);
         };
     }
-
 
 
     public static function combinePartFiles($filePath, $partBasePath, $partCount): void

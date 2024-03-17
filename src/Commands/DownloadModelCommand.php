@@ -14,6 +14,7 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -54,7 +55,7 @@ class DownloadModelCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('✔ Downloading model...');
+        $output->writeln('✔ Initializing download...');
 
         $model = $input->getArgument('model');
         $cacheDir = $input->getOption('cache-dir');
@@ -69,18 +70,18 @@ class DownloadModelCommand extends Command
             $task = $task ? Task::tryFrom($task) : null;
 
             if ($task != null) {
-                pipeline($task, $model);
+                pipeline($task, $model, output: $output);
             } else {
-                AutoTokenizer::fromPretrained($model, $quantized);
-                AutoModel::fromPretrained($model, $quantized);
+                AutoTokenizer::fromPretrained($model, quantized: $quantized, output: $output);
+                AutoModel::fromPretrained($model, $quantized, output: $output);
             }
 
 
-            $output->writeln('✔ Model downloaded successfully.');
+            $output->writeln('✔ Model files downloaded successfully.');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $output->writeln('An error occurred while downloading the model: ' . $e->getMessage());
+            $output->writeln('✘ '. $e->getMessage());
             return Command::FAILURE;
         }
     }

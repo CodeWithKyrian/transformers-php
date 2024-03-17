@@ -13,6 +13,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Symfony\Component\Console\Output\OutputInterface;
 
 enum Task: string
 {
@@ -90,28 +91,29 @@ enum Task: string
         ?array  $config = null,
         ?string $cacheDir = null,
         string  $revision = 'main',
+        ?OutputInterface $output = null
     ): PreTrainedModel
     {
         return match ($this) {
             self::SentimentAnalysis,
             self::TextClassification,
-            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
-            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
-            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
             self::FeatureExtraction,
-            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
             self::Text2TextGeneration,
             self::Translation,
-            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
-            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
 
             self::TokenClassification,
-            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision),
+            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $output),
         };
     }
 }

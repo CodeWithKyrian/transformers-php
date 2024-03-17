@@ -14,7 +14,7 @@ require_once './bootstrap.php';
 
 $classifier = pipeline('text-classification', 'Xenova/distilbert-base-uncased-mnli');
 
-$result = $classifier('A person is eating, there is no food left');
+$result = $classifier('I love you!, You frustrated my life');
 
 
 dd($result);

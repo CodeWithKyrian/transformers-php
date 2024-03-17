@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Tokenizers;
 
 use Codewithkyrian\Transformers\Utils\Hub;
+use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class Tokenizer
 {
@@ -108,7 +109,8 @@ abstract class Tokenizer
         ?array  $config,
         ?string $cacheDir,
         string  $revision,
-        mixed   $legacy
+        mixed   $legacy,
+        ?OutputInterface $output = null
     ): array
     {
         $tokenizerJson = Hub::getJson(
@@ -116,7 +118,8 @@ abstract class Tokenizer
             fileName: 'tokenizer.json',
             cacheDir: $cacheDir,
             revision: $revision,
-            fatal: false
+            fatal: false,
+            output: $output
         );
 
         $tokenizerConfig = Hub::getJson(
@@ -124,7 +127,8 @@ abstract class Tokenizer
             fileName: 'tokenizer_config.json',
             cacheDir: $cacheDir,
             revision: $revision,
-            fatal: false
+            fatal: false,
+            output: $output
         );
 
         if ($legacy != null) {

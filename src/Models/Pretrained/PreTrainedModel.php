@@ -31,6 +31,7 @@ use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use Exception;
 use OnnxRuntime\InferenceSession;
+use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
 
 /**
@@ -83,11 +84,12 @@ class PreTrainedModel
         ?string           $token = null,
         string            $revision = 'main',
         ?string           $modelFilename = null,
-        ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly
+        ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
+        ?OutputInterface $output = null
     ): self
     {
         if (is_array($config)) {
-            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision);
+            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
         }
 
 
@@ -95,10 +97,10 @@ class PreTrainedModel
             case ModelArchitecture::DecoderOnly:
             {
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: $modelFilename ?? 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
+                    fileName: $modelFilename ?? 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 $generatorConfigArr = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generation_config.json',
-                    cacheDir: $cacheDir, revision: $revision, fatal: false);
+                    cacheDir: $cacheDir, revision: $revision, fatal: false, output: $output);
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
@@ -248,12 +250,13 @@ class PreTrainedModel
         string  $revision = 'main',
         string  $subFolder = '',
         bool    $fatal = true,
+        ?OutputInterface $output = null,
                 ...$sessionOptions
     ): ?InferenceSession
     {
         $modelFileName = sprintf('onnx/%s%s.onnx', $fileName, $quantized ? '_quantized' : '');
 
-        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal);
+        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
 
         if ($file === null) return null;
 
@@ -310,11 +313,11 @@ class PreTrainedModel
     public function runSession(InferenceSession $session, array $inputs): array
     {
         try {
-            $inputNames = array_column($session->inputs, 'name');
+            $inputNames = array_column($session->inputs(), 'name');
 
             $inputs = $this->validateInputs($inputNames, $inputs);
 
-            $outputNames = array_column($session->outputs, 'name');
+            $outputNames = array_column($session->outputs(), 'name');
 
             $outputs = $session->run($outputNames, $inputs);
 

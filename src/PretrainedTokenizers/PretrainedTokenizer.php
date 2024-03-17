@@ -554,8 +554,9 @@ class PretrainedTokenizer
     protected function padHelper(array &$item, int $length, \Closure $value_fn, string $side): void
     {
         foreach (array_keys($item) as $key) {
+            if($item[$key] == null) return;
+
             $diff = $length - count($item[$key]);
-            dump("Diff: $diff");
             $value = $value_fn($key);
 
             $padData = array_fill(0, $diff, $value);

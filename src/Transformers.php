@@ -11,8 +11,6 @@ use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 class Transformers
 {
-    public const ONNX_VERSION = '1.16.0';
-
     public static string $cacheDir = '.transformers-cache';
 
     public static string $remoteHost = 'https://huggingface.co';
@@ -37,7 +35,7 @@ class Transformers
     {
         $template = joinPaths(Transformers::$cacheDir, self::platform('file'), 'lib', self::platform('lib'));
 
-        return str_replace('{{version}}', self::ONNX_VERSION, $template);
+        return str_replace('{{version}}', Vendor::VERSION, $template);
     }
 
     /**

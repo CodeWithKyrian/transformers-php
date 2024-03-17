@@ -14,4 +14,4 @@ $extractor = pipeline('embeddings', 'Xenova/all-MiniLM-L6-v2');
 
 $embeddings = $extractor('The quick brown fox jumps over the lazy dog.', normalize: true, pooling: 'mean');
 
-dd(memoryUsage(), timeUsage(), $embeddings[0]);
+dd(memoryUsage(), timeUsage(milliseconds: true), count($embeddings[0]));

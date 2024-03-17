@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Commands;
 
 use Codewithkyrian\Transformers\Transformers;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Psr7\Utils;
 use OnnxRuntime\Exception;
 use OnnxRuntime\Vendor;
+use PharData;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -52,46 +57,88 @@ class InitCommand extends Command
 
             ensureDirectory(Transformers::$cacheDir);
 
-            echo "◌ Downloading ONNX Runtime...\n";
+            echo "✔ Initializing Transformers...\n";
 
             $file = Transformers::platform('file');
             $ext = Transformers::platform('ext');
 
             $urlTemplate = "https://github.com/microsoft/onnxruntime/releases/download/v{{version}}/$file.$ext";
-            $url = str_replace('{{version}}', Transformers::ONNX_VERSION, $urlTemplate);
+            $url = str_replace('{{version}}', Vendor::VERSION, $urlTemplate);
 
-            $contents = @file_get_contents($url);
+            $client = new Client();
+            $tempDest = tempnam(sys_get_temp_dir(), 'onnxruntime') . '.' . $ext;
 
-            if (!$contents) {
-                throw new \Exception("Something went wrong");
-            }
+            ProgressBar::setFormatDefinition('hub', '%filename% : [%bar%] %percent:3s%%');
+
+            $progressBar = new ProgressBar($output, 100);
+            $progressBar->setFormat('hub');
+            $progressBar->setBarCharacter('<fg=green>•</>');
+            $progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
+            $progressBar->setProgressCharacter('<fg=green>➤</>');
+            $progressBar->setMessage("✔ Downloading Libraries", 'filename');
+
+            $client->get($url, ['sink' => $tempDest, 'progress' => self::onProgress($progressBar)]);
+
+            $contents = @file_get_contents($tempDest);
 
             $checksum = hash('sha256', $contents);
+
             if ($checksum != Transformers::platform('checksum')) {
                 throw new Exception("Bad checksum: $checksum");
             }
 
-            $tempDest = tempnam(sys_get_temp_dir(), 'onnxruntime') . '.' . $ext;
+            $archive = new PharData($tempDest);
 
-            file_put_contents($tempDest, $contents);
-
-            $archive = new \PharData($tempDest);
             if ($ext != 'zip') {
                 $archive = $archive->decompress();
             }
 
             $archive->extractTo(Transformers::$cacheDir);
 
+            echo "\n"; // New line to since Symphony ProgressBar doesn't add a new line.
             $output->writeln('✔ Initialized Transformers successfully.');
 
             $this->askToStar($input, $output);
 
             return Command::SUCCESS;
+        } catch (GuzzleException $e) {
+            $output->writeln($e->getMessage());
+
+            return Command::FAILURE;
         } catch (Exception $e) {
             $output->writeln($e->getMessage());
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * @param resource $stream
+     * @return string
+     */
+    public function calculateHash($stream): string
+    {
+        $ctx = hash_init('sha256');
+
+        while (!feof($stream)) {
+            $buffer = fread($stream, 8192); // Read in 8KB chunks
+            hash_update($ctx, $buffer);
+        }
+
+        $hash = hash_final($ctx);
+        fclose($stream);
+
+        return $hash;
+    }
+
+    private static function onProgress(ProgressBar $progressBar): callable
+    {
+        return function ($totalDownload, $downloadedBytes) use ($progressBar) {
+            if ($totalDownload == 0) return;
+
+            $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
+            $progressBar->setProgress((int)$percent);
+        };
     }
 
 

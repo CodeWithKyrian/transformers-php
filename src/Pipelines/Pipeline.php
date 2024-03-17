@@ -8,6 +8,7 @@ use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class Pipeline
 {
@@ -60,6 +61,7 @@ function pipeline(
     ?array      $config = null,
     ?string     $cacheDir = null,
     string      $revision = 'main',
+    ?OutputInterface $output = null
 ): Pipeline
 {
     if (is_string($task)) {
@@ -73,9 +75,9 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision);
+    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision, $output);
 
-    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision);
+    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, $output);
 
     return $task->getPipeline($model, $tokenizer);
 }

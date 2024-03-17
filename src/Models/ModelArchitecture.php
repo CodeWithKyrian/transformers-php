@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models;
 
+use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
+use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
@@ -79,11 +81,11 @@ enum ModelArchitecture: string
     {
         $encoderFeeds = [];
 
-        foreach ($model->session->inputs as ['name' => $inputName]) {
+        foreach ($model->session->inputs() as ['name' => $inputName]) {
             $encoderFeeds[$inputName] = $modelInputs[$inputName];
         }
 
-        $hasTokenTypeIds = in_array('token_type_ids', array_column($model->session->inputs, 'name'));
+        $hasTokenTypeIds = in_array('token_type_ids', array_column($model->session->inputs(), 'name'));
 
         if ($hasTokenTypeIds) {
             // Assign default `token_type_ids` (all zeroes) to the `encoderFeeds` if the model expects it,
@@ -196,6 +198,7 @@ enum ModelArchitecture: string
      * @param PreTrainedModel $model The model to use for the forward pass.
      * @param array $modelInputs The inputs to the model.
      * @return array The output of the forward pass.
+     * @throws MissingModelInputException|ModelExecutionException
      */
     protected function decoderForward(PreTrainedModel $model, array $modelInputs): array
     {
@@ -209,7 +212,7 @@ enum ModelArchitecture: string
 
         $useCacheBranch = !!$pastKeyValues;
 
-        $inputNames = array_column($model->session->inputs, 'name');
+        $inputNames = array_column($model->session->inputs(), 'name');
 
         if (in_array('use_cache_branch', $inputNames)) {
             $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], shape: [1]);
@@ -345,7 +348,7 @@ enum ModelArchitecture: string
 
         $useCacheBranch = !!$pastKeyValues;
 
-        $inputNames = array_column($model->decoderMergedSession->inputs, 'name');
+        $inputNames = array_column($model->decoderMergedSession->inputs(), 'name');
 
 
         if (in_array('use_cache_branch', $inputNames)) {

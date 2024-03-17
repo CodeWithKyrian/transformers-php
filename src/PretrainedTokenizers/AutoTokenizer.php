@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  *  Helper class which is used to instantiate pretrained tokenizers with the `from_pretrained` function.
@@ -84,11 +85,12 @@ class AutoTokenizer
         ?string $cacheDir = null,
         string  $revision = 'main',
         mixed   $legacy = null,
-
+        ?OutputInterface $output = null
     ): PretrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $legacy);
+            Tokenizer::load($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $legacy, $output);
+
 
         // Some tokenizers are saved with the "Fast" suffix, so we remove that if present.
         $tokenizerClassName = str_replace('Fast', '', $tokenizerConfig['tokenizer_class'] ?? 'PreTrainedTokenizer');
