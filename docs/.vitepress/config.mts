@@ -93,5 +93,15 @@ export default defineConfig({
     lastUpdated: true,
     markdown: {
         theme: {light: 'min-light', dark: 'min-dark'},
-    }
+    },
+    head: [
+        [
+            'script',
+            {
+                'defer': '',
+                'data-domain': 'codewithkyrian.github.io/transformers-php',
+                'src': 'https://analytics.codewithkyrian.com/js/script.js'
+            }
+        ]
+    ]
 })
