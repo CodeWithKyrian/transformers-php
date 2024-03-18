@@ -40,7 +40,7 @@ Here's how to perform text classification or sentiment analysis using the pipeli
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 $classifier = pipeline('sentiment-analysis');
-$result = $classifier("I love Transformers PHP!");
+$result = $classifier("I love TransformersPHP!");
 ```
 
 ::: details Click to view output
@@ -60,7 +60,7 @@ When running the `text-classification` pipeline, you can the following options:
   the array.
 
   ```php
-  $result = $classifier(['I love Transformers PHP!', 'I hate Transformers PHP!']);
+  $result = $classifier(['I love TransformersPHP!', 'I hate TransformersPHP!']);
   ```
 
 - ### `topK` *(int)*
@@ -68,7 +68,7 @@ When running the `text-classification` pipeline, you can the following options:
   number to receive that many top classifications, or use -1 to obtain all classifications from the model.
 
   ```php
-  $result = $classifier("I love Transformers PHP!", topK: 3);
+  $result = $classifier("I love TransformersPHP!", topK: 3);
   ```
 
   ::: details Click to view output
@@ -142,7 +142,7 @@ use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 $sentiment = pipeline('sentiment-analysis');
 
-$result = $sentiment('I love Transformers PHP!');
+$result = $sentiment('I love TransformersPHP!');
 ```
 
 ::: details Click to view output

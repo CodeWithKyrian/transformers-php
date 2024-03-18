@@ -1,6 +1,6 @@
-# Transformers PHP Documentation
+# TransformersPHP Documentation
 
-Welcome to the official documentation for Transformers PHP. You can find the online version of this documentation
+Welcome to the official documentation for TransformersPHP. You can find the online version of this documentation
 at [https://codewithkyrian.github.io/transformers-docs/](https://codewithkyrian.github.io/transformers-docs/).
 
 ## Contributing

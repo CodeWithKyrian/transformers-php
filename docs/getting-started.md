@@ -6,7 +6,7 @@ outline: deep
 
 ## Prerequisites
 
-Before installing Transformers PHP, ensure your system meets the following requirements:
+Before installing TransformersPHP, ensure your system meets the following requirements:
 
 - PHP 8.1 or above
 - Composer
@@ -33,13 +33,13 @@ models:
 > platform where the code will be executed. For example, if you're using a Docker container, run the `install` command
 > inside that container.
 
-This command sets up everything you need to start using pre-trained ONNX models with Transformers PHP.
+This command sets up everything you need to start using pre-trained ONNX models with TransformersPHP.
 
 ## Pre-Download Models
 
-By default, Transformers PHP automatically retrieves model weights (ONNX format) from the Hugging Face model hub when
+By default, TransformersPHP automatically retrieves model weights (ONNX format) from the Hugging Face model hub when
 you first use a pipeline or pretrained model. To save time and enhance the user experience, it's a good idea to download
-the ONNX model weights ahead of time, especially for larger models. Transformers PHP includes a command-line tool to
+the ONNX model weights ahead of time, especially for larger models. TransformersPHP includes a command-line tool to
 facilitate this:
 
 ```bash
@@ -70,7 +70,7 @@ Arguments:
       can use the shorthand `-q` instead of `--quantized`. Example: `--quantized=false`, `-q false`.
 
 The `download` command will download the model weights and save them to the cache directory. The next time you use the
-model, Transformers PHP will use the cached weights instead of downloading them again.
+model, TransformersPHP will use the cached weights instead of downloading them again.
 
 > [!CAUTION]
 > Remember to add your cache directory to your `.gitignore` file to avoid committing the downloaded models to your git
@@ -78,13 +78,13 @@ model, Transformers PHP will use the cached weights instead of downloading them 
 
 ## Use Custom Models
 
-Since Transformers PHP operates exclusively with ONNX models, you'll need to convert any machine learning models you've
+Since TransformersPHP operates exclusively with ONNX models, you'll need to convert any machine learning models you've
 developed or plan to use from PyTorch, TensorFlow, or JAX into the ONNX format.
 
 For this conversion process, we recommend using
 the [conversion script](https://github.com/xenova/transformers.js/blob/main/scripts/convert.py)
 provided by the Transformers.js project. This script is designed to convert models from PyTorch, TensorFlow, and JAX to
-ONNX format, and most importantly, outputs it in a folder structure that is compatible with Transformers PHP. Behind the
+ONNX format, and most importantly, outputs it in a folder structure that is compatible with TransformersPHP. Behind the
 scenes, the script uses [🤗 Optimum](https://huggingface.co/docs/optimum) from Hugging Face to convert and quantize the
 models.
 
@@ -108,7 +108,7 @@ The steps for conversion are simple:
   Hugging Face account for sharing and storage.
 
 Whether you convert using the script, or the noteboook, or using TensorFlow's `tf.saved_model` or
-PyTorch's `torch.onnx.export`, just make sure the folder structure of the output is compatible with Transformers PHP.
+PyTorch's `torch.onnx.export`, just make sure the folder structure of the output is compatible with TransformersPHP.
 The script and the DOcker image already handle this for you.
 
 The folder structure should look like this:
@@ -137,7 +137,7 @@ the [Optimum documentation.](https://huggingface.co/docs/optimum/main/en/exporte
 
 ## PHP FFI Extension
 
-Transformers PHP uses the PHP FFI extension to interact with the ONNX runtime. The FFI extension is included by default
+TransformersPHP uses the PHP FFI extension to interact with the ONNX runtime. The FFI extension is included by default
 in PHP 7.4 and later, but it may not be enabled by default. To check if the FFI extension is enabled, run the following
 command:
 
@@ -165,7 +165,7 @@ After making these changes, restart your web server or PHP-FPM service, and you 
 
 Just-In-Time (JIT) compilation is a feature that allows PHP to compile and execute code at runtime. JIT compilation can
 improve the performance of your application by compiling frequently executed code paths into machine code. While you
-can use Transformers PHP without JIT compilation, enabling it can provide a significant performance boost (> 2x in some
+can use TransformersPHP without JIT compilation, enabling it can provide a significant performance boost (> 2x in some
 cases).
 
 JIT compilation is available in PHP 8.0 and later, but it may not be enabled by default. To enable JIT compilation,

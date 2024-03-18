@@ -4,7 +4,7 @@ outline: deep
 
 # Pipelines
 
-Pipelines are a core feature of Transformers PHP, designed to simplify the use of machine learning models for various
+Pipelines are a core feature of TransformersPHP, designed to simplify the use of machine learning models for various
 natural language processing (NLP) tasks. They encapsulate the entire process of running a model, from input
 preprocessing to post-processing the output, making it easy to integrate advanced NLP capabilities into
 your applications.
@@ -82,7 +82,7 @@ For tasks like sentiment analysis, text generation, or named entity recognition 
 an array of strings as input. Here's an example using the sentiment analysis pipeline created earlier:
 
 ```php
-$result = $classifier("Transformers PHP makes NLP easy and accessible.");
+$result = $classifier("TransformersPHP makes NLP easy and accessible.");
 ```
 
 ### Handling Multiple Inputs
@@ -93,7 +93,7 @@ an array of strings to analyze multiple texts at once:
 
 ```php
 $results = $classifier([
-    "I love using Transformers PHP for my projects.",
+    "I love using TransformersPHP for my projects.",
     "The weather today is dreadful."
 ]);
 ```
@@ -106,7 +106,7 @@ the task you're using the pipelines for. For example, for translation, you can s
 ```php
 $translator = pipeline('translation', 'Xenova/m2m100_418M');
 
-$result = $translator('I love Transformers PHP!', srcLang: 'en', tgtLang: 'fr');
+$result = $translator('I love TransformersPHP!', srcLang: 'en', tgtLang: 'fr');
 ```
 
 Details on the specific options available for each pipeline task are provided within the documentation for that task.
@@ -134,7 +134,7 @@ and for the multiple input classifier:
 and for the translation task:
 
 ```php
-['translation_text' => 'J\'aime Transformers PHP!']
+['translation_text' => 'J\'aime TransformersPHP!']
 ```
 
 ## Supported Tasks
@@ -157,7 +157,7 @@ and for the translation task:
 
 ## Supported Model Architectures
 
-Transformers PHP supports a wide range of model architectures for various NLP tasks. If the specific model you're
+TransformersPHP supports a wide range of model architectures for various NLP tasks. If the specific model you're
 interested in isn't listed here, you can open an issue on the repository so we can add support for it. Here's a list of
 currently tested and supported model architectures:
 

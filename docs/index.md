@@ -3,7 +3,7 @@
 layout: home
 
 hero:
-  name: "Transformers PHP"
+  name: "TransformersPHP"
   text: ""
   tagline: State-of-the-art Machine Learning for PHP. Run Transformers natively in your PHP projects
   actions:

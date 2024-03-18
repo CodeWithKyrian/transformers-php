@@ -2,7 +2,7 @@ import {defineConfig} from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-    title: "Transformers PHP",
+    title: "TransformersPHP",
     description: "State-of-the-art Machine Learning for PHP. Run Transformers in PHP",
     base: "/transformers-php/",
     themeConfig: {

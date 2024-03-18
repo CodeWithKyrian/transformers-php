@@ -4,12 +4,12 @@ outline: deep
 
 # Configuration
 
-You can configure Transformers PHP for your specific use case. This page provides an overview of the available
+You can configure TransformersPHP for your specific use case. This page provides an overview of the available
 configuration options.
 
 ## Overview
 
-Configuring Transformers PHP involves setting parameters such as the cache directory, the remote host for downloading
+Configuring TransformersPHP involves setting parameters such as the cache directory, the remote host for downloading
 models, and the remote path template. These settings allow you to tailor how and where models are stored and retrieved.
 
 ```php
@@ -31,13 +31,13 @@ use Codewithkyrian\Transformers\Transformers;
 
 ### `setCacheDir(?string $cacheDir)`
 
-The cache directory is where Transformers PHP stores the downloaded ONNX models. By default, this is set to
+The cache directory is where TransformersPHP stores the downloaded ONNX models. By default, this is set to
 the `.transformers-cache/models` directory from the root of your project. Please ensure this directory is writable by
 your application.
 
 ### `setRemoteHost(string $remoteHost)`
 
-The remote host defines where Transformers PHP looks to download model files. The default host
+The remote host defines where TransformersPHP looks to download model files. The default host
 is https://huggingface.co, which is where Hugging Face hosts its models. If you host your models on a different server
 or use a private repository for models, you can set this to the base URL of that server.
 
@@ -104,7 +104,7 @@ establish the default configuration, else, you will not be able to run any infer
 ### Standalone PHP Projects
 
 In a standalone PHP project, the best place to add global configuration is in your project's bootstrap or initialization
-script. This script should run before any feature utilizing the Transformers PHP library is called.
+script. This script should run before any feature utilizing the TransformersPHP library is called.
 
 ::: code-group
 
@@ -175,6 +175,6 @@ public function boot()
 
 ## Next Steps
 
-Now that you've learned how to configure Transformers PHP, you can start using the library to download and use
+Now that you've learned how to configure TransformersPHP, you can start using the library to download and use
 pre-trained ONNX models. For more information on how to use the library, check out
 the [Getting Started](getting-started.md) guide.

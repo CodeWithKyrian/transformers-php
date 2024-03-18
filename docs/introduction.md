@@ -4,18 +4,18 @@ outline: deep
 
 # Introduction
 
-## What is Transformers PHP
+## What is TransformersPHP
 
-Transformers PHP is a toolkit for PHP developers to add machine learning magic to their projects easily. You've probably
+TransformersPHP is a toolkit for PHP developers to add machine learning magic to their projects easily. You've probably
 heard about the Python library from Hugging Face, famous for doing awesome stuff with text, like summarizing long
 articles, translating between languages, and even image and audio related tasks. Transformers
 PHP brings this capability to the PHP world.
 
 ### Using Pre-trained Models
 
-The core idea behind Transformers PHP is to let you use models that are already trained. "Pre-trained models" are just
+The core idea behind TransformersPHP is to let you use models that are already trained. "Pre-trained models" are just
 machine learning models that have been fed and learned from massive amounts of text data. They're ready to go out of the
-box and can perform a wide range of tasks. With Transformers PHP, these models run directly in your PHP application.
+box and can perform a wide range of tasks. With TransformersPHP, these models run directly in your PHP application.
 That means you don't need to use external services or APIs to process your data. Everything happens locally, on your
 server.
 
@@ -30,10 +30,10 @@ different platforms, including your PHP applications.
 
 ### Inspired by the Best
 
-The development of Transformers PHP was inspired by the [Xenova/transformers](https://github.com/xenova/transformers.js)
+The development of TransformersPHP was inspired by the [Xenova/transformers](https://github.com/xenova/transformers.js)
 project, a similar initiative for JavaScript using ONNX runtime too. This shared inspiration means that most models
 prepared for use with [Xenova/transformers](https://github.com/xenova/transformers.js), are also compatible with
-Transformers PHP. It creates a seamless bridge between the machine learning world and PHP development, allowing you to
+TransformersPHP. It creates a seamless bridge between the machine learning world and PHP development, allowing you to
 leverage powerful models within your applications.
 
 ## Quick tour
@@ -95,8 +95,8 @@ let out = await pipe('I love transformers!');
 
 You can see how similar it is across languages, making it easier if you're switching between them or learning a new one.
 
-## What Transformers PHP is Not
+## What TransformersPHP is Not
 
 While the original HuggingFace Transformers library in Python is a versatile tool supporting both the training of
-machine learning models and inference (using models to make predictions), Transformers PHP allows only inference. This
-means that you cannot train new models from scratch, or fine-tune pretrained models using Transformers PHP.
+machine learning models and inference (using models to make predictions), TransformersPHP allows only inference. This
+means that you cannot train new models from scratch, or fine-tune pretrained models using TransformersPHP.
