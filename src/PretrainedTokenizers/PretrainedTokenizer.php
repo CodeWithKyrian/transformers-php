@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
-use ByJG\JinjaPhp\Template;
-use ByJG\JinjaPhp\Undefined\DebugUndefined;
+use Codewithkyrian\Jinja\Template;
 use Codewithkyrian\Transformers\Decoders\Decoder;
 use Codewithkyrian\Transformers\Normalizers\Normalizer;
 use Codewithkyrian\Transformers\PostProcessors\PostProcessedOutput;
@@ -14,7 +13,6 @@ use Codewithkyrian\Transformers\PostProcessors\PostProcessor;
 use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
-use Codewithkyrian\Transformers\Utils\JinjaTemplate;
 use Codewithkyrian\Transformers\Utils\Tensor;
 
 class PretrainedTokenizer
@@ -671,8 +669,7 @@ class PretrainedTokenizer
 
         if ($compiledTemplate === null) {
             // TODO: Use Jinja to compile the template
-            $compiledTemplate =  new JinjaTemplate($chatTemplate);
-//            $compiledTemplate->withUndefined(new DebugUndefined());
+            $compiledTemplate =  new Template($chatTemplate);
             $this->compiledTemplateCache[$chatTemplate] = $compiledTemplate;
         }
 
@@ -683,6 +680,7 @@ class PretrainedTokenizer
                 $specialTokensMap[$key] = $value;
             }
         }
+
 
         $rendered = $compiledTemplate->render(array_merge([
             'messages' => $conversation,

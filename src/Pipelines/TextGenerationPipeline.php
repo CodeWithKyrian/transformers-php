@@ -67,6 +67,7 @@ class TextGenerationPipeline extends Pipeline
         $generationConfig = new GenerationConfig($snakeCasedArgs);
 
         $isBatched = is_array($texts);
+
         if (!$isBatched) {
             $texts = [$texts];
         }

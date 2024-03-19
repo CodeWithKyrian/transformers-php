@@ -18,7 +18,8 @@
     "ankane/onnxruntime": "^0.2.0",
     "ext-gd": "*",
     "rindow/rindow-math-matrix": "^1.2",
-    "spatie/fork": "^1.2"
+    "spatie/fork": "^1.2",
+    "codewithkyrian/jinja-php": "^1.0"
   },
   "require-dev": {
     "pestphp/pest": "^2.31",
