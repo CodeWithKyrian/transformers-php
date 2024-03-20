@@ -369,6 +369,31 @@ class PretrainedTokenizer
     }
 
     /**
+     * Tokenize the given text(s).
+     *
+     * @param string|array $text The text to tokenize.
+     * @param string|array|null $textPair Optional second sequence to be encoded. If set, must be the same type as text.
+     * @param bool|string $padding Whether to pad the input sequences.
+     * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
+     * @param bool $truncation Whether to truncate the input sequences.
+     * @param int|null $maxLength Maximum length of the returned list and optionally padding length.
+     *
+     * @return array{input_ids: Tensor, attention_mask: Tensor, token_type_ids: Tensor|null}
+     */
+    public function tokenize(
+        string|array      $text,
+        string|array|null $textPair = null,
+        bool|string       $padding = false,
+        bool              $addSpecialTokens = true,
+        bool              $truncation = false,
+        ?int              $maxLength = null,
+    ): array
+    {
+        return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength);
+    }
+
+
+    /**
      * Encodes a single text using the preprocessor pipeline of the tokenizer.
      *
      * @param string|null $text The text to encode.

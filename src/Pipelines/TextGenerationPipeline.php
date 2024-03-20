@@ -64,7 +64,7 @@ class TextGenerationPipeline extends Pipeline
             $snakeCasedArgs[$this->camelCaseToSnakeCase($key)] = $value;
         }
 
-        $generateKwargs = new GenerationConfig($snakeCasedArgs);
+        $generationConfig = new GenerationConfig($snakeCasedArgs);
 
         $isBatched = is_array($texts);
         if (!$isBatched) {
@@ -75,14 +75,14 @@ class TextGenerationPipeline extends Pipeline
         $addSpecialTokens = $this->model->config['add_special_tokens'] ?? false;
 
         $this->tokenizer->paddingSide = 'left';
-        ['input_ids' => $inputIds, 'attention_mask' => $attentionMask] = $this->tokenizer->__invoke(
+        ['input_ids' => $inputIds, 'attention_mask' => $attentionMask] = $this->tokenizer->tokenize(
             $texts,
             padding: true,
             addSpecialTokens: $addSpecialTokens,
             truncation: true
         );
 
-        $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
+        $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generationConfig, streamer: $streamer);
 
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 

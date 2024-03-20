@@ -684,7 +684,7 @@ class PreTrainedModel
         Tensor               $inputs,
         ?GenerationConfig    $generationConfig = null,
         ?LogitsProcessorList $logitsProcessor = null,
-        array                $inputsAttentionMask = null,
+        Tensor                $inputsAttentionMask = null,
         ?Streamer            $streamer = null,
     ): array
     {
