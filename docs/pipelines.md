@@ -71,6 +71,11 @@ this allows you to modify the cache directory to save and look for models for th
 This specified model version to use. It can be a branch name, a tag name, or a commit id. Since HuggingFace uses a
 git-based system for storing models and other artifacts, so ``revision`` can be any identifier allowed by git.
 
+### `modelFilename`
+
+This specified the filename of the model in the repository. It's particularly used for decoder only models. It defaults
+to `decoder_model_merged` but you can set it to use another if the repository doesn't use that nomenclature.
+
 ## Running a Pipeline
 
 Once you've created a pipeline, running it is straightforward. All pipelines are designed to accept input text as their
@@ -143,24 +148,23 @@ and for the translation task:
 
 | Task                                                                              | ID                                            | Description                                                                                    | Supported? |
 |-----------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------|------------|
-| [Fill-Mask](/fill-mask)                                                      | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
-| [Question Answering](/question-answering)                                    | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
-| [Sentence Similarity](/feature-extraction)                                   | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
-| [Summarization](/summarization)                                              | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
+| [Fill-Mask](/fill-mask)                                                           | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
+| [Question Answering](/question-answering)                                         | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
+| [Sentence Similarity](/feature-extraction)                                        | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
+| [Summarization](/summarization)                                                   | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
 | [Table Question Answering](https://huggingface.co/tasks/table-question-answering) | `table-question-answering`                    | Answering a question about information from a given table.                                     | ❌          |
-| [Text Classification](/text-classification)                                  | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
-| [Text Generation](/text-generation)                                          | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
-| [Text-to-text Generation](/text-to-text-generation)                          | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
-| [Token Classification](/token-classification)                                | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
-| [Translation](/translation)                                                  | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
-| [Zero-Shot Classification](/zero-shot-classification)                        | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
+| [Text Classification](/text-classification)                                       | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
+| [Text Generation](/text-generation)                                               | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
+| [Text-to-text Generation](/text-to-text-generation)                               | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
+| [Token Classification](/token-classification)                                     | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
+| [Translation](/translation)                                                       | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
+| [Zero-Shot Classification](/zero-shot-classification)                             | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
 
 ## Supported Model Architectures
 
 TransformersPHP supports a wide range of model architectures for various NLP tasks. If the specific model you're
 interested in isn't listed here, you can open an issue on the repository so we can add support for it. Here's a list of
 currently tested and supported model architectures:
-
 
 1. **[ALBERT](https://huggingface.co/docs/transformers/model_doc/albert)** (from Google Research and the Toyota
    Technological Institute at Chicago) released with the

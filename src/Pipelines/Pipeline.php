@@ -55,12 +55,13 @@ class Pipeline
  * @throws UnsupportedTaskException If the task is not supported.
  */
 function pipeline(
-    string|Task $task,
-    ?string     $modelName = null,
-    bool        $quantized = true,
-    ?array      $config = null,
-    ?string     $cacheDir = null,
-    string      $revision = 'main',
+    string|Task      $task,
+    ?string          $modelName = null,
+    bool             $quantized = true,
+    ?array           $config = null,
+    ?string          $cacheDir = null,
+    string           $revision = 'main',
+    ?string          $modelFilename = null,
     ?OutputInterface $output = null
 ): Pipeline
 {
@@ -75,7 +76,7 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision, $output);
+    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
 
     $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, $output);
 
