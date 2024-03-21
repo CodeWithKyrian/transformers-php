@@ -8,6 +8,8 @@ All notable changes to `transformers-php` will be documented in this file.
 
 * feat: Add ability to use chat templates in Text Generation by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/1
 * bugfix: Autoload errors for `PretrainedModel` on case-sensitive operating systems by @CodeWithKyrian  in https://github.com/CodeWithKyrian/transformers-php/pull/4
+* feat: Bump OnnxRuntime PHP to 0.2.0 in https://github.com/CodeWithKyrian/transformers-php/commit/b3331623cf6696aacbbad0f8c33530086404424d
+* feat: Improve download and install command interfaces to show progress bar in https://github.com/CodeWithKyrian/transformers-php/commit/b3331623cf6696aacbbad0f8c33530086404424d
 
 **Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.1.0...0.2.0
 
