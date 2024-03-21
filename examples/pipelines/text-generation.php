@@ -11,7 +11,7 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 ini_set('memory_limit', -1);
 //
-$generator = pipeline('text-generation', 'Xenova/gpt2');
+$generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
 
 $streamer = StdOutStreamer::make($generator->tokenizer);
 
@@ -21,7 +21,9 @@ $messages = [
     ['role' => 'user', 'content' => 'I am doing great. What about you?'],
 ];
 
-$output = $generator("I love going to school but I don't",
+$input = $generator->tokenizer->applyChatTemplate($messages, addGenerationPrompt: true, tokenize: false);
+
+$output = $generator($messages,
     streamer: $streamer,
     maxNewTokens: 128,
     doSample: true,
