@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\Models\Auto;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
-use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -38,7 +38,7 @@ abstract class PretrainedMixin
      * @param string|null $cacheDir The cache directory to save the model in.
      * @param string $revision The revision of the model.
      * @param string|null $modelFilename The filename of the model.
-     * @return PreTrainedModel The instantiated pretrained model.
+     * @return PretrainedModel The instantiated pretrained model.
      */
     public static function fromPretrained(
         string  $modelNameOrPath,
@@ -48,7 +48,7 @@ abstract class PretrainedMixin
         string  $revision = 'main',
         ?string $modelFilename = null,
         ?OutputInterface $output = null
-    ): PreTrainedModel
+    ): PretrainedModel
     {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
 
@@ -75,7 +75,7 @@ abstract class PretrainedMixin
         if (static::BASE_IF_FAIL) {
             echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.\n";
 
-            return PreTrainedModel::fromPretrained(
+            return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,
                 quantized: $quantized,
                 config: $config,

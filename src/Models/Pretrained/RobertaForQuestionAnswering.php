@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\QuestionAnsweringModelOutput;
 /**
  * RobertaForQuestionAnswering class for performing question answering on Roberta models.
  */
-class RobertaForQuestionAnswering extends RobertaPreTrainedModel
+class RobertaForQuestionAnswering extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): QuestionAnsweringModelOutput
     {

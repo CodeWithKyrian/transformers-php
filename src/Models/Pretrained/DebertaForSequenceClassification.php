@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 /**
  * DebertaForSequenceClassification is a class representing a DeBERTa model for sequence classification.
  */
-class DebertaForSequenceClassification extends DebertaPreTrainedModel
+class DebertaForSequenceClassification extends DebertaPretrainedModel
 {
     public function __invoke(array $modelInputs): SequenceClassifierOutput
     {

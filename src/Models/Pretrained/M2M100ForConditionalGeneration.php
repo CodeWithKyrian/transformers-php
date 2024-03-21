@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use OnnxRuntime\InferenceSession;
 
-class M2M100ForConditionalGeneration extends M2M100PreTrainedModel
+class M2M100ForConditionalGeneration extends M2M100PretrainedModel
 {
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;

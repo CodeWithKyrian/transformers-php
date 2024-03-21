@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * BertForMaskedLM class for performing masked language modeling on BERT models.
  */
-class BertForMaskedLM extends BertPreTrainedModel
+class BertForMaskedLM extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

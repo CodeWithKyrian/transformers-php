@@ -11,7 +11,7 @@ use Codewithkyrian\Transformers\Models\Output\TokenClassifierOutput;
 /**
  * RobertaForTokenClassification class for performing token classification on Roberta models.
  */
-class RobertaForTokenClassification extends RobertaPreTrainedModel
+class RobertaForTokenClassification extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): TokenClassifierOutput
     {

@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\TokenClassifierOutput;
 /**
  * DebertaForTokenClassification is a class representing a DeBERTa model for token classification.
  */
-class DebertaForTokenClassification extends DebertaPreTrainedModel
+class DebertaForTokenClassification extends DebertaPretrainedModel
 {
     public function __invoke(array $modelInputs): TokenClassifierOutput
     {

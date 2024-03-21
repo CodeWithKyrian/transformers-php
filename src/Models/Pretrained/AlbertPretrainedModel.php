@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
-class RobertaPreTrainedModel extends PreTrainedModel
+class AlbertPretrainedModel extends PretrainedModel
 {
 
 }

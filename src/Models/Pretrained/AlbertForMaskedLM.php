@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * AlbertForMaskedLM class for performing masked language modeling on albert models.
  */
-class AlbertForMaskedLM extends BertPreTrainedModel
+class AlbertForMaskedLM extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

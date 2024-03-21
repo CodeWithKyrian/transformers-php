@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * DeBERTa-V2 Model with a `language modeling` head on top.
  */
-class DebertaV2ForMaskedLM extends DebertaV2PreTrainedModel
+class DebertaV2ForMaskedLM extends DebertaV2PretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

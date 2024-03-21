@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\TokenClassifierOutput;
 /**
  * BertForTokenClassification is a class representing a BERT model for token classification.
  */
-class BertForTokenClassification extends BertPreTrainedModel
+class BertForTokenClassification extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): TokenClassifierOutput
     {

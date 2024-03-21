@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 /**
  * AlbertForQuestionAnswering is a class representing a Albert model for sequence classification.
  */
-class AlbertForQuestionAnswering extends BertPreTrainedModel
+class AlbertForQuestionAnswering extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): SequenceClassifierOutput
     {
