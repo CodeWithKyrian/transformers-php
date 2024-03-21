@@ -37,7 +37,7 @@ use function Codewithkyrian\Transformers\Utils\array_some;
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
  */
-class PreTrainedModel
+class PretrainedModel
 {
     public string $mainInputName = 'input_ids';
 

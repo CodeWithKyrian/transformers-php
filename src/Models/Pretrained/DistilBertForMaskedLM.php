@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * DistilBertForMaskedLM class for performing masked language modeling on DistilBERT models.
  */
-class DistilBertForMaskedLM extends RobertaPreTrainedModel
+class DistilBertForMaskedLM extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

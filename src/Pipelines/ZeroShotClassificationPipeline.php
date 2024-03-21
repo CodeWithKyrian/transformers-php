@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
-use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
 
@@ -58,7 +58,7 @@ class ZeroShotClassificationPipeline extends Pipeline
 
     protected mixed $contradictionId;
 
-    public function __construct(Task|string $task, PreTrainedModel $model, ?PretrainedTokenizer $tokenizer = null, ?string $processor = null)
+    public function __construct(Task|string $task, PretrainedModel $model, ?PretrainedTokenizer $tokenizer = null, ?string $processor = null)
     {
         parent::__construct($task, $model, $tokenizer, $processor);
 

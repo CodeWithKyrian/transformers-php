@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\QuestionAnsweringModelOutput;
 /**
  * MobileBert Model with a span classification head on top for extractive question-answering tasks
  */
-class MobileBertForQuestionAnswering extends MobileBertPreTrainedModel
+class MobileBertForQuestionAnswering extends MobileBertPretrainedModel
 {
     public function __invoke(array $modelInputs): QuestionAnsweringModelOutput
     {

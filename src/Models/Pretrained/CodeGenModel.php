@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\Models\Pretrained;
 /**
  * CodeGenModel is a class representing a code generation model without a language model head.
  */
-class CodeGenModel extends CodeGenPreTrainedModel
+class CodeGenModel extends CodeGenPretrainedModel
 {
 
 }

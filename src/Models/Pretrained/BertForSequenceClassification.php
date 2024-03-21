@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 /**
  * BertForSequenceClassification is a class representing a BERT model for sequence classification.
  */
-class BertForSequenceClassification extends BertPreTrainedModel
+class BertForSequenceClassification extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): SequenceClassifierOutput
     {

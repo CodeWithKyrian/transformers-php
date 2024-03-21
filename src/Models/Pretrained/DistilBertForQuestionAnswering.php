@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\QuestionAnsweringModelOutput;
 /**
  * DistilBertForQuestionAnswering is a class representing a DistilBERT model for question answering.
  */
-class DistilBertForQuestionAnswering extends BertPreTrainedModel
+class DistilBertForQuestionAnswering extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): QuestionAnsweringModelOutput
     {

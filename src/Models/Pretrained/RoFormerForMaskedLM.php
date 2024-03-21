@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * RoFormer Model with a `language modeling` head on top.
  */
-class RoFormerForMaskedLM extends RoFormerPreTrainedModel
+class RoFormerForMaskedLM extends RoFormerPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

@@ -13,7 +13,7 @@ use OnnxRuntime\InferenceSession;
 /**
  * T5Model is a class representing a T5 model for conditional generation.
  */
-class T5ForConditionalGeneration extends T5PreTrainedModel
+class T5ForConditionalGeneration extends T5PretrainedModel
 {
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;

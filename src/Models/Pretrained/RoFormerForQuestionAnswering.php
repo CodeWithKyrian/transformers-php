@@ -11,7 +11,7 @@ use Codewithkyrian\Transformers\Models\Output\QuestionAnsweringModelOutput;
  * RoFormer Model with a span classification head on top for extractive question-answering tasks like SQuAD
  * (a linear layers on top of the hidden-states output to compute `span start logits` and `span end logits`).
  */
-class RoFormerForQuestionAnswering extends RobertaPreTrainedModel
+class RoFormerForQuestionAnswering extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): QuestionAnsweringModelOutput
     {

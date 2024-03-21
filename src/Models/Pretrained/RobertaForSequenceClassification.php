@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 /**
  * RobertaForSequenceClassification class for performing sequence classification on Roberta models.
  */
-class RobertaForSequenceClassification extends RobertaPreTrainedModel
+class RobertaForSequenceClassification extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): SequenceClassifierOutput
     {

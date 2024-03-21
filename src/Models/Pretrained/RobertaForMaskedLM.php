@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * RobertaForMaskedLM class for performing masked language modeling on Roberta models.
  */
-class RobertaForMaskedLM extends RobertaPreTrainedModel
+class RobertaForMaskedLM extends RobertaPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

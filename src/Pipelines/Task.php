@@ -11,7 +11,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
-use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -31,7 +31,7 @@ enum Task: string
     case TokenClassification = 'token-classification';
     case Ner = 'ner';
 
-    public function getPipeline(PreTrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
+    public function getPipeline(PretrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
     {
         return match ($this) {
             self::SentimentAnalysis,
@@ -93,7 +93,7 @@ enum Task: string
         string           $revision = 'main',
         ?string          $modelFilename = null,
         ?OutputInterface $output = null
-    ): PreTrainedModel
+    ): PretrainedModel
     {
         return match ($this) {
             self::SentimentAnalysis,

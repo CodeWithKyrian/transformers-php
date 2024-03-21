@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
-class GPTJModel extends GPTJPreTrainedModel
+class GPTJModel extends GPTJPretrainedModel
 {
 
 }

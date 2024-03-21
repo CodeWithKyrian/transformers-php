@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
-use Codewithkyrian\Transformers\Models\Pretrained\PreTrainedModel;
+use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -14,7 +14,7 @@ class Pipeline
 {
     public function __construct(
         protected string|Task       $task,
-        protected PreTrainedModel   $model,
+        protected PretrainedModel   $model,
         public ?PretrainedTokenizer $tokenizer = null,
         protected ?string           $processor = null,
     )

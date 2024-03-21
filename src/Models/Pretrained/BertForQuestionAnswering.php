@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Output\QuestionAnsweringModelOutput;
 /**
  * BertForQuestionAnswering is a class representing a BERT model for question answering.
  */
-class BertForQuestionAnswering extends BertPreTrainedModel
+class BertForQuestionAnswering extends BertPretrainedModel
 {
     public function __invoke(array $modelInputs): QuestionAnsweringModelOutput
     {

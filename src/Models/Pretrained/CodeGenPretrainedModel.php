@@ -7,23 +7,22 @@ namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use OnnxRuntime\InferenceSession;
 
-class GPT2PreTrainedModel extends PreTrainedModel
+class CodeGenPretrainedModel extends PretrainedModel
 {
     protected int $numHeads;
     protected int $numLayers;
     protected int $dimKv;
 
     public function __construct(
-        AutoConfig               $config,
-        InferenceSession         $session,
-        public ModelArchitecture $modelArchitecture,
-        public GenerationConfig  $generationConfig
+        AutoConfig        $config,
+        InferenceSession  $session,
+        ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
+                          ...$args
     )
     {
-        parent::__construct($config, $session, $modelArchitecture);
+        parent::__construct($config, $session, $modelArchitecture, $args);
 
         // config doesn't contain pad_token_id, so we assume it is the eos_token_id
         $this->config['pad_token_id'] = $this->config['eos_token_id'];
@@ -32,5 +31,6 @@ class GPT2PreTrainedModel extends PreTrainedModel
         $this->numHeads = $this->config['n_head'];
         $this->numLayers = $this->config['n_layer'];
         $this->dimKv = $this->config['n_embd'] / $this->numHeads;
+
     }
 }

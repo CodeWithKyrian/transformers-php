@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 /**
  * MobileBertForMaskedLM is a class representing a MobileBERT model for masking task.
  */
-class MobileBertForMaskedLM extends MobileBertPreTrainedModel
+class MobileBertForMaskedLM extends MobileBertPretrainedModel
 {
     public function __invoke(array $modelInputs): MaskedLMOutput
     {

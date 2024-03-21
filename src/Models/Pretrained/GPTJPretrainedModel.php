@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use OnnxRuntime\InferenceSession;
 
-class GPTJPreTrainedModel extends PretrainedModel
+class GPTJPretrainedModel extends PretrainedModel
 {
     protected int $numHeads;
     protected int $numLayers;

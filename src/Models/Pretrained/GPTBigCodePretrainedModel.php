@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use OnnxRuntime\InferenceSession;
 
-class GPTBigCodePreTrainedModel extends PreTrainedModel
+class GPTBigCodePretrainedModel extends PretrainedModel
 {
     protected int $numHeads;
     protected int $numLayers;
