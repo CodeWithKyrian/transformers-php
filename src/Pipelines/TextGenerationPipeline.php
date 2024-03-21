@@ -66,7 +66,14 @@ class TextGenerationPipeline extends Pipeline
 
         $generationConfig = new GenerationConfig($snakeCasedArgs);
 
+        $isChatMode = $this->isChatMode($texts);
+
+        if ($isChatMode) {
+            $texts = $this->tokenizer->applyChatTemplate($texts, addGenerationPrompt: true, tokenize: false);
+        }
+
         $isBatched = is_array($texts);
+
         if (!$isBatched) {
             $texts = [$texts];
         }
@@ -86,6 +93,7 @@ class TextGenerationPipeline extends Pipeline
 
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
+
         $toReturn = array_fill(0, count($texts), []);
 
         for ($i = 0; $i < count($decoded); ++$i) {
@@ -102,5 +110,12 @@ class TextGenerationPipeline extends Pipeline
     protected function camelCaseToSnakeCase(string $input): string
     {
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+    }
+
+    // Detect chat mode
+    protected function isChatMode(string|array $texts): bool
+    {
+        return is_array($texts) && isset($texts[0]) && is_array($texts[0]) && !array_is_list($texts[0]);
+
     }
 }

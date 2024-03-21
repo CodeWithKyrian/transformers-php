@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
+use Codewithkyrian\Jinja\Template;
 use Codewithkyrian\Transformers\Decoders\Decoder;
 use Codewithkyrian\Transformers\Normalizers\Normalizer;
 use Codewithkyrian\Transformers\PostProcessors\PostProcessedOutput;
@@ -18,7 +19,7 @@ class PretrainedTokenizer
 {
     protected bool $returnTokenTypeIds = false;
 
-    protected bool $warnedAboutChatTemplate;
+    protected bool $warnedAboutChatTemplate = false;
 
     protected string $defaultChatTemplate = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>' + '\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}";
 
@@ -68,7 +69,7 @@ class PretrainedTokenizer
     protected bool $legacy;
 
     protected mixed $chatTemplate;
-    protected \SplObjectStorage $compiledTemplateCache;
+    protected array $compiledTemplateCache = [];
 
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
@@ -145,8 +146,6 @@ class PretrainedTokenizer
         $this->legacy = false;
 
         $this->chatTemplate = $tokenizerConfig['chat_template'] ?? null;
-        $this->compiledTemplateCache = new \SplObjectStorage();
-
     }
 
     /**
@@ -335,7 +334,7 @@ class PretrainedTokenizer
             if (
                 array_reduce($encodedTokens, function ($carry, $x) use ($encodedTokens) {
                     foreach ($x as $key => $value) {
-                        if (count($value) !== count($encodedTokens[0][$key] ?? [])) {
+                        if (count($value ?? []) !== count($encodedTokens[0][$key] ?? [])) {
                             return true;
                         }
                     }
@@ -610,10 +609,10 @@ class PretrainedTokenizer
 
     protected function getDefaultChatTemplate(): string
     {
-        if (!$this->warnedAboutChatTemplate) {
-            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
-            $this->warnedAboutChatTemplate = true;
-        }
+//        if (!$this->warnedAboutChatTemplate) {
+//            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
+//            $this->warnedAboutChatTemplate = true;
+//        }
 
         return $this->defaultChatTemplate;
     }
@@ -670,7 +669,7 @@ class PretrainedTokenizer
 
         if ($compiledTemplate === null) {
             // TODO: Use Jinja to compile the template
-            $compiledTemplate = null;
+            $compiledTemplate =  new Template($chatTemplate);
             $this->compiledTemplateCache[$chatTemplate] = $compiledTemplate;
         }
 
@@ -695,10 +694,10 @@ class PretrainedTokenizer
                 addSpecialTokens: false,
                 truncation: $truncation,
                 maxLength: $maxLength
-            )['input_ids'];
+            )['input_ids']->toArray();
         }
 
-        return $rendered;
+        return stripcslashes($rendered);
     }
 
 }

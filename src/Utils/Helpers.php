@@ -58,7 +58,6 @@ function array_every(array $array, callable $callback): bool
     return true;
 }
 
-
 function joinPaths(string ...$args): string
 {
     $paths = [];
