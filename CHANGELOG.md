@@ -2,6 +2,14 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.2.1 - 2024-03-21
+
+### What's Changed
+
+* Add symfony/console explicitly as a dependency by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/7
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.2.0...0.2.1
+
 ## v0.2.0 - 2024-03-21
 
 ### What's Changed
@@ -35,11 +43,13 @@ Installation is a breeze with Composer:
 composer require codewithkyrian/transformers
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 ```
@@ -53,6 +63,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 ```
