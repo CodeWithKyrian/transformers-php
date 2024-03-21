@@ -2,6 +2,15 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.2.0 - 2024-03-21
+
+### What's Changed
+
+* feat: Add ability to use chat templates in Text Generation by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/1
+* bugfix: Autoload errors for `PretrainedModel` on case-sensitive operating systems by @CodeWithKyrian  in https://github.com/CodeWithKyrian/transformers-php/pull/4
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.1.0...0.2.0
+
 ## v0.1.0 - 2024-03-15
 
 ### Initial Release 🎉
@@ -23,11 +32,13 @@ Installation is a breeze with Composer:
 ```bash
 composer require codewithkyrian/transformers
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 ```
 #### Checkout the Documentation
@@ -40,6 +51,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 ```
 #### What's Next?
