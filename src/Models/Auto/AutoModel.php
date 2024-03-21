@@ -28,6 +28,7 @@ class AutoModel extends PretrainedMixin
         "gptj" => \Codewithkyrian\Transformers\Models\Pretrained\GPTJModel::class,
         "gpt_bigcode" => \Codewithkyrian\Transformers\Models\Pretrained\GPTBigCodeModel::class,
         "codegen" => \Codewithkyrian\Transformers\Models\Pretrained\CodeGenModel::class,
+        "qwen2" => \Codewithkyrian\Transformers\Models\Pretrained\Qwen2Model::class,
     ];
 
     const MODEL_CLASS_MAPPINGS = [

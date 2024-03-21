@@ -55,6 +55,7 @@ class AutoTokenizer
         'SpeechT5Tokenizer' => 'SpeechT5Tokenizer',
         'NougatTokenizer' => 'NougatTokenizer',
         'VitsTokenizer' => 'VitsTokenizer',
+        'Qwen2Tokenizer' => 'Qwen2Tokenizer',
         // Base case:
         'PreTrainedTokenizer' => 'PreTrainedTokenizer',
     ];
