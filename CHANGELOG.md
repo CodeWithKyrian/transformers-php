@@ -2,11 +2,12 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
-## v0.2.1 - 2024-03-21
+## v0.2.1 - 2024-03-22
 
-### What's Changed
+## What's Changed
+* bugfix: Add symfony/console explicitly as a dependency by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/7
+* bugfix: Autoload errors for `WordPieceTokenizer` on case-sensitive operating systems in https://github.com/CodeWithKyrian/transformers-php/commit/0f1fc8bda91fb3df9492057a4224b171d2e3f2d5
 
-* Add symfony/console explicitly as a dependency by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/7
 
 **Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.2.0...0.2.1
 
