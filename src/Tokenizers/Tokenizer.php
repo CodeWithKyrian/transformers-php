@@ -61,7 +61,7 @@ abstract class Tokenizer
     public static function fromConfig(array $config, ...$args): self
     {
         return match ($config['type'] ?? null) {
-            'WordPiece' => new WordpieceTokenizer($config),
+            'WordPiece' => new WordPieceTokenizer($config),
             'Unigram' => new UnigramTokenizer($config, ...$args),
             'BPE' => new BPETokenizer($config),
             default => (function () use ($config, $args) {
