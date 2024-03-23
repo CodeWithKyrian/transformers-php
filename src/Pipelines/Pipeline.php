@@ -78,7 +78,7 @@ function pipeline(
 
     $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
 
-    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, $output);
+    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, null, $output);
 
     return $task->getPipeline($model, $tokenizer);
 }
