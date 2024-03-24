@@ -234,7 +234,7 @@ class Tensor extends NDArrayPhp
      * @return int The positive index within bounds.
      * @throws \Exception If the index is out of bounds.
      */
-    protected function safeIndex(int $index, int $size, ?int $dimension = null): int
+    protected static function safeIndex(int $index, int $size, ?int $dimension = null): int
     {
         if ($index < -$size || $index >= $size) {
             throw new \Exception("IndexError: index $index is out of bounds for dimension"
@@ -327,6 +327,24 @@ class Tensor extends NDArrayPhp
     }
 
     /**
+     * Helper function to calculate new dimensions when performing an unsqueeze operation.
+     * @param array $dims The dimensions of the tensor.
+     * @param int $dim The dimension to unsqueeze.
+     * @return array The new dimensions.
+     */
+    protected function calcUnsqueezeDims(array $dims, int $dim): array
+    {
+        // Dimension out of range (e.g., "expected to be in range of [-4, 3], but got 4")
+        // + 1 since we allow inserting at the end (i.e. dim = -1)
+        $dim = self::safeIndex($dim, count($dims) + 1);
+        $newDims = $dims;
+        // Insert 1 into specified dimension
+        array_splice($newDims, $dim, 0, [1]);
+        return $newDims;
+    }
+
+
+    /**
      * Returns a tensor with all specified dimensions of input of size 1 removed.
      *
      * @param ?int $dim If given, the input will be squeezed only in the specified dimensions.
@@ -335,29 +353,11 @@ class Tensor extends NDArrayPhp
      */
     public function unsqueeze(?int $dim = null): static
     {
-        $mo = self::getMo();
-
-        $result = clone $this;
-
-        if ($dim === null) {
-            $result->_buffer = array_filter($result->_buffer, function ($value) {
-                return $value !== 1;
-            });
-            $result->_shape = array_filter($result->_shape, function ($value) {
-                return $value !== 1;
-            });
-        } else {
-            $dim = $result->safeIndex($dim, $result->ndim());
-
-            if ($result->_shape[$dim] !== 1) {
-                throw new \Exception("DimensionError: cannot select an axis to squeeze out which has size not equal to one");
-            }
-
-            array_splice($result->_buffer, $dim, 1);
-            array_splice($result->_shape, $dim, 1);
-        }
-
-        return $result;
+        return new Tensor(
+            $this->_buffer->toArray(),
+            $this->_dtype,
+            $this->calcUnsqueezeDims($this->shape(), $dim),
+        );
     }
 
     /**
@@ -592,4 +592,97 @@ class Tensor extends NDArrayPhp
         }
         return $arrayLength; // Use the pre-computed length
     }
+
+    /**
+     * Permutes a tensor according to the provided axes.
+     * @param array $axes The axes to permute the tensor along.
+     * @return Tensor The permuted tensor.
+     */
+    public function permute(...$axes): static
+    {
+        [$permutedData, $shape] = Math::permuteData($this->_buffer->toArray(), $this->shape(), $axes);
+
+        return new Tensor($permutedData, $this->dtype(), $shape);
+    }
+
+    /**
+     * Concatenates an array of tensors along a specified dimension.
+     *
+     * @param Tensor[] $tensors The array of tensors to concatenate.
+     * @param int $dim The dimension to concatenate along.
+     *
+     * @return Tensor The concatenated tensor.
+     * @throws \Exception
+     */
+    public static function cat(array $tensors, int $dim = 0): Tensor
+    {
+        $dim = self::safeIndex($dim, $tensors[0]->ndim());
+
+        // TODO: Perform validation of shapes
+
+        $resultShape = $tensors[0]->shape();
+        $resultOffset = $tensors[0]->offset();
+        $resultShape[$dim] = array_reduce($tensors, function ($carry, $tensor) use ($dim) {
+            return $carry + $tensor->shape()[$dim];
+        }, 0);
+
+        // Create a new array to store the accumulated values
+        $resultSize = array_product($resultShape);
+
+        $result = new \SplFixedArray($resultSize);
+
+        // Create output tensor of same type as first
+        $resultType = $tensors[0]->dtype();
+
+        if ($dim === 0) {
+            // Handle special case for performance reasons
+
+            $offset = 0;
+            foreach ($tensors as $t) {
+                for ($i = 0; $i < $t->_buffer->count(); $i++) {
+                    $result[$offset++] = $t->buffer()[$i];
+                }
+            }
+        } else {
+            $currentDim = 0;
+
+            foreach ($tensors as $tensor) {
+                for ($i = 0; $i < $tensor->_buffer->count(); $i++) {
+                    $resultIndex = 0;
+
+                    for ($j = $tensor->ndim() - 1, $num = $i, $resultMultiplier = 1; $j >= 0; --$j) {
+                        $size = $tensor->shape()[$j];
+                        $index = $num % $size;
+                        if ($j === $dim) {
+                            $index += $currentDim;
+                        }
+                        $resultIndex += $index * $resultMultiplier;
+                        $resultMultiplier *= $resultShape[$j];
+                        $num = (int)floor($num / $size);
+                    }
+                    $result[$resultIndex] = $tensor->buffer()[$i];
+                }
+
+                $currentDim += $tensor->shape()[$dim];
+            }
+        }
+
+        return new Tensor($result, $resultType, $resultShape, $resultOffset);
+    }
+
+    /**
+     * Stack an array of tensors along a specified dimension.
+     *
+     * @param Tensor[] $tensors The array of tensors to stack.
+     * @param int $dim The dimension to stack along.
+     *
+     * @return Tensor The stacked tensor.
+     */
+    public static function stack(array $tensors, int $dim = 0): Tensor
+    {
+        // TODO: Perform validation of shapes
+        // NOTE: stack expects each tensor to be equal size
+        return self::cat(array_map(fn($t) => $t->unsqueeze($dim), $tensors), $dim);
+    }
+
 }

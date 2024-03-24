@@ -15,6 +15,7 @@ class AutoModel extends PretrainedMixin
         "mobilebert" => \Codewithkyrian\Transformers\Models\Pretrained\MobileBertModel::class,
         "roformer" => \Codewithkyrian\Transformers\Models\Pretrained\RoFormerModel::class,
         "roberta" => \Codewithkyrian\Transformers\Models\Pretrained\RobertaModel::class,
+        "clip" => \Codewithkyrian\Transformers\Models\Pretrained\CLIPModel::class,
     ];
 
     const ENCODER_DECODER_MODEL_MAPPING = [

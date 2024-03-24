@@ -42,7 +42,7 @@ use Codewithkyrian\Transformers\Utils\Tensor;
  */
 class TokenClassificationPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $ignoreLabels = $args['ignoreLabels'] ?? ['O'];
         $aggregationStrategy = $args['aggregationStrategy'] ?? AggregationStrategy::NONE;
@@ -51,12 +51,12 @@ class TokenClassificationPipeline extends Pipeline
             ? $aggregationStrategy
             : AggregationStrategy::from($aggregationStrategy);
 
-        $isBatched = is_array($texts);
+        $isBatched = is_array($inputs);
         if (!$isBatched) {
-            $texts = [$texts];
+            $inputs = [$inputs];
         }
 
-        $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         /** @var TokenClassifierOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);

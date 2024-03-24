@@ -86,10 +86,12 @@ class AutoTokenizer
         string  $revision = 'main',
         mixed   $legacy = null,
         ?OutputInterface $output = null
-    ): PretrainedTokenizer
+    ): ?PretrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
             Tokenizer::load($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $legacy, $output);
+
+        if($tokenizerJson == null) return null;
 
 
         // Some tokenizers are saved with the "Fast" suffix, so we remove that if present.

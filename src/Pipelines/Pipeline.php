@@ -8,7 +8,10 @@ use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\Processors\AutoProcessor;
+use Codewithkyrian\Transformers\Processors\Processor;
 use Symfony\Component\Console\Output\OutputInterface;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class Pipeline
 {
@@ -16,17 +19,17 @@ class Pipeline
         protected string|Task       $task,
         protected PretrainedModel   $model,
         public ?PretrainedTokenizer $tokenizer = null,
-        protected ?string           $processor = null,
+        protected ?Processor        $processor = null,
     )
     {
     }
 
     /**
-     * @param string[]|string $texts
+     * @param string[]|string $inputs
      * @param ...$args
      * @return array
      */
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         return [];
     }
@@ -76,9 +79,11 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->pretrainedModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
+    $model = $task->autoModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
 
-    $tokenizer = AutoTokenizer::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, null, $output);
+    $tokenizer = $task->autoTokenizer($modelName, $quantized, $config, $cacheDir, $revision, $output);
 
-    return $task->getPipeline($model, $tokenizer);
+    $processor = $task->autoProcessor($modelName, $config, $cacheDir, $revision, $output);
+
+    return $task->pipeline($model, $tokenizer, $processor);
 }

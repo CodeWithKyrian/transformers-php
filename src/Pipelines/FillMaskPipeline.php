@@ -32,11 +32,11 @@ use Codewithkyrian\Transformers\Utils\Math;
  */
 class FillMaskPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $topK = $args["topK"] ?? 5;
 
-        $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         /** @var MaskedLMOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);
@@ -69,6 +69,6 @@ class FillMaskPipeline extends Pipeline
             }, $scores);
         }
 
-        return is_array($texts) ? $toReturn : $toReturn[0];
+        return is_array($inputs) ? $toReturn : $toReturn[0];
     }
 }

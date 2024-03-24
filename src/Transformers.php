@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
+use Codewithkyrian\Transformers\Utils\Image;
+use Codewithkyrian\Transformers\Utils\ImageDriver;
 use OnnxRuntime\FFI;
 use OnnxRuntime\Vendor;
 use function Codewithkyrian\Transformers\Utils\joinPaths;
@@ -21,6 +23,8 @@ class Transformers
 
     public static ?string $userAgent = 'transformers-php/0.1.0';
 
+    public static ImageDriver $imageDriver = ImageDriver::IMAGICK;
+
     public static function setup(): static
     {
         return new static;
@@ -29,6 +33,11 @@ class Transformers
     public function apply(): void
     {
         FFI::$lib = self::libFile();
+
+        Image::$imagine = match (self::$imageDriver) {
+            ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
+            ImageDriver::GD => new \Imagine\GD\Imagine(),
+        };
     }
 
     public static function libFile(): string
@@ -98,6 +107,13 @@ class Transformers
     public function setUserAgent(string $userAgent): static
     {
         self::$userAgent = $userAgent;
+
+        return $this;
+    }
+
+    public function setImageDriver(ImageDriver $imageDriver): static
+    {
+        self::$imageDriver = $imageDriver;
 
         return $this;
     }

@@ -78,16 +78,16 @@ class ZeroShotClassificationPipeline extends Pipeline
         }
     }
 
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $candidateLabels = $args[0];
         $multiLabel = $args['multiLabel'] ?? false;
         $hypothesisTemplate = $args['hypothesisTemplate'] ?? "This example is {}.";
 
-        $isBatched = is_array($texts);
+        $isBatched = is_array($inputs);
 
         if (!$isBatched) {
-            $texts = [$texts];
+            $inputs = [$inputs];
         }
 
         if (!is_array($candidateLabels)) {
@@ -95,20 +95,18 @@ class ZeroShotClassificationPipeline extends Pipeline
         }
 
         // Insert labels into hypothesis template
-        $hypotheses = array_map(function ($x) use ($hypothesisTemplate) {
-            return str_replace('{}', $x, $hypothesisTemplate);
-        }, $candidateLabels);
+        $hypotheses = array_map(fn($x) => str_replace('{}', $x, $hypothesisTemplate), $candidateLabels);
 
 
         // Determine whether to perform softmax over each label independently
         $softmaxEach = $multiLabel || count($candidateLabels) === 1;
 
         $toReturn = [];
-        foreach ($texts as $premise) {
+        foreach ($inputs as $premise) {
             $entailsLogits = [];
 
             foreach ($hypotheses as $hypothesis) {
-                $inputs = $this->tokenizer->__invoke($premise, textPair: $hypothesis, padding: true, truncation: true);
+                $inputs = $this->tokenizer->tokenize($premise, textPair: $hypothesis, padding: true, truncation: true);
 
                 /** @var SequenceClassifierOutput $outputs */
                 $outputs = $this->model->__invoke($inputs);

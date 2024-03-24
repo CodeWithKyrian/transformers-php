@@ -23,9 +23,9 @@ use Codewithkyrian\Transformers\Utils\Math;
  */
 class QuestionAnsweringPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
-        $question = $texts;
+        $question = $inputs;
         $context = $args[0] ?? $args["context"];
         $topK = $args["topK"] ?? 1;
 
