@@ -8,7 +8,8 @@ namespace Codewithkyrian\Transformers\Models\Auto;
 class AutoModelForImageClassification extends PretrainedMixin
 {
     const MODEL_CLASS_MAPPING = [
-        'vit' => \Codewithkyrian\Transformers\Models\Pretrained\ViTForImageClassification::class
+        'vit' => \Codewithkyrian\Transformers\Models\Pretrained\ViTForImageClassification::class,
+        'deit' => \Codewithkyrian\Transformers\Models\Pretrained\DeiTForImageClassification::class,
     ];
 
     const MODEL_CLASS_MAPPINGS = [

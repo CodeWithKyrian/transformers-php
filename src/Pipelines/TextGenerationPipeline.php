@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 
 /**
  * Language generation pipeline using any `ModelWithLMHead` or `ModelForCausalLM`.
@@ -61,7 +62,7 @@ class TextGenerationPipeline extends Pipeline
         // Convert the rest of the arguments key names from camelCase to snake_case
         $snakeCasedArgs = [];
         foreach ($args as $key => $value) {
-            $snakeCasedArgs[$this->camelCaseToSnakeCase($key)] = $value;
+            $snakeCasedArgs[camelCaseToSnakeCase($key)] = $value;
         }
 
         $generationConfig = new GenerationConfig($snakeCasedArgs);
@@ -105,11 +106,6 @@ class TextGenerationPipeline extends Pipeline
 
         return (!$isBatched && count($toReturn) === 1) ? $toReturn[0] : $toReturn;
 
-    }
-
-    protected function camelCaseToSnakeCase(string $input): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
     }
 
     // Detect chat mode

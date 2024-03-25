@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * NLI-based zero-shot classification pipeline using any model that has been fine-tuned on NLI (natural language inference)
@@ -119,6 +120,7 @@ class ZeroShotClassificationPipeline extends Pipeline
                 } else {
                     $entailsLogits[] = $outputs->logits->buffer()[$this->entailmentId];
                 }
+
             }
 
             $scores = $softmaxEach

@@ -62,6 +62,11 @@ function array_every(array $array, callable $callback): bool
     return true;
 }
 
+function camelCaseToSnakeCase(string $input): string
+{
+    return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+}
+
 function joinPaths(string ...$args): string
 {
     $paths = [];

@@ -15,12 +15,12 @@ use OnnxRuntime\InferenceSession;
  */
 class BartForConditionalGeneration extends BartPretrainedModel
 {
-    protected mixed $numDecoderLayers;
-    protected mixed $numDecoderHeads;
-    protected mixed $decoderDimKv;
-    protected mixed $numEncoderLayers;
-    protected mixed $numEncoderHeads;
-    protected mixed $encoderDimKv;
+    public mixed $numDecoderLayers;
+    public mixed $numDecoderHeads;
+    public mixed $decoderDimKv;
+    public mixed $numEncoderLayers;
+    public mixed $numEncoderHeads;
+    public mixed $encoderDimKv;
 
     public function __construct(
         AutoConfig               $config,

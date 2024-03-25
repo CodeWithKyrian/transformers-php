@@ -12,6 +12,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForVision2Seq;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
@@ -36,6 +37,7 @@ enum Task: string
     case Ner = 'ner';
 
 
+    case ImageToText = 'image-to-text';
     case ImageClassification = 'image-classification';
     case ZeroShotImageClassification = 'zero-shot-image-classification';
 
@@ -66,6 +68,8 @@ enum Task: string
             self::TokenClassification,
             self::Ner => new TokenClassificationPipeline($this, $model, $tokenizer),
 
+            self::ImageToText => new ImageToTextPipeline($this, $model, $tokenizer, $processor),
+
             self::ImageClassification => new ImageClassificationPipeline($this, $model, processor: $processor),
 
             self::ZeroShotImageClassification => new ZeroShotImageClassificationPipeline($this, $model, $tokenizer, $processor)
@@ -95,6 +99,8 @@ enum Task: string
             self::TextGeneration => 'Xenova/gpt2', // Original: 'gpt2',
 
             self::TokenClassification, self::Ner => 'Xenova/bert-base-multilingual-cased-ner-hrl', // Original: 'Davlan/bert-base-multilingual-cased-ner-hrl',
+
+            self::ImageToText => 'Xenova/vit-gpt2-image-captioning', // Original: 'nlpconnect/vit-gpt2-image-captioning'
 
             self::ImageClassification => 'Xenova/vit-base-patch16-224', // Original: 'google/vit-base-patch16-224'
 
@@ -133,6 +139,8 @@ enum Task: string
             self::TokenClassification,
             self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
 
+            self::ImageToText => AutoModelForVision2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+
             self::ImageClassification => AutoModelForImageClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
 
             self::ZeroShotImageClassification => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
@@ -166,6 +174,7 @@ enum Task: string
             self::TextGeneration,
             self::TokenClassification,
             self::Ner,
+                self::ImageToText,
             self::ZeroShotImageClassification => AutoTokenizer::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, null, $output),
         };
     }
@@ -180,6 +189,7 @@ enum Task: string
     {
         return match ($this) {
 
+            self::ImageToText,
             self::ImageClassification,
             self::ZeroShotImageClassification => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output),
 

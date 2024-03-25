@@ -16,6 +16,8 @@ class AutoModel extends PretrainedMixin
         "roformer" => \Codewithkyrian\Transformers\Models\Pretrained\RoFormerModel::class,
         "roberta" => \Codewithkyrian\Transformers\Models\Pretrained\RobertaModel::class,
         "clip" => \Codewithkyrian\Transformers\Models\Pretrained\CLIPModel::class,
+        "vit" => \Codewithkyrian\Transformers\Models\Pretrained\ViTModel::class,
+        "deit" => \Codewithkyrian\Transformers\Models\Pretrained\DeiTModel::class,
     ];
 
     const ENCODER_DECODER_MODEL_MAPPING = [
@@ -42,6 +44,8 @@ class AutoModel extends PretrainedMixin
         AutoModelForCausalLM::MODEL_CLASS_MAPPING,
         AutoModelForMaskedLM::MODEL_CLASS_MAPPING,
         AutoModelForQuestionAnswering::MODEL_CLASS_MAPPING,
+        AutoModelForImageClassification::MODEL_CLASS_MAPPING,
+        AutoModelForVision2Seq::MODEL_CLASS_MAPPING
     ];
 
 
