@@ -108,10 +108,11 @@ class ZeroShotClassificationPipeline extends Pipeline
             $entailsLogits = [];
 
             foreach ($hypotheses as $hypothesis) {
-                $inputs = $this->tokenizer->__invoke($premise, textPair: $hypothesis, padding: true, truncation: true);
+                $inputs = $this->tokenizer->tokenize($premise, textPair: $hypothesis, padding: true, truncation: true);
 
                 /** @var SequenceClassifierOutput $outputs */
                 $outputs = $this->model->__invoke($inputs);
+
 
                 if ($softmaxEach) {
                     $entailsLogits[] = [
