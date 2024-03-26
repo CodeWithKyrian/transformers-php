@@ -12,6 +12,7 @@ Before installing TransformersPHP, ensure your system meets the following requir
 - Composer
 - PHP FFI extension
 - JIT compilation (optional)
+- Increased memory limit (for advanced tasks like text generation)
 
 ## Installation
 
