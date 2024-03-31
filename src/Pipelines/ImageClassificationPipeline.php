@@ -71,7 +71,7 @@ class ImageClassificationPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($output->logits as $batch) {
-            $scores = Math::getTopItems(Math::softmax($batch->buffer()->toArray()), $topK);
+            $scores = Math::getTopItems(Math::softmax($batch->toArray()), $topK);
 
             $values = array_map(function ($score) use ($id2label) {
                 return [

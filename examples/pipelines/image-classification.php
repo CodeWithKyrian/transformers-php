@@ -10,8 +10,12 @@ require_once './bootstrap.php';
 
 $classifier = pipeline('image-classification', 'Xenova/vit-base-patch16-224');
 
-$url = __DIR__. '/../images/corgi.jpg';
+$urls = [
+    __DIR__. '/../images/tiger.jpg',
+    __DIR__. '/../images/corgi.jpg',
+    __DIR__. '/../images/cats.jpg',
+];
 
-$output =  $classifier($url);
+$output =  $classifier($urls);
 
 dd($output, timeUsage(), memoryUsage());
