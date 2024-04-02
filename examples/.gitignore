@@ -1,3 +1,4 @@
 vendor
 .transformers-cache/*
 composer.lock
+paddleocr
