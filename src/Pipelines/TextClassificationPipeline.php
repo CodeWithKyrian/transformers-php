@@ -58,12 +58,12 @@ use Codewithkyrian\Transformers\Utils\Tensor;
  */
 class TextClassificationPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $topK = $args["topK"] ?? 1;
 
 
-        $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         /** @var SequenceClassifierOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);

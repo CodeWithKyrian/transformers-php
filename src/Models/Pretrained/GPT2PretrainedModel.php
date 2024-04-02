@@ -12,9 +12,9 @@ use OnnxRuntime\InferenceSession;
 
 class GPT2PretrainedModel extends PretrainedModel
 {
-    protected int $numHeads;
-    protected int $numLayers;
-    protected int $dimKv;
+    public int $numHeads;
+    public int $numLayers;
+    public int $dimKv;
 
     public function __construct(
         AutoConfig               $config,

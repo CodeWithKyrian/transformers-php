@@ -26,7 +26,7 @@ class Text2TextGenerationPipeline extends Pipeline
 {
     protected string $key = 'generated_text';
 
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $streamer = null;
 
@@ -44,14 +44,14 @@ class Text2TextGenerationPipeline extends Pipeline
         $generateKwargs = new GenerationConfig($snakeCasedArgs);
 
 
-        if (!is_array($texts)) {
-            $texts = [$texts];
+        if (!is_array($inputs)) {
+            $inputs = [$inputs];
         }
 
         // Add global prefix, if present
         $prefix = $this->model->config['prefix'] ?? null;
         if ($prefix) {
-            $texts = array_map(fn($x) => $prefix . $x, $texts);
+            $inputs = array_map(fn($x) => $prefix . $x, $inputs);
         }
 
         // Handle task specific params
@@ -63,7 +63,7 @@ class Text2TextGenerationPipeline extends Pipeline
             $taskPrefix = $taskSpecificParams[$this->task->value]['prefix'] ?? null;
 
             if ($taskPrefix) {
-                $texts = array_map(fn($x) => $taskPrefix . $x, $texts);
+                $inputs = array_map(fn($x) => $taskPrefix . $x, $inputs);
             }
 
             // TODO: update generation config
@@ -73,8 +73,8 @@ class Text2TextGenerationPipeline extends Pipeline
         $tokenizer = $this->tokenizer;
 
         $inputIds = $this instanceof TranslationPipeline && method_exists($tokenizer, 'buildTranslationInputs')
-            ? $tokenizer->buildTranslationInputs($texts, $generateKwargs, padding: true, truncation: true)['input_ids']
-            : $tokenizer->__invoke($texts, padding: true, truncation: true)['input_ids'];
+            ? $tokenizer->buildTranslationInputs($inputs, $generateKwargs, padding: true, truncation: true)['input_ids']
+            : $tokenizer->__invoke($inputs, padding: true, truncation: true)['input_ids'];
 
 
         // Generate output token ids

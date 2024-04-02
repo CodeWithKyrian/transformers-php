@@ -6,13 +6,18 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForMaskedLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForVision2Seq;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
+use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\Processors\AutoProcessor;
+use Codewithkyrian\Transformers\Processors\Processor;
 use Symfony\Component\Console\Output\OutputInterface;
 
 enum Task: string
@@ -31,7 +36,13 @@ enum Task: string
     case TokenClassification = 'token-classification';
     case Ner = 'ner';
 
-    public function getPipeline(PretrainedModel $model, PretrainedTokenizer $tokenizer): Pipeline
+
+    case ImageToText = 'image-to-text';
+    case ImageClassification = 'image-classification';
+    case ZeroShotImageClassification = 'zero-shot-image-classification';
+
+
+    public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
     {
         return match ($this) {
             self::SentimentAnalysis,
@@ -56,6 +67,12 @@ enum Task: string
 
             self::TokenClassification,
             self::Ner => new TokenClassificationPipeline($this, $model, $tokenizer),
+
+            self::ImageToText => new ImageToTextPipeline($this, $model, $tokenizer, $processor),
+
+            self::ImageClassification => new ImageClassificationPipeline($this, $model, processor: $processor),
+
+            self::ZeroShotImageClassification => new ZeroShotImageClassificationPipeline($this, $model, $tokenizer, $processor)
         };
     }
 
@@ -82,10 +99,16 @@ enum Task: string
             self::TextGeneration => 'Xenova/gpt2', // Original: 'gpt2',
 
             self::TokenClassification, self::Ner => 'Xenova/bert-base-multilingual-cased-ner-hrl', // Original: 'Davlan/bert-base-multilingual-cased-ner-hrl',
+
+            self::ImageToText => 'Xenova/vit-gpt2-image-captioning', // Original: 'nlpconnect/vit-gpt2-image-captioning'
+
+            self::ImageClassification => 'Xenova/vit-base-patch16-224', // Original: 'google/vit-base-patch16-224'
+
+            self::ZeroShotImageClassification => 'Xenova/clip-vit-base-patch32', // Original: 'openai/clip-vit-base-patch32'
         };
     }
 
-    public function pretrainedModel(
+    public function autoModel(
         string           $modelNameOrPath,
         bool             $quantized = true,
         ?array           $config = null,
@@ -115,6 +138,75 @@ enum Task: string
 
             self::TokenClassification,
             self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+
+            self::ImageToText => AutoModelForVision2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+
+            self::ImageClassification => AutoModelForImageClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+
+            self::ZeroShotImageClassification => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+        };
+    }
+
+    public function autoTokenizer(
+        string           $modelNameOrPath,
+        bool             $quantized = true,
+        ?array           $config = null,
+        ?string          $cacheDir = null,
+        string           $revision = 'main',
+        ?OutputInterface $output = null
+    ): ?PretrainedTokenizer
+    {
+        return match ($this) {
+
+            self::ImageClassification => null,
+
+
+            self::SentimentAnalysis,
+            self::TextClassification,
+            self::ZeroShotClassification,
+            self::FillMask,
+            self::QuestionAnswering,
+            self::FeatureExtraction,
+            self::Embeddings,
+            self::Text2TextGeneration,
+            self::Translation,
+            self::Summarization,
+            self::TextGeneration,
+            self::TokenClassification,
+            self::Ner,
+                self::ImageToText,
+            self::ZeroShotImageClassification => AutoTokenizer::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, null, $output),
+        };
+    }
+
+    public function autoProcessor(
+        string           $modelNameOrPath,
+        ?array           $config = null,
+        ?string          $cacheDir = null,
+        string           $revision = 'main',
+        ?OutputInterface $output = null
+    ): ?Processor
+    {
+        return match ($this) {
+
+            self::ImageToText,
+            self::ImageClassification,
+            self::ZeroShotImageClassification => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output),
+
+
+            self::SentimentAnalysis,
+            self::TextClassification,
+            self::ZeroShotClassification,
+            self::FillMask,
+            self::QuestionAnswering,
+            self::FeatureExtraction,
+            self::Embeddings,
+            self::Text2TextGeneration,
+            self::Translation,
+            self::Summarization,
+            self::TextGeneration,
+            self::TokenClassification,
+            self::Ner => null,
         };
     }
 }

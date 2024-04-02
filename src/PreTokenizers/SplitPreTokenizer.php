@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\PreTokenizers;
 
 class SplitPreTokenizer extends PreTokenizer
 {
-    protected string $pattern;
+    protected string|array $pattern;
 
     public function __construct(protected array $config)
     {
@@ -19,9 +19,18 @@ class SplitPreTokenizer extends PreTokenizer
      */
     public function preTokenizeText(string|array $text, array $options): array
     {
-        // TODO: Consider $config['invert'] option
-//        return preg_split($this->pattern, $text);
+        if (is_string($this->pattern)) {
+            return explode($this->pattern, $text);
+        }
 
-        return explode($this->pattern, $text);
+        $regex = $this->pattern['Regex'] ?? $this->pattern['String'] ?? null;
+
+        if ($regex != null) {
+            preg_match_all("/$regex/u", $text, $matches, PREG_SPLIT_NO_EMPTY);
+
+            $text = array_map(fn($match) => $match, $matches[0]);
+        }
+
+        return $text;
     }
 }

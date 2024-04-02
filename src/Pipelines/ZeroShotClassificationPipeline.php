@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * NLI-based zero-shot classification pipeline using any model that has been fine-tuned on NLI (natural language inference)
@@ -78,16 +79,16 @@ class ZeroShotClassificationPipeline extends Pipeline
         }
     }
 
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $candidateLabels = $args[0];
         $multiLabel = $args['multiLabel'] ?? false;
         $hypothesisTemplate = $args['hypothesisTemplate'] ?? "This example is {}.";
 
-        $isBatched = is_array($texts);
+        $isBatched = is_array($inputs);
 
         if (!$isBatched) {
-            $texts = [$texts];
+            $inputs = [$inputs];
         }
 
         if (!is_array($candidateLabels)) {
@@ -95,16 +96,14 @@ class ZeroShotClassificationPipeline extends Pipeline
         }
 
         // Insert labels into hypothesis template
-        $hypotheses = array_map(function ($x) use ($hypothesisTemplate) {
-            return str_replace('{}', $x, $hypothesisTemplate);
-        }, $candidateLabels);
+        $hypotheses = array_map(fn($x) => str_replace('{}', $x, $hypothesisTemplate), $candidateLabels);
 
 
         // Determine whether to perform softmax over each label independently
         $softmaxEach = $multiLabel || count($candidateLabels) === 1;
 
         $toReturn = [];
-        foreach ($texts as $premise) {
+        foreach ($inputs as $premise) {
             $entailsLogits = [];
 
             foreach ($hypotheses as $hypothesis) {
@@ -122,6 +121,7 @@ class ZeroShotClassificationPipeline extends Pipeline
                 } else {
                     $entailsLogits[] = $outputs->logits->buffer()[$this->entailmentId];
                 }
+
             }
 
             $scores = $softmaxEach

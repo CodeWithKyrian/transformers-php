@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Exception;
+
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
@@ -21,13 +23,15 @@ function memoryPeak(): string
 }
 
 
-function timeUsage(bool $milliseconds = false, bool $sinceLastCall = false): string
+function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true): string
 {
-    static $lastCallTime;
+    static $lastCallTime = 0;
 
     $currentTime = microtime(true);
 
-    $timeDiff = $currentTime - ($sinceLastCall ? $lastCallTime : $_SERVER["REQUEST_TIME_FLOAT"]);
+    $timeDiff = $sinceLastCall ? ($lastCallTime !== 0 ? $currentTime - $lastCallTime
+        : $currentTime - $_SERVER["REQUEST_TIME_FLOAT"])
+        : $currentTime - $_SERVER["REQUEST_TIME_FLOAT"];
 
     $lastCallTime = $currentTime;
 
@@ -58,6 +62,11 @@ function array_every(array $array, callable $callback): bool
     return true;
 }
 
+function camelCaseToSnakeCase(string $input): string
+{
+    return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
+}
+
 function joinPaths(string ...$args): string
 {
     $paths = [];
@@ -82,4 +91,25 @@ function ensureDirectory($filePath): void
     if (!is_dir(dirname($filePath))) {
         mkdir(dirname($filePath), 0755, true);
     }
+}
+
+/**
+ * Prepare images for further tasks.
+ * @param mixed $images Images to prepare.
+ * @return array Returns processed images.
+ */
+function prepareImages(mixed $images): array
+{
+    if (!is_array($images)) {
+        $images = [$images];
+    }
+
+    // Possibly convert any non-images to images
+    $processedImages = [];
+
+    foreach ($images as $image) {
+        $processedImages[] = Image::read($image);
+    }
+
+    return $processedImages;
 }

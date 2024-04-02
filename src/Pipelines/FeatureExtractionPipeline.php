@@ -63,12 +63,12 @@ use Codewithkyrian\Transformers\Utils\Tensor;
  */
 class FeatureExtractionPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $pooling = $args["pooling"] ?? 'none';
         $normalize = $args["normalize"] ?? false;
 
-        $modelInputs = $this->tokenizer->__invoke($texts, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         $outputs = $this->model->__invoke($modelInputs);
 

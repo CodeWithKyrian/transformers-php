@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 
 /**
  * Language generation pipeline using any `ModelWithLMHead` or `ModelForCausalLM`.
@@ -49,7 +50,7 @@ use Codewithkyrian\Transformers\Utils\GenerationConfig;
  */
 class TextGenerationPipeline extends Pipeline
 {
-    public function __invoke(array|string $texts, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array
     {
         $streamer = null;
 
@@ -61,21 +62,21 @@ class TextGenerationPipeline extends Pipeline
         // Convert the rest of the arguments key names from camelCase to snake_case
         $snakeCasedArgs = [];
         foreach ($args as $key => $value) {
-            $snakeCasedArgs[$this->camelCaseToSnakeCase($key)] = $value;
+            $snakeCasedArgs[camelCaseToSnakeCase($key)] = $value;
         }
 
         $generationConfig = new GenerationConfig($snakeCasedArgs);
 
-        $isChatMode = $this->isChatMode($texts);
+        $isChatMode = $this->isChatMode($inputs);
 
         if ($isChatMode) {
-            $texts = $this->tokenizer->applyChatTemplate($texts, addGenerationPrompt: true, tokenize: false);
+            $inputs = $this->tokenizer->applyChatTemplate($inputs, addGenerationPrompt: true, tokenize: false);
         }
 
-        $isBatched = is_array($texts);
+        $isBatched = is_array($inputs);
 
         if (!$isBatched) {
-            $texts = [$texts];
+            $inputs = [$inputs];
         }
 
         // By default, do not add special tokens
@@ -83,7 +84,7 @@ class TextGenerationPipeline extends Pipeline
 
         $this->tokenizer->paddingSide = 'left';
         ['input_ids' => $inputIds, 'attention_mask' => $attentionMask] = $this->tokenizer->tokenize(
-            $texts,
+            $inputs,
             padding: true,
             addSpecialTokens: $addSpecialTokens,
             truncation: true
@@ -94,10 +95,10 @@ class TextGenerationPipeline extends Pipeline
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
 
-        $toReturn = array_fill(0, count($texts), []);
+        $toReturn = array_fill(0, count($inputs), []);
 
         for ($i = 0; $i < count($decoded); ++$i) {
-            $textIndex = floor($i / count($outputTokenIds) * count($texts));
+            $textIndex = floor($i / count($outputTokenIds) * count($inputs));
             $toReturn[$textIndex][] = [
                 'generated_text' => $decoded[$i]
             ];
@@ -105,11 +106,6 @@ class TextGenerationPipeline extends Pipeline
 
         return (!$isBatched && count($toReturn) === 1) ? $toReturn[0] : $toReturn;
 
-    }
-
-    protected function camelCaseToSnakeCase(string $input): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
     }
 
     // Detect chat mode

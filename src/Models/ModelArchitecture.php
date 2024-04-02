@@ -34,7 +34,7 @@ enum ModelArchitecture: string
     {
         return match ($this) {
             self::DecoderOnly => $this->decoderRunBeam($model, $beam),
-            self::Seq2SeqLM => $this->seq2seqRunBeam($model, $beam),
+            self::Seq2SeqLM, self::Vision2Seq  => $this->seq2seqRunBeam($model, $beam),
             default => throw new \Error('This model type does not support beam search'),
         };
     }
@@ -49,7 +49,7 @@ enum ModelArchitecture: string
     {
         return match ($this) {
             self::DecoderOnly => $this->decoderStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens, $inputsAttentionMask),
-            self::Seq2SeqLM => $this->seq2seqStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens),
+            self::Seq2SeqLM, self::Vision2Seq => $this->seq2seqStartBeams($model, $inputTokenIds, $generationConfig, $numOutputTokens),
             default => throw new \Error('This model type does not support beam search'),
         };
     }

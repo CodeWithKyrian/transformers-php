@@ -111,13 +111,13 @@ class PretrainedModel
             case ModelArchitecture::Vision2Seq:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 $generatorConfigArr = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generation_config.json',
-                    cacheDir: $cacheDir, revision: $revision, fatal: false);
+                    cacheDir: $cacheDir, revision: $revision, fatal: false, output: $output);
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
@@ -128,10 +128,10 @@ class PretrainedModel
             case ModelArchitecture::MaskGeneration:
             {
                 $visionEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'vision_encoder', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'vision_encoder', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 $promptMaskEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'prompt_encoder_mask_decoder', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'prompt_encoder_mask_decoder', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
             }
@@ -139,10 +139,10 @@ class PretrainedModel
             case ModelArchitecture::EncoderDecoder:
             {
                 $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
             }
@@ -154,7 +154,7 @@ class PretrainedModel
                 }
 
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
-                    fileName: 'model', cacheDir: $cacheDir, revision: $revision);
+                    fileName: 'model', cacheDir: $cacheDir, revision: $revision, output: $output);
 
                 return new static($config, $session, $modelArchitecture);
             }
