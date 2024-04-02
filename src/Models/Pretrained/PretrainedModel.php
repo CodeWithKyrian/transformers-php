@@ -475,28 +475,27 @@ class PretrainedModel
         }
 
         // TODO: Verify this works properly!!!
-        $data = array_fill(0, count($feeds['attention_mask']), 0);
+        $data = array_fill(0, count($feeds['attention_mask']->buffer()), 0);
 
         // Compute cumulative sum of the attention mask along the sequence length dimension
-        for ($i = 0; $i < $feeds['attention_mask']['dims'][0]; ++$i) {
-            $start = $i * $feeds['attention_mask']['dims'][1];
+        for ($i = 0; $i < $feeds['attention_mask']->shape()[0]; ++$i) {
+            $start = $i * $feeds['attention_mask']->shape()[1];
             $sum = 0;
-            for ($j = 0; $j < $feeds['attention_mask']['dims'][1]; ++$j) {
+            for ($j = 0; $j < $feeds['attention_mask']->shape()[1]; ++$j) {
                 $index = $start + $j;
-                if ($feeds['attention_mask']['data'][$index] === 0) {
+                if ($feeds['attention_mask']->buffer()[$index] === 0) {
                     $data[$index] = 1;
                 } else { // === 1
                     $data[$index] = $sum;
-                    $sum += $feeds['attention_mask']['data'][$index];
+                    $sum += $feeds['attention_mask']->buffer()[$index];
                 }
             }
         }
-
         $feeds['position_ids'] = new Tensor($data, shape: $feeds['attention_mask']->shape());
 
         if ($useCacheBranch) {
             // TODO: Fix this
-//            $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1)->unsqueeze_(-1);
+            $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1)->unsqueeze(-1);
         }
     }
 
