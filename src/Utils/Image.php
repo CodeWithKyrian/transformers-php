@@ -24,13 +24,13 @@ class Image
     {
     }
 
-    public static function read(string $input): static
+    public static function read(string $input, array $options = []): static
     {
         if (filter_var($input, FILTER_VALIDATE_URL)) {
             // get from a remote url
         }
 
-        $image = self::$imagine->open($input);
+        $image = self::$imagine->open($input, $options);
 
         return new self($image);
     }
@@ -69,9 +69,9 @@ class Image
      * Convert the image to grayscale format.
      * @return $this
      */
-    public function grayscale(): static
+    public function grayscale(bool $force = false): static
     {
-        if ($this->channels === 1) {
+        if ($this->channels === 1 && !$force) {
             return $this;
         }
 
@@ -85,13 +85,25 @@ class Image
      * Convert the image to RGB format.
      * @return $this
      */
-    public function rgb(): static
+    public function rgb(bool $force = false): static
     {
-        if ($this->channels === 3) {
+        // If the image is already in RGB format, return it as is
+        if ($this->channels === 3 && !$force) {
             return $this;
         }
 
         $this->channels = 3;
+
+        // If it's a Vips image, we can extract the RGB channels
+        if($this->image instanceof \Imagine\Vips\Image){
+            $this->channels = 3;
+
+            $vipImage = $this->image->getVips()->extract_band(0, ['n' => 3]);
+
+            $this->image = $this->image->setVips($vipImage);
+
+            return $this;
+        }
 
         return $this;
     }
@@ -100,13 +112,27 @@ class Image
      * Convert the image to RGBA format.
      * @return $this
      */
-    public function rgba(): static
+    public function rgba(bool $force = false): static
     {
-        if ($this->channels === 4) {
+        // If the image is already in RGBA format, return it as is
+        if ($this->channels === 4 && !$force) {
             return $this;
         }
 
         $this->channels = 4;
+
+        // If it's a Vips image, we can handle the RGBA channels
+        if($this->image instanceof \Imagine\Vips\Image){
+            $this->channels = 4;
+
+            $vipImage = $this->image->getVips();
+
+            $vipImage = $vipImage->hasAlpha() ? $vipImage->extract_band(0, ['n' => 4]) : $vipImage->bandjoin([255]);
+
+            $this->image = $this->image->setVips($vipImage);
+
+            return $this;
+        }
 
         return $this;
     }
@@ -114,9 +140,9 @@ class Image
     /**
      * Resize the image to the given dimensions.
      */
-    public function resize(int $width, int $height, int $resample = 2): static
+    public function resize(int $width, int $height, int|Resample $resample = 2): static
     {
-        $resampleMethod = Resample::tryFrom($resample) ?? Resample::NEAREST;
+        $resampleMethod = $resample instanceof Resample ? $resample : Resample::from($resample) ?? Resample::NEAREST;
 
         $this->image = $this->image->resize(new Box($width, $height), $resampleMethod->toString());
 
@@ -135,13 +161,20 @@ class Image
         $newWidth = $originalWidth + $left + $right;
         $newHeight = $originalHeight + $top + $bottom;
 
-        $palette = new RGB();
-
-        $canvas = self::$imagine->create(new Box($newWidth, $newHeight), $palette->color('FFFFFF', 100));
+        $canvas = self::$imagine->create(new Box($newWidth, $newHeight));
 
         $canvas->paste($this->image, new Point($left, $top));
 
         $this->image = $canvas;
+
+        // Convert to the same format as the original image
+        if ($this->channels === 1) {
+            $this->grayscale(true);
+        } elseif ($this->channels === 3) {
+            $this->rgb(true);
+        } elseif ($this->channels === 4) {
+            $this->rgba(true);
+        }
 
         return $this;
     }
@@ -220,6 +253,11 @@ class Image
      */
     public function pixelData(): array
     {
+        // If it's a Vips image, we can extract the pixel data directly
+        if($this->image instanceof \Imagine\Vips\Image){
+            return $this->image->getVips()->writeToArray();
+        }
+
         $width = $this->image->getSize()->getWidth();
         $height = $this->image->getSize()->getHeight();
 

@@ -9,4 +9,5 @@ enum ImageDriver
 {
     case IMAGICK;
     case GD;
+    case VIPS;
 }
