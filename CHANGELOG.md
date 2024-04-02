@@ -2,12 +2,21 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.2.2 - 2024-03-25
+
+### What's new
+
+- bugfix: Fix the wrong argument being passed in Autotokenizer by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/05e55888d9ad0184103061347a427b259afb360e
+- feat: cache tokenizer output to improve speed in repetitive tasks leading to 75% speed improvement (11.7687s to 2.9687s) by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/b115c28f526dfbde13457c00f5306d05a51c445b
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.2.1...0.2.2
+
 ## v0.2.1 - 2024-03-22
 
 ## What's Changed
+
 * bugfix: Add symfony/console explicitly as a dependency by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/7
 * bugfix: Autoload errors for `WordPieceTokenizer` on case-sensitive operating systems in https://github.com/CodeWithKyrian/transformers-php/commit/0f1fc8bda91fb3df9492057a4224b171d2e3f2d5
-
 
 **Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.2.0...0.2.1
 
@@ -45,11 +54,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -64,6 +75,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 

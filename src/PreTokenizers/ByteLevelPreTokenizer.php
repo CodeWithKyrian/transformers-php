@@ -37,7 +37,7 @@ class ByteLevelPreTokenizer extends PreTokenizer
 
     public function __construct(protected array $config)
     {
-        $this->addPrefixSpace = $config['add_prefix_state'] ?? true;
+        $this->addPrefixSpace = $config['add_prefix_space'] ?? true;
         $this->trimOffsets = $config['trim_offsets'] ?? true;
         $this->useRegex = $config['use_regex'] ?? true;
 

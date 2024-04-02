@@ -112,6 +112,7 @@ class ZeroShotClassificationPipeline extends Pipeline
                 /** @var SequenceClassifierOutput $outputs */
                 $outputs = $this->model->__invoke($inputs);
 
+
                 if ($softmaxEach) {
                     $entailsLogits[] = [
                         $outputs->logits->buffer()[$this->contradictionId],

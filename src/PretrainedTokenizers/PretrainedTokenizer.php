@@ -14,6 +14,7 @@ use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 use Codewithkyrian\Transformers\Utils\Tensor;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class PretrainedTokenizer
 {
@@ -70,6 +71,7 @@ class PretrainedTokenizer
 
     protected mixed $chatTemplate;
     protected array $compiledTemplateCache = [];
+    protected array $tokenizationCache = [];
 
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
@@ -404,6 +406,13 @@ class PretrainedTokenizer
             return null;
         }
 
+        // Hash the text and check if it is in the cache
+        $hash = hash('sha256', $text);
+
+        if (isset($this->tokenizationCache[$hash])) {
+            return $this->tokenizationCache[$hash];
+        }
+
         // Actual function which does encoding, for a single text
         // First, we take care of special tokens. Needed to avoid issues arising from
         // normalization and/or pretokenization (which may not preserve special tokens)
@@ -442,7 +451,12 @@ class PretrainedTokenizer
             }
         }, $sections, array_keys($sections));
 
-        return array_merge(...$tokens);
+        $result =  array_merge(...$tokens);
+
+        // Cache the result
+        $this->tokenizationCache[$hash] = $result;
+
+        return $result;
     }
 
 

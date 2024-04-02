@@ -15,7 +15,6 @@ require_once './bootstrap.php';
 ini_set('memory_limit', -1);
 $classifier = pipeline('zero-shot-classification', 'Xenova/nli-deberta-v3-xsmall');
 
-dump(timeUsage());
 $input = "The tension was thick as fog in the arena tonight as the underdogs, the Nets, clawed their way back from a significant deficit to steal a victory from the heavily favored The BUlls  in a final score of 120 - Nets to 80 - Bulls
 
 The game was a nail-biter from the start. The Bulls jumped out to an early lead, showcasing their signature fast-paced offense.  Net's defense struggled to contain their star player, Frank, who racked up points in the first half.
@@ -41,3 +40,4 @@ $result = $classifier(
 
 dd( $result, timeUsage(), memoryUsage());
 
+// Improved from 11.7687s to 2.9687s, 3.5x faster (75% improvement)
