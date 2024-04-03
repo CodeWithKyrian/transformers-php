@@ -294,8 +294,8 @@ class ImageFeatureExtractor extends FeatureExtractor
      */
     public function rescale(array &$pixelData): void
     {
-        foreach ($pixelData as &$pixel) {
-            $pixel *= $this->rescaleFactor;
+        for ($i = 0; $i < count($pixelData); ++$i) {
+            $pixelData[$i] *= $this->rescaleFactor;
         }
     }
 
@@ -337,14 +337,15 @@ class ImageFeatureExtractor extends FeatureExtractor
             $newWidth = $srcWidth * $shortResizeFactor;
             $newHeight = $srcHeight * $shortResizeFactor;
 
-            // Downscale to ensure the largest dimension is longestEdge
+            // The new width and height might be greater than `longest_edge`, so
+            // we downscale to ensure the largest dimension is longestEdge
             $longResizeFactor = $longestEdge !== null
                 ? min($longestEdge / $newWidth, $longestEdge / $newHeight)
                 : 1;
 
             // Round to avoid floating point precision issues
-            $finalWidth = (int)floor($newWidth * $longResizeFactor);
-            $finalHeight = (int)floor($newHeight * $longResizeFactor);
+            $finalWidth = (int)floor(round($srcWidth * $longResizeFactor, 2));
+            $finalHeight = (int)floor(round($srcHeight * $longResizeFactor, 2));
 
             if ($this->sizeDivisibility !== null) {
                 [$finalWidth, $finalHeight] = $this->enforceSizeDivisibility([$finalWidth, $finalHeight], $this->sizeDivisibility);
@@ -453,10 +454,13 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         $reshapedInputSize = [$image->height(), $image->width()];
 
+
         // All pixel-level manipulation occurs with data in the hwc format (height, width, channels),
         // to emulate the behavior of the original Python code (w/ numpy).
         $pixelData = $image->pixelData();
+
         $imgShape = [$image->height(), $image->width(), $image->channels];
+
 
         if ($this->doRescale) {
             $this->rescale($pixelData);

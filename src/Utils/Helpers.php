@@ -96,7 +96,7 @@ function ensureDirectory($filePath): void
 /**
  * Prepare images for further tasks.
  * @param mixed $images Images to prepare.
- * @return array Returns processed images.
+ * @return Image[] Returns processed images.
  */
 function prepareImages(mixed $images): array
 {
@@ -113,3 +113,22 @@ function prepareImages(mixed $images): array
 
     return $processedImages;
 }
+
+/**
+ * Helper function to convert list [xmin, xmax, ymin, ymax] into object { "xmin": xmin, ... }
+ * @param array $box The bounding box as a list.
+ * @param bool $asInteger Whether to cast to integers.
+ * @return array The bounding box as an object.
+ * @private
+ */
+function getBoundingBox(array $box, bool $asInteger): array
+{
+    if ($asInteger) {
+        $box = array_map(fn($x) => (int)$x, $box);
+    }
+
+    [$xmin, $ymin, $xmax, $ymax] = $box;
+
+    return ['xmin' => $xmin, 'ymin' => $ymin, 'xmax' => $xmax, 'ymax' => $ymax];
+}
+

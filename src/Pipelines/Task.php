@@ -8,6 +8,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForMaskedLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForObjectDetection;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
@@ -41,6 +42,8 @@ enum Task: string
     case ImageClassification = 'image-classification';
     case ZeroShotImageClassification = 'zero-shot-image-classification';
 
+    case ObjectDetection = 'object-detection';
+
 
     public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
     {
@@ -72,7 +75,9 @@ enum Task: string
 
             self::ImageClassification => new ImageClassificationPipeline($this, $model, processor: $processor),
 
-            self::ZeroShotImageClassification => new ZeroShotImageClassificationPipeline($this, $model, $tokenizer, $processor)
+            self::ZeroShotImageClassification => new ZeroShotImageClassificationPipeline($this, $model, $tokenizer, $processor),
+
+            self::ObjectDetection => new ObjectDetectionPipeline($this, $model, $tokenizer, $processor),
         };
     }
 
@@ -105,6 +110,8 @@ enum Task: string
             self::ImageClassification => 'Xenova/vit-base-patch16-224', // Original: 'google/vit-base-patch16-224'
 
             self::ZeroShotImageClassification => 'Xenova/clip-vit-base-patch32', // Original: 'openai/clip-vit-base-patch32'
+
+            self::ObjectDetection => 'Xenova/detr-resnet-50', // Original: 'facebook/detr-resnet-50',
         };
     }
 
@@ -144,6 +151,8 @@ enum Task: string
             self::ImageClassification => AutoModelForImageClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
 
             self::ZeroShotImageClassification => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
+
+            self::ObjectDetection => AutoModelForObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $output),
         };
     }
 
@@ -158,7 +167,8 @@ enum Task: string
     {
         return match ($this) {
 
-            self::ImageClassification => null,
+            self::ImageClassification,
+            self::ObjectDetection => null,
 
 
             self::SentimentAnalysis,
@@ -174,7 +184,7 @@ enum Task: string
             self::TextGeneration,
             self::TokenClassification,
             self::Ner,
-                self::ImageToText,
+            self::ImageToText,
             self::ZeroShotImageClassification => AutoTokenizer::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, null, $output),
         };
     }
@@ -191,7 +201,8 @@ enum Task: string
 
             self::ImageToText,
             self::ImageClassification,
-            self::ZeroShotImageClassification => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output),
+            self::ZeroShotImageClassification,
+            self::ObjectDetection => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output),
 
 
             self::SentimentAnalysis,
