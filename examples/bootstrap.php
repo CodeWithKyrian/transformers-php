@@ -6,5 +6,7 @@ use Codewithkyrian\Transformers\Transformers;
 
 require_once './vendor/autoload.php';
 
-Transformers::setup()->apply();
+Transformers::setup()
+//    ->setImageDriver(\Codewithkyrian\Transformers\Utils\ImageDriver::GD)
+    ->apply();
 
