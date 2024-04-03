@@ -2,18 +2,55 @@
 
 declare(strict_types=1);
 
-use Codewithkyrian\Transformers\Processors\AutoProcessor;
-use Codewithkyrian\Transformers\Utils\Image1;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Image;
-use function Codewithkyrian\Transformers\Utils\memoryUsage;
+use Codewithkyrian\Transformers\Utils\ImageDriver;
+use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 require_once './bootstrap.php';
 
-$processor = AutoProcessor::fromPretrained('Xenova/vit-base-patch16-224');
+function toTensorTest(ImageDriver $imageDriver): Tensor
+{
+    timeUsage();
 
-$image = Image::read('images/kyrian-cartoon.jpeg');
+    Transformers::setup()
+        ->setImageDriver($imageDriver)
+        ->apply();
 
-$imageInputs = $processor($image);
+    $image = Image::read('images/butterfly.jpg');
 
-dd($imageInputs['pixel_values']->shape(), $imageInputs['original_sizes'], $imageInputs['reshaped_input_sizes']);
+    $image->rgb();
+
+    $tensor =  $image->toTensor();
+
+    dump("$imageDriver->name (toTensor) : ". timeUsage());
+
+    return $tensor;
+}
+
+function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor) : Image
+{
+    Transformers::setup()
+        ->setImageDriver($imageDriver)
+        ->apply();
+
+    $image =  Image::fromTensor($tensor);
+
+    dump("$imageDriver->name (fromTensor) : ". timeUsage());
+
+    return $image;
+}
+
+
+// Run the test
+dump("------------ toTensor ------------");
+$tensor = toTensorTest(ImageDriver::IMAGICK);
+$tensor = toTensorTest(ImageDriver::GD);
+$tensor = toTensorTest(ImageDriver::VIPS);
+
+
+dump("------------ fromTensor ------------");
+$image = fromTensorTest(ImageDriver::IMAGICK, $tensor);
+$image = fromTensorTest(ImageDriver::GD, $tensor);
+$image = fromTensorTest(ImageDriver::VIPS, $tensor);
