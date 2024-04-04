@@ -413,6 +413,7 @@ class Tensor extends NDArrayPhp
             $this->buffer(),
             $this->_dtype,
             $this->calcUnsqueezeDims($this->shape(), $dim),
+            $this->_offset
         );
     }
 
