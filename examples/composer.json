@@ -2,7 +2,7 @@
     "name": "kyrian/examples",
     "autoload": {
         "psr-4": {
-            "Kyrian\\Examples\\": "src/"
+            "Kyrian\\Examples\\": "/"
         }
     },
     "authors": [
@@ -24,5 +24,10 @@
             "type" : "path",
             "url": "../"
         }
-    ]
+    ],
+    "config": {
+        "allow-plugins": {
+            "codewithkyrian/onnxruntime-downloader-plugin": true
+        }
+    }
 }

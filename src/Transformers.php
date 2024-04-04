@@ -32,7 +32,7 @@ class Transformers
 
     public function apply(): void
     {
-        FFI::$lib = self::libFile();
+//        FFI::$lib = self::libFile();
 
         Image::$imagine = match (self::$imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
