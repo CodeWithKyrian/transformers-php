@@ -2,14 +2,70 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
+use ArrayObject;
+use Interop\Polite\Math\Matrix\NDArray;
+use InvalidArgumentException;
 use Rindow\Math\Matrix\MatrixOperator;
 use Rindow\Math\Matrix\NDArrayPhp;
 
 class Tensor extends NDArrayPhp
 {
+
+    public function __construct($array = null, $dtype = null, array $shape = null, $offset = null)
+    {
+        if ($dtype === null) {
+            if (is_bool($array)) {
+                $dtype = NDArray::bool;
+            } else {
+                $dtype = NDArray::float32;
+            }
+        }
+
+        if (is_array($array) || $array instanceof ArrayObject) {
+            $size = count($array, COUNT_RECURSIVE);
+            $this->_buffer = $this->newBuffer($size, $dtype);
+            $index = 0;
+            $this->flattenArray($array, $this->_buffer, $index);
+            $this->_offset = 0;
+            $shape = $shape ?? $this->genShape($array);
+        } elseif (is_numeric($array) || is_bool($array)) {
+            if (is_bool($array) && $dtype != NDArray::bool) {
+                throw new InvalidArgumentException("unmatch dtype with bool value");
+            }
+            $this->_buffer = $this->newBuffer(1, $dtype);
+            $this->_buffer[0] = $array;
+            $this->_offset = 0;
+            $shape = $shape ?? [];
+            $this->assertShape($shape);
+            if (array_product($shape) != 1)
+                throw new InvalidArgumentException("Invalid dimension size");
+        } elseif ($array === null && $shape !== null) {
+            $this->assertShape($shape);
+            $size = (int)array_product($shape);
+            $this->_buffer = $this->newBuffer($size, $dtype);
+            $this->_offset = 0;
+        } elseif ($this->isBuffer($array)) {
+            if (!is_int($offset))
+                throw new InvalidArgumentException("Must specify offset with the buffer");
+            if ($shape === null)
+                throw new InvalidArgumentException("Invalid dimension size");
+            $this->_buffer = $array;
+            $this->_offset = $offset;
+        } else {
+            throw new InvalidArgumentException("Invalid type of array");
+        }
+        $this->assertShape($shape);
+        $this->_shape = $shape;
+
+        $size = (int)array_product($shape);
+        if (count($this->_buffer) - $this->_offset < $size)
+            throw new InvalidArgumentException("Invalid dimension size");
+
+        $this->_dtype = $dtype;
+    }
+
 
     public static function getMo(): MatrixOperator
     {
@@ -25,7 +81,7 @@ class Tensor extends NDArrayPhp
 
     public static function fromNdArray(NDArrayPhp $ndArray, $shape = null): static
     {
-        return new static($ndArray->toArray(), $ndArray->dtype(), $shape ?? $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $shape ?? $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -40,7 +96,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->zeros($shape, $dtype);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -54,7 +110,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->zerosLike($other);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
 
@@ -71,7 +127,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->ones($shape, $dtype);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -85,7 +141,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->ones($other->shape(), $other->dtype());
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
 
@@ -101,7 +157,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->add($this, $other);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -116,7 +172,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->op($this, '+', $scalar);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -129,7 +185,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->f(fn($x) => 1 / (1 + exp(-$x)), $this);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -145,7 +201,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->op($this, '*', $scalar);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -158,7 +214,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->transpose($this);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -223,7 +279,7 @@ class Tensor extends NDArrayPhp
             array_splice($resultDims, $dim, 1);
         }
 
-        return new static($result->toArray(), $result->dtype(), $resultDims);
+        return new static($result->buffer(), $result->dtype(), $resultDims);
     }
 
     /**
@@ -354,7 +410,7 @@ class Tensor extends NDArrayPhp
     public function unsqueeze(?int $dim = null): static
     {
         return new Tensor(
-            $this->_buffer->toArray(),
+            $this->buffer(),
             $this->_dtype,
             $this->calcUnsqueezeDims($this->shape(), $dim),
         );
@@ -373,7 +429,7 @@ class Tensor extends NDArrayPhp
 
         $result = $mo->f(fn($x) => max($min, min($max, $x)), $this);
 
-        return new static($result->toArray(), $result->dtype(), $result->shape(), $result->offset());
+        return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
 
     /**
@@ -386,7 +442,7 @@ class Tensor extends NDArrayPhp
 
         $result = $mo->f(fn($x) => round($x), $this);
 
-        return new static($result->toArray(), $result->dtype(), $result->shape(), $result->offset());
+        return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
 
     /**
@@ -405,7 +461,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $mo->astype($this, $dtype);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -421,7 +477,7 @@ class Tensor extends NDArrayPhp
 
         $ndArray = $ndArray->reshape($shape);
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -437,7 +493,7 @@ class Tensor extends NDArrayPhp
             array_splice($ndArray->_shape, $dim, 1);
         }
 
-        return new static($ndArray->toArray(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -519,7 +575,7 @@ class Tensor extends NDArrayPhp
 
         $newBufferSize = array_reduce($newDims, fn($a, $b) => $a * $b, 1);
 
-        $buffer = [];
+        $buffer = $this->newBuffer($newBufferSize, $this->dtype());
         $stride = $this->stride();
 
         for ($i = 0; $i < $newBufferSize; ++$i) {
@@ -532,7 +588,7 @@ class Tensor extends NDArrayPhp
             $buffer[$i] = $this->_buffer[$originalIndex];
         }
 
-        return new Tensor($buffer, $this->dtype(), $newDims);
+        return new Tensor($buffer, $this->dtype(), $newDims, $this->offset());
     }
 
     /**
@@ -553,27 +609,19 @@ class Tensor extends NDArrayPhp
         return array_reverse($stride, true);
     }
 
-    protected function array2Flat($A, $F, &$idx, $prepare)
+    protected function flattenArray(array|ArrayObject $nestedArray, $flatArray, int &$currentIndex): int
     {
-//        if (is_array($A)) {
-//            ksort($A);
-//        } elseif ($A instanceof \ArrayObject) {
-//            $A->ksort();
-//        } else {
-//            // If $A is neither an array nor an ArrayObject, it's an unexpected type.
-//            throw new \InvalidArgumentException("Input must be an array or ArrayObject.");
-//        }
-
         $num = null;
         $cursor = 0;
-        $arrayLength = count($A); // Optimize count() call
-        while ($cursor < $arrayLength) {
-            $value = $A[$cursor];
+        $nestedArrayLength = count($nestedArray);
+
+        while ($cursor < $nestedArrayLength) {
+            $value = $nestedArray[$cursor];
             if (is_array($value) || $value instanceof \ArrayObject) {
                 if ($value instanceof \ArrayObject) {
-                    $value = $value->getArrayCopy(); // Standardize handling of ArrayObject
+                    $value = $value->getArrayCopy();
                 }
-                $num2 = $this->array2Flat($value, $F, $idx, $prepare);
+                $num2 = $this->flattenArray($value, $flatArray, $currentIndex);
                 if ($num === null) {
                     $num = $num2;
                 } elseif ($num !== $num2) {
@@ -583,14 +631,13 @@ class Tensor extends NDArrayPhp
                 if ($num !== null) {
                     throw new \InvalidArgumentException("The shape of the dimension is broken");
                 }
-                if (!$prepare) {
-                    $F[$idx] = $value;
-                }
-                $idx++;
+
+                $flatArray[$currentIndex] = $value;
+                $currentIndex++;
             }
             $cursor++;
         }
-        return $arrayLength; // Use the pre-computed length
+        return $nestedArrayLength; // Use the pre-computed length
     }
 
     /**
@@ -622,17 +669,15 @@ class Tensor extends NDArrayPhp
 
         $resultShape = $tensors[0]->shape();
         $resultOffset = $tensors[0]->offset();
-        $resultShape[$dim] = array_reduce($tensors, function ($carry, $tensor) use ($dim) {
-            return $carry + $tensor->shape()[$dim];
-        }, 0);
+        $resultType = $tensors[0]->dtype();
+        $resultShape[$dim] = array_reduce($tensors, fn($carry, $tensor) => $carry + $tensor->shape()[$dim], 0);
 
         // Create a new array to store the accumulated values
         $resultSize = array_product($resultShape);
 
-        $result = new \SplFixedArray($resultSize);
+        $result = $tensors[0]->newBuffer($resultSize, $resultType);
 
         // Create output tensor of same type as first
-        $resultType = $tensors[0]->dtype();
 
         if ($dim === 0) {
             // Handle special case for performance reasons
