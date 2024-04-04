@@ -7,9 +7,7 @@ namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use OnnxRuntime\FFI;
 use OnnxRuntime\Vendor;
-use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 class Transformers
 {
@@ -32,20 +30,11 @@ class Transformers
 
     public function apply(): void
     {
-        FFI::$lib = self::libFile();
-
         Image::$imagine = match (self::$imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
             ImageDriver::GD => new \Imagine\GD\Imagine(),
             ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
         };
-    }
-
-    public static function libFile(): string
-    {
-        $template = joinPaths(Transformers::$cacheDir, self::platform('file'), 'lib', self::platform('lib'));
-
-        return str_replace('{{version}}', Vendor::VERSION, $template);
     }
 
     /**
