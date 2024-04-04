@@ -19,6 +19,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 #[AsCommand(
@@ -79,10 +80,38 @@ class DownloadModelCommand extends Command
 
             $output->writeln('✔ Model files downloaded successfully.');
 
+            $this->askToStar($input, $output);
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $output->writeln('✘ '. $e->getMessage());
             return Command::FAILURE;
+        }
+    }
+
+    protected function askToStar(InputInterface $input, OutputInterface $output): void
+    {
+        if ($input->getOption('no-interaction')) {
+            return;
+        }
+
+        $helper = $this->getHelper('question');
+        $question = new ConfirmationQuestion('? Would you like to show some love by starring the Transformers repo on GitHub? ', true);
+
+        if ($helper->ask($input, $output, $question)) {
+            if (PHP_OS_FAMILY === 'Darwin') {
+                exec('open https://github.com/CodeWithKyrian/transformers-php');
+            }
+            if (PHP_OS_FAMILY === 'Linux') {
+                exec('xdg-open https://github.com/CodeWithKyrian/transformers-php');
+            }
+            if (PHP_OS_FAMILY === 'Windows') {
+                exec('start https://github.com/CodeWithKyrian/transformers-php');
+            }
+
+            $output->writeln('✔ Thank you!');
+        } else {
+            $output->writeln('✔ That\'s okay. You can always star the repo later.');
         }
     }
 }

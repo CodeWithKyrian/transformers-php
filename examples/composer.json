@@ -2,7 +2,7 @@
     "name": "kyrian/examples",
     "autoload": {
         "psr-4": {
-            "Kyrian\\Examples\\": "src/"
+            "Kyrian\\Examples\\": "/"
         }
     },
     "authors": [
@@ -14,8 +14,9 @@
     "require": {
         "php": "^8.1",
         "symfony/console": "^7.0",
-        "codewithkyrian/transformers" : "dev-main"
+        "codewithkyrian/transformers": "dev-change-init-process"
     },
+    "minimum-stability": "dev",
     "require-dev": {
         "symfony/var-dumper": "^7.0"
     },
