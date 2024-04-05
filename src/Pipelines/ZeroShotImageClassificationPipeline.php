@@ -52,15 +52,15 @@ class ZeroShotImageClassificationPipeline extends Pipeline
         $output = $this->model->__invoke(array_merge($textInputs, ['pixel_values' => $pixelValues]));
 
         $activationFn = $this->model->config['model_type'] === 'siglip' ?
-            fn(Tensor $batch) => $batch->sigmoid()->buffer()->toArray() :
-            fn(Tensor $batch) => Math::softmax($batch->buffer()->toArray());
+            fn(Tensor $batch) => $batch->sigmoid()->toArray() :
+            fn(Tensor $batch) => Math::softmax($batch->toArray());
 
         // Compare each image with each candidate label
         $toReturn = [];
 
         foreach ($output['logits_per_image'] as $batch) {
             // Compute softmax per image
-            $scores = $activationFn(Tensor::fromNdArray($batch));
+            $scores = $activationFn(Tensor::fromArray($batch));
 
             $result = [];
             foreach ($scores as $i => $score) {
