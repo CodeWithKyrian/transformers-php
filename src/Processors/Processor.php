@@ -67,7 +67,7 @@ class Processor
                 $probs = [];
                 if ($isZeroShot) {
                     // Get indices of classes with high enough probability
-                    $logitSigmoid = $logit->sigmoid()->buffer();
+                    $logitSigmoid = Math::sigmoid($logit->toArray());
                     foreach ($logitSigmoid as $k => $prob) {
                         if ($prob > $threshold) {
                             $indices[] = $k;

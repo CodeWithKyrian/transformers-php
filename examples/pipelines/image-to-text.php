@@ -13,9 +13,9 @@ ini_set('memory_limit', -1);
 //$captioner = pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
 $captioner = pipeline('image-to-text', 'Xenova/trocr-small-handwritten');
 
-$streamer = StdOutStreamer::make($captioner->tokenizer);
+//$streamer = StdOutStreamer::make($captioner->tokenizer);
 
-//$url = __DIR__. '/../images/cats.jpg';
+$url = __DIR__. '/../images/beach.png';
 //$url = __DIR__. '/../images/handwriting.jpg';
 //$url = __DIR__. '/../images/handwriting3.png';
 $url = __DIR__. '/../images/handwriting4.jpeg';
