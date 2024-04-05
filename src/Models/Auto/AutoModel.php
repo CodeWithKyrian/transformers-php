@@ -21,6 +21,8 @@ class AutoModel extends PretrainedMixin
 
         'detr' => \Codewithkyrian\Transformers\Models\Pretrained\DETRModel::class,
         'yolos' => \Codewithkyrian\Transformers\Models\Pretrained\YOLOSModel::class,
+        'owlvit' => \Codewithkyrian\Transformers\Models\Pretrained\OwlVitModel::class,
+        'owlv2' => \Codewithkyrian\Transformers\Models\Pretrained\OwlV2Model::class,
     ];
 
     const ENCODER_DECODER_MODEL_MAPPING = [
@@ -48,7 +50,9 @@ class AutoModel extends PretrainedMixin
         AutoModelForMaskedLM::MODEL_CLASS_MAPPING,
         AutoModelForQuestionAnswering::MODEL_CLASS_MAPPING,
         AutoModelForImageClassification::MODEL_CLASS_MAPPING,
-        AutoModelForVision2Seq::MODEL_CLASS_MAPPING
+        AutoModelForVision2Seq::MODEL_CLASS_MAPPING,
+        AutoModelForObjectDetection::MODEL_CLASS_MAPPING,
+        AutoModelForZeroShotObjectDetection::MODEL_CLASS_MAPPING,
     ];
 
 

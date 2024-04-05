@@ -7,6 +7,17 @@ namespace Codewithkyrian\Transformers\Utils;
 
 class Math
 {
+    public static function sigmoid(array|\ArrayAccess $arr): array
+    {
+        $result = [];
+
+        foreach ($arr as $value) {
+            $result[] = 1 / (1 + exp(-$value));
+        }
+
+        return $result;
+    }
+
     /**
      * Compute the softmax of an array of numbers.
      * @template T of int|float

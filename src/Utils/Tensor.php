@@ -25,7 +25,7 @@ class Tensor extends NDArrayPhp
 
     public static function fromNdArray(NDArrayPhp $ndArray, $shape = null): static
     {
-        return new static($ndArray->toArray(), $ndArray->dtype(), $shape ?? $ndArray->shape(), $ndArray->offset());
+        return new static($ndArray->buffer(), $ndArray->dtype(), $shape ?? $ndArray->shape(), $ndArray->offset());
     }
 
     /**
