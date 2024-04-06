@@ -58,7 +58,7 @@ class ImageToTextPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($pixelValues as $batch) {
-            $batch = Tensor::fromNdArray($batch, [1, ...$batch->shape()]);
+            $batch = Tensor::fromArray($batch, shape: [1, ...$batch->shape()]);
 
             $output = $this->model->generate($batch, generationConfig: $generationConfig, streamer: $streamer);
 

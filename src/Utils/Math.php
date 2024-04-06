@@ -108,21 +108,21 @@ class Math
      *
      * @template T
      * @param T $array
-     * @param int[] $dims
+     * @param int[] $shape
      * @param int[] $axes
      * @return array{0: T, 1: int[]} The permuted array and the new shape.
      */
-    public static function permuteData($array, array $dims, array $axes): array
+    public static function permuteData($array, array $shape, array $axes): array
     {
         // Calculate the new shape of the permuted array
         // and the stride of the original array
-        $shape = array_fill(0, count($axes), 0);
+        $newShape = array_fill(0, count($axes), 0);
         $stride = array_fill(0, count($axes), 0);
 
         for ($i = count($axes) - 1, $s = 1; $i >= 0; --$i) {
             $stride[$i] = $s;
-            $shape[$i] = $dims[$axes[$i]];
-            $s *= $shape[$i];
+            $newShape[$i] = $shape[$axes[$i]];
+            $s *= $newShape[$i];
         }
 
         // Precompute inverse mapping of stride
@@ -136,14 +136,14 @@ class Math
         // Permute the original array to the new array
         for ($i = 0; $i < count($array); ++$i) {
             $newIndex = 0;
-            for ($j = count($dims) - 1, $k = $i; $j >= 0; --$j) {
-                $newIndex += ($k % $dims[$j]) * $invStride[$j];
-                $k = intval(floor($k / $dims[$j]));
+            for ($j = count($shape) - 1, $k = $i; $j >= 0; --$j) {
+                $newIndex += ($k % $shape[$j]) * $invStride[$j];
+                $k = intval(floor($k / $shape[$j]));
             }
             $permutedData[$newIndex] = $array[$i];
         }
 
-        return [$permutedData, $shape];
+        return [$permutedData, $newShape];
     }
 
 
