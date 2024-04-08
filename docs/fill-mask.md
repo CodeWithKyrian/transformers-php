@@ -35,7 +35,7 @@ use function Codewithkyrian\Transformers\Pipelines\pipeline;
 
 $fillMask = pipeline('fill-mask');
 
-$result = $fillMask('The quick brown <mask> jumps over the lazy dog.');
+$result = $fillMask('The quick brown [MASK] jumps over the lazy dog.');
 ```
 
 ## Pipeline Input Options
@@ -50,7 +50,7 @@ When running the `fill-mask` pipeline, you can the following options:
   in an exception.
 
   ```php
-  $result = $fillMask(['My name is Kyrian and I am a <mask> developer.', 'I am a <mask> developer.']);
+  $result = $fillMask(['My name is Kyrian and I am a [MASK] developer.', 'I am a [MASK] developer.']);
   ```
 
 - ### `topK` *(int)*
@@ -58,7 +58,7 @@ When running the `fill-mask` pipeline, you can the following options:
   receive that many top predictions, or use -1 to obtain all predictions from the model.
 
   ```php
-  $result = $fillMask('My name is Kyrian and I am a <mask> developer.', topK: 2);
+  $result = $fillMask('My name is Kyrian and I am a [MASK] developer.', topK: 2);
   ```
 
   ::: details Click to view output
