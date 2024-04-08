@@ -10,6 +10,8 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Processors\AutoProcessor;
 use Codewithkyrian\Transformers\Processors\Processor;
+use Codewithkyrian\Transformers\Utils\Image;
+use Codewithkyrian\Transformers\Utils\Tensor;
 use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
@@ -29,7 +31,7 @@ class Pipeline
      * @param ...$args
      * @return array
      */
-    public function __invoke(array|string $inputs, ...$args): array
+    public function __invoke(array|string $inputs, ...$args): array|Tensor|Image
     {
         return [];
     }

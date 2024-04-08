@@ -10,6 +10,7 @@ use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Symfony\Component\Console\Output\OutputInterface;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Base class of all AutoModels. Contains the `from_pretrained` function
@@ -50,6 +51,7 @@ abstract class PretrainedMixin
         ?OutputInterface $output = null
     ): PretrainedModel
     {
+
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
 
         foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {

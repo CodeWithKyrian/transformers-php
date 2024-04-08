@@ -598,23 +598,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $mo = self::getMo();
 
-        $result = clone $this;
+        $ndArray = $mo->la()->squeeze($this, $dim);
 
-        if ($dim === null) {
-            $result->buffer = array_filter($result->buffer, fn($value) => $value !== 1);
-            $result->shape = array_filter($result->shape, fn($value) => $value !== 1);
-        } else {
-            $dim = $result->safeIndex($dim, $result->ndim());
-
-            if ($result->shape[$dim] !== 1) {
-                throw new Exception("DimensionError: cannot select an axis to squeeze out which has size not equal to one");
-            }
-
-            array_splice($result->buffer, $dim, 1);
-            array_splice($result->shape, $dim, 1);
-        }
-
-        return $result;
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -684,10 +670,10 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Performs Tensor dtype conversion.
      *
-     * @param string $dtype The target data type.
+     * @param int $dtype The target data type.
      * @return static The converted tensor.
      */
-    public function to(string $dtype): static
+    public function to(int $dtype): static
     {
         if ($this->dtype() === $dtype) {
             return $this;

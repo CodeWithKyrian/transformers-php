@@ -16,13 +16,13 @@ class ImageFeatureExtractor extends FeatureExtractor
      * The mean values for image normalization.
      * @var int|int[]
      */
-    protected int|array $imageMean;
+    protected int|array|null $imageMean;
 
     /**
      * The standard deviation values for image normalization.
      * @var int|int[]
      */
-    protected int|array $imageStd;
+    protected int|array|null $imageStd;
 
     /*
      * What method to use for resampling.
@@ -65,14 +65,13 @@ class ImageFeatureExtractor extends FeatureExtractor
     protected array|int|null $cropSize;
     protected ?bool $doConvertRGB;
     protected ?bool $doCropMargin;
-    protected ?array $padSize;
+    protected array|int|null $padSize;
     protected ?bool $doPad;
 
     public function __construct(public array $config)
     {
-
-        $this->imageMean = $config['image_mean'] ?? $config['mean'];
-        $this->imageStd = $config['image_std'] ?? $config['std'];
+        $this->imageMean = $config['image_mean'] ?? $config['mean'] ?? null;
+        $this->imageStd = $config['image_std'] ?? $config['std'] ?? null;
 
         $this->resample = $config['resample'] ?? 2; // 2 => bilinear
         $this->doRescale = $config['do_rescale'] ?? true;
@@ -493,7 +492,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         // Perform padding after rescaling/normalizing
         if ($doPad ?? $this->doPad) {
             if ($this->padSize !== null) {
-                $pixelData = $this->padImage($pixelData, $imgShape, $this->padSize);
+                [$pixelData, $imgShape] = $this->padImage($pixelData, $imgShape, $this->padSize);
             } elseif ($this->sizeDivisibility !== null) {
                 [$paddedWidth, $paddedHeight] = $this->enforceSizeDivisibility([$imgShape[1], $imgShape[0]], $this->sizeDivisibility);
                 [$pixelData, $imgShape] = $this->padImage($pixelData, $imgShape, ['width' => $paddedWidth, 'height' => $paddedHeight]);

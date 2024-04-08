@@ -33,6 +33,7 @@ use Exception;
 use OnnxRuntime\InferenceSession;
 use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -91,7 +92,6 @@ class PretrainedModel
         if (is_array($config)) {
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
         }
-
 
         switch ($modelArchitecture) {
             case ModelArchitecture::DecoderOnly:
@@ -153,8 +153,10 @@ class PretrainedModel
                     echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
                 }
 
+
                 $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
                     fileName: 'model', cacheDir: $cacheDir, revision: $revision, output: $output);
+
 
                 return new static($config, $session, $modelArchitecture);
             }
