@@ -24,6 +24,7 @@ class AutoModel extends PretrainedMixin
         'yolos' => \Codewithkyrian\Transformers\Models\Pretrained\YOLOSModel::class,
         'owlvit' => \Codewithkyrian\Transformers\Models\Pretrained\OwlVitModel::class,
         'owlv2' => \Codewithkyrian\Transformers\Models\Pretrained\OwlV2Model::class,
+        'swin2sr' => \Codewithkyrian\Transformers\Models\Pretrained\Swin2SRModel::class,
     ];
 
     const ENCODER_DECODER_MODEL_MAPPING = [
