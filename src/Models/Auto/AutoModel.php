@@ -18,6 +18,7 @@ class AutoModel extends PretrainedMixin
         "clip" => \Codewithkyrian\Transformers\Models\Pretrained\CLIPModel::class,
         "vit" => \Codewithkyrian\Transformers\Models\Pretrained\ViTModel::class,
         "deit" => \Codewithkyrian\Transformers\Models\Pretrained\DeiTModel::class,
+        "siglip" => \Codewithkyrian\Transformers\Models\Pretrained\SigLipModel::class,
 
         'detr' => \Codewithkyrian\Transformers\Models\Pretrained\DETRModel::class,
         'yolos' => \Codewithkyrian\Transformers\Models\Pretrained\YOLOSModel::class,
