@@ -31,8 +31,8 @@ class QuestionAnsweringPipeline extends Pipeline
 
         $inputs = $this->tokenizer->__invoke($question, $context, padding: true, truncation: true);
 
-         /** @var QuestionAnsweringModelOutput $outputs */
-         $outputs = $this->model->__invoke($inputs);
+        /** @var QuestionAnsweringModelOutput $outputs */
+        $outputs = $this->model->__invoke($inputs);
 
         $toReturn = [];
 
@@ -40,14 +40,14 @@ class QuestionAnsweringPipeline extends Pipeline
             $ids = $inputs['input_ids']->toArray()[$i];
             $sepIndex = array_search($this->tokenizer->sepTokenId, $ids);
 
-            $startLogits = $outputs->startLogits[$i]->buffer()->toArray();
-            $endLogits = $outputs->endLogits[$i]->buffer()->toArray();
+            $startLogits = $outputs->startLogits[$i];
+            $endLogits = $outputs->endLogits[$i];
 
             // Compute softmax for start and end logits and filter based on separator index
             $s1 = array_filter(
                 array_map(
                     fn($x) => [$x[0], $x[1]],
-                    array_map(null, Math::softmax($startLogits), range(0, count($startLogits) - 1))
+                    array_map(null, $startLogits->softmax(), range(0, count($startLogits) - 1))
                 ),
                 fn($x) => $x[1] > $sepIndex
             );
@@ -56,7 +56,7 @@ class QuestionAnsweringPipeline extends Pipeline
             $e1 = array_filter(
                 array_map(
                     fn($x) => [$x[0], $x[1]],
-                    array_map(null, Math::softmax($endLogits), range(0, count($endLogits) - 1))
+                    array_map(null, $endLogits->softmax(), range(0, count($endLogits) - 1))
                 ),
                 fn($x) => $x[1] > $sepIndex
             );

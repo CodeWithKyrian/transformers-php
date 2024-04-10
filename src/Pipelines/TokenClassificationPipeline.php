@@ -7,8 +7,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\TokenClassifierOutput;
 use Codewithkyrian\Transformers\Utils\AggregationStrategy;
-use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Exception;
 
 /**
  * Named Entity Recognition pipeline using any `ModelForTokenClassification`.
@@ -73,8 +72,7 @@ class TokenClassificationPipeline extends Pipeline
             $entities = [];
 
             for ($j = 0; $j < $batch->shape()[0]; ++$j) {
-                $tokenData = $batch[$j]->toArray();
-                $topScoreIndex = array_search(max($tokenData), $tokenData);
+                $topScoreIndex = $batch[$j]->argMax();
 
                 $entity = $id2label[$topScoreIndex] ?? "LABEL_{$topScoreIndex}";
 
@@ -86,7 +84,7 @@ class TokenClassificationPipeline extends Pipeline
                     continue;
                 }
 
-                $scores = Math::softmax($tokenData);
+                $scores = $batch[$j]->softmax();
 
                 $entities[] = [
                     'entity' => $entity,
@@ -168,7 +166,7 @@ class TokenClassificationPipeline extends Pipeline
                 break;
 
             default:
-                throw new \Exception("Invalid aggregation_strategy");
+                throw new Exception("Invalid aggregation_strategy");
         }
 
 
@@ -221,6 +219,17 @@ class TokenClassificationPipeline extends Pipeline
         return $entityGroups;
     }
 
+    protected function getTag($entityName): array
+    {
+        if (str_starts_with($entityName, "B-")) {
+            return ["B", substr($entityName, 2)];
+        } elseif (str_starts_with($entityName, "I-")) {
+            return ["I", substr($entityName, 2)];
+        } else {
+            return ["I", $entityName]; // Default to "I" for continuation
+        }
+    }
+
     /**
      * Group together the adjacent tokens with the same entity predicted.
      *
@@ -242,17 +251,6 @@ class TokenClassificationPipeline extends Pipeline
             'start' => null,
             'end' => null
         ];
-    }
-
-    protected function getTag($entityName): array
-    {
-        if (str_starts_with($entityName, "B-")) {
-            return ["B", substr($entityName, 2)];
-        } elseif (str_starts_with($entityName, "I-")) {
-            return ["I", substr($entityName, 2)];
-        } else {
-            return ["I", $entityName]; // Default to "I" for continuation
-        }
     }
 
 }
