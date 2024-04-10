@@ -5,37 +5,14 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tokenizers;
 
+use ArrayObject;
+use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Utils\Hub;
+use Exception;
 use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class Tokenizer
 {
-    /**
-     * An array of tokens.
-     * @var string[]
-     */
-    public array $vocab = [];
-
-    /**
-     * A mapping of tokens to ids.
-     * @var array<string, int>
-     */
-    public array $tokenToIds = [];
-
-    /**
-     *The id of the unknown token.
-     */
-    protected ?int $unkTokenId = null;
-
-    /**
-     * The unknown token string.
-     */
-    protected ?string $unkToken = null;
-
-    public ?string $endOfWordSuffix = null;
-
-    public ?string $continuingSubwordPrefix = null;
-
     public const SPECIAL_TOKEN_ATTRIBUTES = [
         'bos_token',
         'eos_token',
@@ -46,6 +23,26 @@ abstract class Tokenizer
         'mask_token',
         // additional_special_tokens (TODO)
     ];
+    /**
+     * An array of tokens.
+     * @var string[]
+     */
+    public array $vocab = [];
+    /**
+     * A mapping of tokens to ids.
+     * @var array<string, int>
+     */
+    public array $tokenToIds = [];
+    public ?string $endOfWordSuffix = null;
+    public ?string $continuingSubwordPrefix = null;
+    /**
+     *The id of the unknown token.
+     */
+    protected ?int $unkTokenId = null;
+    /**
+     * The unknown token string.
+     */
+    protected ?string $unkToken = null;
 
     public function __construct(protected array $config)
     {
@@ -69,47 +66,27 @@ abstract class Tokenizer
                     return new LegacyTokenizer($config, ...$args);
                 }
 
-                throw new \Exception("Unknown tokenizer type {$config['type']}");
+                throw new Exception("Unknown tokenizer type {$config['type']}");
             })()
         };
-    }
-
-
-    /**
-     * Internal function to call the TokenizerModel instance.
-     * @param string[] $tokens The tokens to encode.
-     * @return string[] The encoded token IDs.
-     */
-    public function __invoke(array $tokens): array
-    {
-        $ids = $this->encode($tokens);
-
-        if ($this->fuseUnk()) {
-            $ids = $this->fuse($ids, $this->unkTokenId, $this->tokenToIds);
-        }
-
-        return $ids;
     }
 
     /**
      * Loads a tokenizer from the specified path.
      *
      * @param string $modelNameOrPath The path to the tokenizer model directory
-     * @param bool $quantized
-     * @param array|null $config
      * @param string|null $cacheDir
      * @param string $revision
      * @param mixed $legacy
+     * @param OutputInterface|null $output
      * @return array {tokenizerJson: array, tokenizerConfig: array}
+     * @throws HubException
      */
     public static function load(
-        string  $modelNameOrPath,
-
-        bool    $quantized,
-        ?array  $config,
-        ?string $cacheDir,
-        string  $revision,
-        mixed   $legacy,
+        string           $modelNameOrPath,
+        ?string          $cacheDir,
+        string           $revision,
+        mixed            $legacy,
         ?OutputInterface $output = null
     ): array
     {
@@ -142,47 +119,128 @@ abstract class Tokenizer
     }
 
     /**
+     * Helper function to split a string on whitespace.
+     *
+     * @param string $text The text to split.
+     * @return string[] The split text.
+     */
+    public static function whitespaceSplit(string $text): array
+    {
+        return preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    /**
+     * Helper function to lowercase a string and remove accents.
+     * @param string $text The text to lowercase and remove accents from.
+     * @return string The text with accents removed and lowercased.
+     */
+    public static function lowerCaseAndRemoveAccents(string $text): string
+    {
+        return mb_strtolower(self::removeAccents($text));
+    }
+
+    /**
+     * Helper function to remove accents from a string.
+     * @param string $text The text to remove accents from.
+     * @return string The text with accents removed.
+     */
+    public static function removeAccents(string $text): string
+    {
+        return preg_replace('/[\x{0300}-\x{036f}]/u', '', $text);
+    }
+
+    /**
+     * Clean up a list of simple English tokenization artifacts like spaces before punctuations and abbreviated forms
+     *
+     * @param string $text The text to clean up.
+     * @return string The cleaned up text.
+     */
+    public static function cleanUpTokenization(string|int $text): string
+    {
+        if (is_int($text)) {
+            $text = (string)$text;
+        }
+
+        $text = preg_replace('/ \./', '.', $text);
+        $text = preg_replace('/ \?/', '?', $text);
+        $text = preg_replace('/ \!/', '!', $text);
+        $text = preg_replace('/ ,/', ',', $text);
+        $text = preg_replace('/ \' /', "'", $text);
+        $text = preg_replace('/ n\'t/', "n't", $text);
+        $text = preg_replace('/ \'m/', "'m", $text);
+        $text = preg_replace('/ \'s/', "'s", $text);
+        $text = preg_replace('/ \'ve/', "'ve", $text);
+
+        return preg_replace('/ \'re/', "'re", $text);
+    }
+
+    public static function toMap(array $arr): array
+    {
+        $arrayObject = new ArrayObject($arr);
+
+        return $arrayObject->getArrayCopy();
+    }
+
+    public static function unicodeToBytes(): array
+    {
+        return array_flip(self::bytesToUnicode());
+    }
+
+    /**
+     * Returns list of utf-8 byte and a mapping to unicode strings.
+     * Specifically avoids mapping to whitespace/control characters the BPE code barfs on.
+     * @returns array Object with utf-8 byte keys and unicode string values.
+     */
+    public static function bytesToUnicode(): array
+    {
+        $bs = array_merge(
+            range(mb_ord('!'), mb_ord('~')),
+            range(mb_ord('¡'), mb_ord('¬')),
+            range(mb_ord('®'), mb_ord('ÿ'))
+        );
+
+        $cs = $bs;
+
+        // Adjust to correctly add missing bytes and map them starting from extended ASCII
+        $n = 0;
+        for ($b = 0; $b < 256; ++$b) {
+            if (!in_array($b, $bs)) {
+                $bs[] = $b;
+                // Here we start mapping to code points beyond the standard ASCII range
+                $cs[] = 256 + $n;
+                $n += 1;
+            }
+        }
+
+        // Convert $cs array elements to their corresponding Unicode characters
+        $cs = array_map(fn($code) => mb_chr($code), $cs);
+
+        return array_combine($bs, $cs);
+    }
+
+    /**
+     * Internal function to call the TokenizerModel instance.
+     * @param string[] $tokens The tokens to encode.
+     * @return string[] The encoded token IDs.
+     */
+    public function __invoke(array $tokens): array
+    {
+        $ids = $this->encode($tokens);
+
+        if ($this->fuseUnk()) {
+            $ids = $this->fuse($ids, $this->unkTokenId, $this->tokenToIds);
+        }
+
+        return $ids;
+    }
+
+    /**
      * Encodes a list of tokens into a list of token IDs.
      *
      * @param string[] $tokens The tokens to encode.
      * @return string[] The encoded token IDs.
      */
     protected abstract function encode(array $tokens): array;
-
-    /**
-     * Converts a list of tokens into a list of token IDs.
-     *
-     * @param string[] $tokens The tokens to convert.
-     * @return int[] The converted token IDs.
-     */
-    public function convertTokensToIds(array $tokens): array
-    {
-        $ids = [];
-
-        foreach ($tokens as $token) {
-            $ids[] = $this->tokenToIds[$token] ?? $this->unkTokenId;
-        }
-
-
-        return $ids;
-    }
-
-    /**
-     * Converts a list of token IDs into a list of tokens.
-     *
-     * @param string[] $ids The token IDs to convert.
-     * @return string[] The converted tokens.
-     */
-    public function convertIdsToTokens(array $ids): array
-    {
-        $tokens = [];
-
-        foreach ($ids as $id) {
-            $tokens[] = $this->vocab[$id] ?? $this->unkToken;
-        }
-
-        return $tokens;
-    }
 
     protected function fuseUnk(): bool
     {
@@ -227,102 +285,37 @@ abstract class Tokenizer
     }
 
     /**
-     * Helper function to split a string on whitespace.
+     * Converts a list of tokens into a list of token IDs.
      *
-     * @param string $text The text to split.
-     * @return string[] The split text.
+     * @param string[] $tokens The tokens to convert.
+     * @return int[] The converted token IDs.
      */
-    public static function whitespaceSplit(string $text): array
+    public function convertTokensToIds(array $tokens): array
     {
-        return preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-    }
+        $ids = [];
 
-    /**
-     * Helper function to remove accents from a string.
-     * @param string $text The text to remove accents from.
-     * @return string The text with accents removed.
-     */
-    public static function removeAccents(string $text): string
-    {
-        return preg_replace('/[\x{0300}-\x{036f}]/u', '', $text);
-    }
-
-    /**
-     * Helper function to lowercase a string and remove accents.
-     * @param string $text The text to lowercase and remove accents from.
-     * @return string The text with accents removed and lowercased.
-     */
-    public static function lowerCaseAndRemoveAccents(string $text): string
-    {
-        return mb_strtolower(self::removeAccents($text));
-    }
-
-    /**
-     * Clean up a list of simple English tokenization artifacts like spaces before punctuations and abbreviated forms
-     *
-     * @param string $text The text to clean up.
-     * @return string The cleaned up text.
-     */
-    public static function cleanUpTokenization(string|int $text): string
-    {
-        if (is_int($text)) {
-            $text = (string)$text;
+        foreach ($tokens as $token) {
+            $ids[] = $this->tokenToIds[$token] ?? $this->unkTokenId;
         }
 
-        $text = preg_replace('/ \./', '.', $text);
-        $text = preg_replace('/ \?/', '?', $text);
-        $text = preg_replace('/ \!/', '!', $text);
-        $text = preg_replace('/ ,/', ',', $text);
-        $text = preg_replace('/ \' /', "'", $text);
-        $text = preg_replace('/ n\'t/', "n't", $text);
-        $text = preg_replace('/ \'m/', "'m", $text);
-        $text = preg_replace('/ \'s/', "'s", $text);
-        $text = preg_replace('/ \'ve/', "'ve", $text);
 
-        return preg_replace('/ \'re/', "'re", $text);
-    }
-
-    public static function toMap(array $arr): array
-    {
-        $arrayObject = new \ArrayObject($arr);
-
-        return $arrayObject->getArrayCopy();
+        return $ids;
     }
 
     /**
-     * Returns list of utf-8 byte and a mapping to unicode strings.
-     * Specifically avoids mapping to whitespace/control characters the BPE code barfs on.
-     * @returns array Object with utf-8 byte keys and unicode string values.
+     * Converts a list of token IDs into a list of tokens.
+     *
+     * @param string[] $ids The token IDs to convert.
+     * @return string[] The converted tokens.
      */
-    public static function bytesToUnicode(): array
+    public function convertIdsToTokens(array $ids): array
     {
-        $bs = array_merge(
-            range(mb_ord('!'), mb_ord('~')),
-            range(mb_ord('¡'), mb_ord('¬')),
-            range(mb_ord('®'), mb_ord('ÿ'))
-        );
+        $tokens = [];
 
-        $cs = $bs;
-
-        // Adjust to correctly add missing bytes and map them starting from extended ASCII
-        $n = 0;
-        for ($b = 0; $b < 256; ++$b) {
-            if (!in_array($b, $bs)) {
-                $bs[] = $b;
-                // Here we start mapping to code points beyond the standard ASCII range
-                $cs[] = 256 + $n;
-                $n += 1;
-            }
+        foreach ($ids as $id) {
+            $tokens[] = $this->vocab[$id] ?? $this->unkToken;
         }
 
-        // Convert $cs array elements to their corresponding Unicode characters
-        $cs = array_map(fn($code) => mb_chr($code), $cs);
-
-        return array_combine($bs, $cs);
-    }
-
-    public static function unicodeToBytes(): array
-    {
-        return array_flip(self::bytesToUnicode());
+        return $tokens;
     }
 }

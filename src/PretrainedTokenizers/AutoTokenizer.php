@@ -70,28 +70,24 @@ class AutoTokenizer
      *  - A string, the *model id* of a pretrained tokenizer hosted inside a model repo on huggingface.co.
      *    Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
      *    user or organization name, like `dbmdz/bert-base-german-cased`.
-     *  - A path to a *directory* containing tokenizer files, e.g., `./my_model_directory/`.
-     * @param bool $quantized
-     * @param array|null $config
      * @param string|null $cacheDir
      * @param string $revision
      * @param mixed $legacy
-     * @return PretrainedTokenizer
+     * @param OutputInterface|null $output
+     * @return PretrainedTokenizer|null
      */
     public static function fromPretrained(
-        string  $modelNameOrPath,
-        bool    $quantized = true,
-        ?array  $config = null,
-        ?string $cacheDir = null,
-        string  $revision = 'main',
-        mixed   $legacy = null,
+        string           $modelNameOrPath,
+        ?string          $cacheDir = null,
+        string           $revision = 'main',
+        mixed            $legacy = null,
         ?OutputInterface $output = null
     ): ?PretrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $legacy, $output);
+            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy, $output);
 
-        if($tokenizerJson == null) return null;
+        if ($tokenizerJson == null) return null;
 
 
         // Some tokenizers are saved with the "Fast" suffix, so we remove that if present.

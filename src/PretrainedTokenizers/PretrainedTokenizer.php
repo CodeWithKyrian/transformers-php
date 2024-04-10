@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
+use Closure;
 use Codewithkyrian\Jinja\Template;
 use Codewithkyrian\Transformers\Decoders\Decoder;
 use Codewithkyrian\Transformers\Normalizers\Normalizer;
@@ -14,59 +15,40 @@ use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 use Codewithkyrian\Transformers\Utils\Tensor;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Error;
+use Exception;
 
 class PretrainedTokenizer
 {
-    protected bool $returnTokenTypeIds = false;
-
-    protected bool $warnedAboutChatTemplate = false;
-
-    protected string $defaultChatTemplate = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>' + '\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}";
-
-
-    protected ?Normalizer $normalizer;
-
-    protected ?PreTokenizer $preTokenizer;
-
     public ?Tokenizer $tokenizer;
-
+    public ?string $maskToken = null;
+    public ?int $maskTokenId = null;
+    public ?int $sepTokenId = null;
+    public string $paddingSide;
+    protected bool $returnTokenTypeIds = false;
+    protected bool $warnedAboutChatTemplate = false;
+    protected string $defaultChatTemplate = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>' + '\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}";
+    protected ?Normalizer $normalizer;
+    protected ?PreTokenizer $preTokenizer;
     protected ?PostProcessor $postProcessor;
-
     protected ?Decoder $decoder;
-
     protected array $specialTokens = [];
-
     protected array $allSpecialIds = [];
-
     /**
      * @var AddedToken[]
      */
     protected array $addedTokens = [];
-
     protected array $additionalSpecialTokens = [];
-
     protected string $addedTokensRegex = '';
-
-    public ?string $maskToken = null;
-    public ?int $maskTokenId = null;
-
     protected ?string $padToken = null;
     protected ?int $padTokenId = null;
-
     protected ?string $sepToken = null;
-    public ?int $sepTokenId = null;
-
     protected ?string $unkToken = null;
     protected ?int $unkTokenId = null;
-
     protected mixed $modelMaxLength;
     protected bool $removeSpace;
-
     protected bool $cleanUpTokenizationSpaces;
     protected bool $doLowerCaseAndRemoveAccent;
-
-    public string $paddingSide;
     protected bool $legacy;
 
     protected mixed $chatTemplate;
@@ -157,7 +139,7 @@ class PretrainedTokenizer
      *
      * @return string|null The value associated with the first matching key, or null if no match is found.
      *
-     * @throws \Exception If an object is found for a matching key and its __type property is not "AddedToken".
+     * @throws Exception If an object is found for a matching key and its __type property is not "AddedToken".
      */
     protected function getToken(string ...$keys): ?string
     {
@@ -172,7 +154,7 @@ class PretrainedTokenizer
                 if ($item['__type'] == 'AddedToken') {
                     return $item['content'];
                 } else {
-                    throw new \Exception("Unknown token: " . json_encode($item));
+                    throw new Exception("Unknown token: " . json_encode($item));
                 }
             } else {
                 return $item;
@@ -186,24 +168,46 @@ class PretrainedTokenizer
      * Loads a pre-trained tokenizer from the given path or name.
      *
      * @param string $modelNameOrPath
-     * @param $config
-     * @param $cacheDir
+     * @param string|null $cacheDir
      * @param string $revision
-     * @param $legacy
+     * @param null $legacy
      * @return PretrainedTokenizer
      */
     public static function fromPretrained(
         string  $modelNameOrPath,
-        ?array  $config = null,
         ?string $cacheDir = null,
         string  $revision = 'main',
                 $legacy = null,
     ): PretrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, true, $config, $cacheDir, $revision, $legacy);
+            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy);
 
         return new PretrainedTokenizer($tokenizerJson, $tokenizerConfig);
+    }
+
+    /**
+     * Tokenize the given text(s).
+     *
+     * @param string|array $text The text to tokenize.
+     * @param string|array|null $textPair Optional second sequence to be encoded. If set, must be the same type as text.
+     * @param bool|string $padding Whether to pad the input sequences.
+     * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
+     * @param bool $truncation Whether to truncate the input sequences.
+     * @param int|null $maxLength Maximum length of the returned list and optionally padding length.
+     *
+     * @return array{input_ids: Tensor, attention_mask: Tensor, token_type_ids: Tensor|null}
+     */
+    public function tokenize(
+        string|array      $text,
+        string|array|null $textPair = null,
+        bool|string       $padding = false,
+        bool              $addSpecialTokens = true,
+        bool              $truncation = false,
+        ?int              $maxLength = null,
+    ): array
+    {
+        return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength);
     }
 
     /**
@@ -234,14 +238,14 @@ class PretrainedTokenizer
 
         if ($isBatched) {
             if (count($text) === 0) {
-                throw new \Exception('$text array must be non-empty');
+                throw new Exception('$text array must be non-empty');
             }
 
             if ($textPair !== null) {
                 if (!is_array($textPair)) {
-                    throw new \Exception('$textPair must also be an array');
+                    throw new Exception('$textPair must also be an array');
                 } elseif (count($text) !== count($textPair)) {
-                    throw new \Exception('$text and $textPair must have the same length');
+                    throw new Exception('$text and $textPair must have the same length');
                 }
 
                 $encodedTokens = array_map(
@@ -267,7 +271,7 @@ class PretrainedTokenizer
             }
         } else {
             if (is_array($textPair)) {
-                throw new \Exception('When specifying `$textPair`, since `$text` is a string, `$textPair` must also be a string (i.e., not an array).');
+                throw new Exception('When specifying `$textPair`, since `$text` is a string, `$textPair` must also be a string (i.e., not an array).');
             }
 
             // For single input, we just wrap in an array, and then unwrap later.
@@ -299,7 +303,6 @@ class PretrainedTokenizer
 
         // Ensure it is less than model max length
         $maxLength = min($maxLength, $this->modelMaxLength);
-
 
 
         if ($padding || $truncation) {
@@ -343,7 +346,7 @@ class PretrainedTokenizer
                     return $carry;
                 }, false)
             ) {
-                throw new \Error("Unable to create tensor, you should probably activate truncation and/or padding with 'padding=true' and 'truncation=true' to have batched tensors with the same length.");
+                throw new Error("Unable to create tensor, you should probably activate truncation and/or padding with 'padding=true' and 'truncation=true' to have batched tensors with the same length.");
             }
         }
 
@@ -368,97 +371,6 @@ class PretrainedTokenizer
 
         return $result;
     }
-
-    /**
-     * Tokenize the given text(s).
-     *
-     * @param string|array $text The text to tokenize.
-     * @param string|array|null $textPair Optional second sequence to be encoded. If set, must be the same type as text.
-     * @param bool|string $padding Whether to pad the input sequences.
-     * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
-     * @param bool $truncation Whether to truncate the input sequences.
-     * @param int|null $maxLength Maximum length of the returned list and optionally padding length.
-     *
-     * @return array{input_ids: Tensor, attention_mask: Tensor, token_type_ids: Tensor|null}
-     */
-    public function tokenize(
-        string|array      $text,
-        string|array|null $textPair = null,
-        bool|string       $padding = false,
-        bool              $addSpecialTokens = true,
-        bool              $truncation = false,
-        ?int              $maxLength = null,
-    ): array
-    {
-        return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength);
-    }
-
-
-    /**
-     * Encodes a single text using the preprocessor pipeline of the tokenizer.
-     *
-     * @param string|null $text The text to encode.
-     * @return string[]|null The encoded tokens.
-     */
-    protected function encodeText(?string $text): ?array
-    {
-        if ($text === null) {
-            return null;
-        }
-
-        // Hash the text and check if it is in the cache
-        $hash = hash('sha256', $text);
-
-        if (isset($this->tokenizationCache[$hash])) {
-            return $this->tokenizationCache[$hash];
-        }
-
-        // Actual function which does encoding, for a single text
-        // First, we take care of special tokens. Needed to avoid issues arising from
-        // normalization and/or pretokenization (which may not preserve special tokens)
-        $sections = $this->addedTokensRegex ? preg_split($this->addedTokensRegex, $text, -1,  PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) : [$text];
-
-        $tokens = array_map(function ($x, $sectionIndex) {
-            $addedToken = null;
-            foreach ($this->addedTokens as $token) {
-                if ($token->content === $x) {
-                    $addedToken = $token;
-                    break;
-                }
-            }
-
-            if ($addedToken !== null) {
-                // Ignore added tokens
-                return [$x];
-            } else {
-                if ($this->removeSpace === true) {
-                    $x = preg_replace('/\s+/', ' ', trim($x));
-                }
-
-                if ($this->doLowerCaseAndRemoveAccent) {
-                    $x = Tokenizer::lowerCaseAndRemoveAccents($x);
-                }
-
-                if ($this->normalizer !== null) {
-                    $x = $this->normalizer->normalize($x);
-                }
-
-                $sectionTokens = ($this->preTokenizer !== null)
-                    ? $this->preTokenizer->preTokenize($x, ['section_index' => $sectionIndex])
-                    : [$x];
-
-                return $this->tokenizer->__invoke($sectionTokens);
-            }
-        }, $sections, array_keys($sections));
-
-        $result =  array_merge(...$tokens);
-
-        // Cache the result
-        $this->tokenizationCache[$hash] = $result;
-
-        return $result;
-    }
-
 
     /**
      * Encodes a single text or a pair of texts using the model's tokenizer.
@@ -494,6 +406,112 @@ class PretrainedTokenizer
     }
 
     /**
+     * Encodes a single text using the preprocessor pipeline of the tokenizer.
+     *
+     * @param string|null $text The text to encode.
+     * @return string[]|null The encoded tokens.
+     */
+    protected function encodeText(?string $text): ?array
+    {
+        if ($text === null) {
+            return null;
+        }
+
+        // Hash the text and check if it is in the cache
+        $hash = hash('sha256', $text);
+
+        if (isset($this->tokenizationCache[$hash])) {
+            return $this->tokenizationCache[$hash];
+        }
+
+        // Actual function which does encoding, for a single text
+        // First, we take care of special tokens. Needed to avoid issues arising from
+        // normalization and/or pretokenization (which may not preserve special tokens)
+        $sections = $this->addedTokensRegex ? preg_split($this->addedTokensRegex, $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) : [$text];
+
+        $tokens = array_map(function ($x, $sectionIndex) {
+            $addedToken = null;
+            foreach ($this->addedTokens as $token) {
+                if ($token->content === $x) {
+                    $addedToken = $token;
+                    break;
+                }
+            }
+
+            if ($addedToken !== null) {
+                // Ignore added tokens
+                return [$x];
+            } else {
+                if ($this->removeSpace === true) {
+                    $x = preg_replace('/\s+/', ' ', trim($x));
+                }
+
+                if ($this->doLowerCaseAndRemoveAccent) {
+                    $x = Tokenizer::lowerCaseAndRemoveAccents($x);
+                }
+
+                if ($this->normalizer !== null) {
+                    $x = $this->normalizer->normalize($x);
+                }
+
+                $sectionTokens = ($this->preTokenizer !== null)
+                    ? $this->preTokenizer->preTokenize($x, ['section_index' => $sectionIndex])
+                    : [$x];
+
+                return $this->tokenizer->__invoke($sectionTokens);
+            }
+        }, $sections, array_keys($sections));
+
+        $result = array_merge(...$tokens);
+
+        // Cache the result
+        $this->tokenizationCache[$hash] = $result;
+
+        return $result;
+    }
+
+    /**
+     * Helper function for truncating values of an object, which are each arrays.
+     * NOTE: No additional checks are made here for the validity of arguments.
+     *
+     * @param array $item The input object.
+     * @param int $length The length to truncate to.
+     */
+    function truncateHelper(array &$item, int $length): void
+    {
+        // Setting .length to a lower value truncates the array in-place.
+        // Note: In PHP, arrays automatically adjust their size, so we don't need to explicitly set the length.
+        foreach (array_keys($item) as $key) {
+            $item[$key] = array_slice($item[$key], 0, $length);
+        }
+    }
+
+    /**
+     * Helper function for padding values of an object, which are each arrays.
+     * NOTE: No additional checks are made here for the validity of arguments.
+     *
+     * @param array $item The input object.
+     * @param int $length The length to pad to.
+     * @param Closure $value_fn Determine the value to fill the array, based on its key.
+     * @param string $side Which side to pad the array.
+     */
+    protected function padHelper(array &$item, int $length, Closure $value_fn, string $side): void
+    {
+        foreach (array_keys($item) as $key) {
+            if ($item[$key] == null) return;
+
+            $diff = $length - count($item[$key]);
+            $value = $value_fn($key);
+
+            $padData = array_fill(0, $diff, $value);
+            $item[$key] = ($side === 'right')
+                ? [...$item[$key], ...$padData]
+                : [...$padData, ...$item[$key]];
+
+        }
+    }
+
+    /**
      * Encodes a single text or a pair of texts using the model's tokenizer.
      * @param string $text
      * @param string|null $textPair The optional second text to encode.
@@ -520,7 +538,6 @@ class PretrainedTokenizer
         }, $batch);
     }
 
-
     /**
      * Decodes a sequence of token IDs back to a string.
      *
@@ -532,7 +549,7 @@ class PretrainedTokenizer
     public function decode(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
         if (empty($tokenIds) || !is_int($tokenIds[0])) {
-            throw new \Exception("token_ids must be a non-empty array of integers.");
+            throw new Exception("token_ids must be a non-empty array of integers.");
         }
 
         return $this->decodeSingle($tokenIds, $skipSpecialTokens, $cleanUpTokenizationSpaces);
@@ -578,57 +595,6 @@ class PretrainedTokenizer
         }
 
         return $decoded;
-    }
-
-    /**
-     * Helper function for padding values of an object, which are each arrays.
-     * NOTE: No additional checks are made here for the validity of arguments.
-     *
-     * @param array $item The input object.
-     * @param int $length The length to pad to.
-     * @param \Closure $value_fn Determine the value to fill the array, based on its key.
-     * @param string $side Which side to pad the array.
-     */
-    protected function padHelper(array &$item, int $length, \Closure $value_fn, string $side): void
-    {
-        foreach (array_keys($item) as $key) {
-            if($item[$key] == null) return;
-
-            $diff = $length - count($item[$key]);
-            $value = $value_fn($key);
-
-            $padData = array_fill(0, $diff, $value);
-            $item[$key] = ($side === 'right')
-                ? [...$item[$key], ...$padData]
-                : [...$padData, ...$item[$key]];
-
-        }
-    }
-
-    /**
-     * Helper function for truncating values of an object, which are each arrays.
-     * NOTE: No additional checks are made here for the validity of arguments.
-     *
-     * @param array $item The input object.
-     * @param int $length The length to truncate to.
-     */
-    function truncateHelper(array &$item, int $length): void
-    {
-        // Setting .length to a lower value truncates the array in-place.
-        // Note: In PHP, arrays automatically adjust their size, so we don't need to explicitly set the length.
-        foreach (array_keys($item) as $key) {
-            $item[$key] = array_slice($item[$key], 0, $length);
-        }
-    }
-
-    protected function getDefaultChatTemplate(): string
-    {
-//        if (!$this->warnedAboutChatTemplate) {
-//            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
-//            $this->warnedAboutChatTemplate = true;
-//        }
-
-        return $this->defaultChatTemplate;
     }
 
     /**
@@ -683,7 +649,7 @@ class PretrainedTokenizer
 
         if ($compiledTemplate === null) {
             // TODO: Use Jinja to compile the template
-            $compiledTemplate =  new Template($chatTemplate);
+            $compiledTemplate = new Template($chatTemplate);
             $this->compiledTemplateCache[$chatTemplate] = $compiledTemplate;
         }
 
@@ -712,6 +678,16 @@ class PretrainedTokenizer
         }
 
         return stripcslashes($rendered);
+    }
+
+    protected function getDefaultChatTemplate(): string
+    {
+//        if (!$this->warnedAboutChatTemplate) {
+//            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
+//            $this->warnedAboutChatTemplate = true;
+//        }
+
+        return $this->defaultChatTemplate;
     }
 
 }
