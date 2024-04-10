@@ -91,7 +91,6 @@ class Processor
 
                     // convert to [x0, y0, x1, y1] format
                     $box = self::centerToCornersFormat($box);
-                    dump($box);
 
                     if ($targetSize !== null) {
                         $box = array_map(fn($x, $i) => $x * $targetSize[($i + 1) % 2], $box, array_keys($box));
@@ -103,8 +102,6 @@ class Processor
                 }
 
             }
-            dd('eait');
-
             $toReturn[] = $info;
         }
         return $toReturn;
