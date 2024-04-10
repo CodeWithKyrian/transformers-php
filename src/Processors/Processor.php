@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\FeatureExtractors\FeatureExtractor;
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
 use Codewithkyrian\Transformers\Utils\Math;
 use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\MatrixOperator;
+use Exception;
 
 /**
  * Represents a Processor that extracts features from an input.
@@ -20,11 +20,6 @@ class Processor
         public FeatureExtractor $featureExtractor
     )
     {
-    }
-
-    public function __invoke(mixed $input, ...$args)
-    {
-        return $this->featureExtractor->__invoke($input, ...$args);
     }
 
     /**
@@ -45,7 +40,7 @@ class Processor
 
 
         if ($targetSizes !== null && count($targetSizes) !== $batchSize) {
-            throw new \Exception("Make sure that you pass in as many target sizes as the batch dimension of the logits");
+            throw new Exception("Make sure that you pass in as many target sizes as the batch dimension of the logits");
         }
 
         $toReturn = [];
@@ -78,7 +73,7 @@ class Processor
                     $mo = Tensor::getMo();
 
                     // Get most probable class
-                    $maxIndex =  $mo->argMax($logit);
+                    $maxIndex = $mo->argMax($logit);
 
                     if ($maxIndex === $numClasses - 1) {
                         // This is the background class, skip it
@@ -93,8 +88,10 @@ class Processor
                 foreach ($indices as $index) {
                     $box = $bbox[$j]->toArray();
 
+
                     // convert to [x0, y0, x1, y1] format
                     $box = self::centerToCornersFormat($box);
+                    dump($box);
 
                     if ($targetSize !== null) {
                         $box = array_map(fn($x, $i) => $x * $targetSize[($i + 1) % 2], $box, array_keys($box));
@@ -104,7 +101,10 @@ class Processor
                     $info['classes'][] = $index;
                     $info['scores'][] = $probs[$index];
                 }
+
             }
+            dd('eait');
+
             $toReturn[] = $info;
         }
         return $toReturn;
@@ -120,12 +120,17 @@ class Processor
     {
         [$centerX, $centerY, $width, $height] = $arr;
 
-        return [
-            $centerX - $width / 2,
-            $centerY - $height / 2,
-            $centerX + $width / 2,
-            $centerY + $height / 2
-        ];
+        $topLeftX = Math::clamp($centerX - $width / 2, 0.0, 1.0);
+        $topLeftY = Math::clamp($centerY - $height / 2, 0.0, 1.0);
+        $bottomRightX = Math::clamp($centerX + $width / 2, 0.0, 1.0);
+        $bottomRightY = Math::clamp($centerY + $height / 2, 0.0, 1.0);
+
+        return [$topLeftX, $topLeftY, $bottomRightX, $bottomRightY];
+    }
+
+    public function __invoke(mixed $input, ...$args)
+    {
+        return $this->featureExtractor->__invoke($input, ...$args);
     }
 
 }

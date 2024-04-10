@@ -5,9 +5,17 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use ArrayAccess;
+use Traversable;
+
 class Math
 {
-    public static function sigmoid(array|\ArrayAccess $arr): array
+    public static function clamp(float $value, float $min, float $max): float
+    {
+        return max($min, min($max, $value));
+    }
+
+    public static function sigmoid(array|ArrayAccess $arr): array
     {
         $result = [];
 
@@ -16,6 +24,21 @@ class Math
         }
 
         return $result;
+    }
+
+    /**
+     * Calculates the logarithm of the softmax function for the input array.
+     * @template T of int|float
+     * @param array<int|float> $arr The input array to calculate the log_softmax function for.
+     * @return array<int|float> The resulting log_softmax array.
+     */
+    public static function logSoftmax(array $arr): array
+    {
+        // Compute the softmax values
+        $softmaxArr = self::softmax($arr);
+
+        // Apply log formula to each element
+        return array_map(fn($x) => log($x), $softmaxArr);
     }
 
     /**
@@ -40,23 +63,8 @@ class Math
     }
 
     /**
-     * Calculates the logarithm of the softmax function for the input array.
-     * @template T of int|float
-     * @param array<int|float> $arr The input array to calculate the log_softmax function for.
-     * @return array<int|float> The resulting log_softmax array.
-     */
-    public static function logSoftmax(array $arr): array
-    {
-        // Compute the softmax values
-        $softmaxArr = self::softmax($arr);
-
-        // Apply log formula to each element
-        return array_map(fn($x) => log($x), $softmaxArr);
-    }
-
-    /**
      * Get the top k items from an iterable, sorted by descending order
-     * @param array|\Traversable $items The items to be sorted
+     * @param array|Traversable $items The items to be sorted
      * @param int $topK The number of top items to return (default: 0 = return all)
      * @return array The top k items, sorted by descending order
      */
