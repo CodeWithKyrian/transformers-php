@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Exception;
-
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);

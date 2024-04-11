@@ -8,7 +8,6 @@ namespace Codewithkyrian\Transformers\Processors;
 use Codewithkyrian\Transformers\FeatureExtractors\FeatureExtractor;
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
 use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Exception;
 
 /**
@@ -70,10 +69,8 @@ class Processor
                     }
                     $probs = $logitSigmoid;
                 } else {
-                    $mo = Tensor::getMo();
-
                     // Get most probable class
-                    $maxIndex = $mo->argMax($logit);
+                    $maxIndex = $logit->argMax();
 
                     if ($maxIndex === $numClasses - 1) {
                         // This is the background class, skip it
@@ -82,7 +79,7 @@ class Processor
                     $indices[] = $maxIndex;
 
                     // Compute softmax over classes
-                    $probs = Math::softmax($logit->toArray());
+                    $probs = $logit->softmax();
                 }
 
                 foreach ($indices as $index) {

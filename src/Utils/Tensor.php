@@ -929,9 +929,22 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * Calculate the softmax of the tensor.
      *
      */
-    public function softmax(): array
+    public function softmax(): array|static
     {
-        return Math::softmax($this->toArray());
+        return match ($this->ndim()) {
+            1 => Math::softmax($this->toArray()),
+            2 => $this->softmax2D(),
+            default => throw new InvalidArgumentException("Softmax is only supported for 1D and 2D tensors.")
+        };
+    }
+
+    protected function softmax2D(): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->la()->softmax($this);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     public function max(?int $axis = null): static|int|float
