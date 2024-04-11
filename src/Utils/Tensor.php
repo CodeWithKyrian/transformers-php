@@ -604,32 +604,30 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * Returns the matrix norm or vector norm of a given tensor.
      *
      * @param int $ord Order of the norm. Supported values are 1, 2, Infinity.
-     * @param int|null $dim The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
+     * @param int|null $axis The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
      * @param bool $keepdims If true, retains reduced dimensions with length 1.
      *
      * @return static
      */
-    public function norm(int $ord = 2, ?int $dim = null, bool $keepdims = false): static
+    public function norm(int $ord = 2, ?int $axis = null, bool $keepdims = false): static
     {
         $mo = self::getMo();
 
-        if ($dim === null) {
-            $val = pow(array_reduce($this->buffer, function ($carry, $item) use ($ord) {
-                return $carry + pow($item, $ord);
-            }, 0), 1 / $ord);
+        if ($axis === null) {
+            $val = pow(array_reduce($this->toBufferArray(), fn($carry, $item) => $carry + pow($item, $ord), 0), 1 / $ord);
 
             return new Tensor([$val], $this->dtype(), []);
         }
 
         // Negative indexing
-        $dim = $this->safeIndex($dim, $this->ndim());
+        $axis = $this->safeIndex($axis, $this->ndim());
 
         // Calculate the shape of the resulting array after summation
         $resultDims = $this->shape();
-        $resultDims[$dim] = 1; // Remove the specified axis
+        $resultDims[$axis] = 1; // Remove the specified axis
 
         // Create a new array to store the accumulated values
-        $result = $this->zeros([count($this->buffer) / $this->shape()[$dim]]);
+        $result = $this->zeros([count($this->buffer) / $this->shape()[$axis]]);
 
         // Iterate over the data array
         foreach ($this->buffer as $i => $value) {
@@ -641,7 +639,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             for ($j = $this->ndim() - 1; $j >= 0; --$j) {
                 $size = $this->shape()[$j];
 
-                if ($j !== $dim) {
+                if ($j !== $axis) {
                     $index = $num % $size;
                     $resultIndex += $index * $resultMultiplier;
                     $resultMultiplier *= $resultDims[$j];
@@ -659,10 +657,59 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         }
 
         if (!$keepdims) {
-            array_splice($resultDims, $dim, 1);
+            array_splice($resultDims, $axis, 1);
         }
 
         return new static($result->buffer(), $result->dtype(), $resultDims, $result->offset());
+    }
+
+    /**
+     * Convert the tensor into a flat array of the buffer contents.
+     */
+    public function toBufferArray()
+    {
+        if ($this->buffer instanceof OpenBlasBuffer) {
+            return $this->buffer->dump();
+        } elseif ($this->buffer instanceof SplFixedArray) {
+            return $this->buffer->toArray();
+        } else {
+            throw new RuntimeException('Unknown buffer type is inconvertible:' . get_class($this->buffer));
+        }
+    }
+
+    /**
+     * Convert the tensor into an array.
+     */
+    public function toArray()
+    {
+        if (count($this->shape) == 0) {
+            return $this->buffer[$this->offset];
+        }
+
+        $idx = $this->offset;
+
+        return $this->unflattenArray($this->buffer, $idx, $this->shape);
+    }
+
+    /**
+     * Unflatten the given flat array into a nested array according to the given shape.
+     */
+    protected function unflattenArray($flatArray, &$currentIndex, array $shape): array
+    {
+        $size = array_shift($shape);
+        $nestedArray = [];
+
+        if (count($shape)) {
+            for ($i = 0; $i < $size; $i++) {
+                $nestedArray[$i] = $this->unflattenArray($flatArray, $currentIndex, $shape);
+            }
+        } else {
+            for ($i = 0; $i < $size; $i++) {
+                $nestedArray[$i] = $flatArray[$currentIndex];
+                $currentIndex++;
+            }
+        }
+        return $nestedArray;
     }
 
     /**
@@ -879,7 +926,6 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return array_reverse($stride, true);
     }
 
-
     /**
      * Permutes a tensor according to the provided axes.
      * @param array $axes The axes to permute the tensor along.
@@ -890,55 +936,6 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         [$permutedData, $shape] = Math::permuteData($this->toBufferArray(), $this->shape(), $axes);
 
         return new Tensor($permutedData, $this->dtype(), $shape);
-    }
-
-    /**
-     * Convert the tensor into a flat array of the buffer contents.
-     */
-    public function toBufferArray()
-    {
-        if ($this->buffer instanceof OpenBlasBuffer) {
-            return $this->buffer->dump();
-        } elseif ($this->buffer instanceof SplFixedArray) {
-            return $this->buffer->toArray();
-        } else {
-            throw new RuntimeException('Unknown buffer type is inconvertible:' . get_class($this->buffer));
-        }
-    }
-
-    /**
-     * Convert the tensor into an array.
-     */
-    public function toArray()
-    {
-        if (count($this->shape) == 0) {
-            return $this->buffer[$this->offset];
-        }
-
-        $idx = $this->offset;
-
-        return $this->unflattenArray($this->buffer, $idx, $this->shape);
-    }
-
-    /**
-     * Unflatten the given flat array into a nested array according to the given shape.
-     */
-    protected function unflattenArray($flatArray, &$currentIndex, array $shape): array
-    {
-        $size = array_shift($shape);
-        $nestedArray = [];
-
-        if (count($shape)) {
-            for ($i = 0; $i < $size; $i++) {
-                $nestedArray[$i] = $this->unflattenArray($flatArray, $currentIndex, $shape);
-            }
-        } else {
-            for ($i = 0; $i < $size; $i++) {
-                $nestedArray[$i] = $flatArray[$currentIndex];
-                $currentIndex++;
-            }
-        }
-        return $nestedArray;
     }
 
     /**
