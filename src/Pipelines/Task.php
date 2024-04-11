@@ -182,8 +182,6 @@ enum Task: string
 
     public function autoTokenizer(
         string           $modelNameOrPath,
-        bool             $quantized = true,
-        ?array           $config = null,
         ?string          $cacheDir = null,
         string           $revision = 'main',
         ?OutputInterface $output = null
