@@ -66,7 +66,7 @@ it('can add two tensors element-wise', function () {
 
 it('can add a scalar to each element of a tensor', function () {
     $tensor = Tensor::fromArray([[1, 2], [3, 4]]);
-    $result = $tensor->addScalar(5);
+    $result = $tensor->add(5);
 
     expect($result)->toBeInstanceOf(Tensor::class)
         ->and($result->toArray())->toBe([[6, 7], [8, 9]]);
@@ -82,7 +82,7 @@ it('can apply the sigmoid function to each element of a tensor', function () {
 
 it('can multiply each element of a tensor by a scalar', function () {
     $tensor = Tensor::fromArray([[1, 2], [3, 4]]);
-    $result = $tensor->multiplyScalar(2);
+    $result = $tensor->multiply(2);
 
     expect($result)->toBeInstanceOf(Tensor::class)
         ->and($result->toArray())->toBe([[2.0, 4.0], [6.0, 8.0]]);
@@ -90,7 +90,7 @@ it('can multiply each element of a tensor by a scalar', function () {
 
 it('can compute the mean value of each row of the tensor', function () {
     $tensor = Tensor::fromArray([[1, 2], [3, 4]]);
-    $result = $tensor->mean(dim: 1);
+    $result = $tensor->mean(axis: 1);
 
     expect($result)->toBeInstanceOf(Tensor::class)
         ->and($result->toArray())->toBe([1.5, 3.5]);

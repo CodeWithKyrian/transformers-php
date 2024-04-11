@@ -60,7 +60,7 @@ class ImageToImagePipeline extends Pipeline
         foreach ($outputs['reconstruction'] as $i => $batch) {
             $output = $batch->squeeze()
                 ->clamp(0, 1)
-                ->multiplyScalar(255)
+                ->multiply(255)
                 ->round()
                 ->to(NDArray::uint8);
 

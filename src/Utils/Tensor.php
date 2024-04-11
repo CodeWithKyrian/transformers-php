@@ -477,34 +477,21 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Add two NDArrays element-wise, A + B
+     * Add a tensor or scalar to this tensor. If it's a tensor, it must be the same shape, and it performs
+     * an element-wise addition. If it's a scalar, it adds the scalar to every element in the tensor.
      *
-     * @param Tensor $other The NDArray to add to this NDArray.
+     * @param Tensor|float|int $other The NDArray to add to this NDArray.
      * @return static
      */
-    public function add(Tensor $other): static
+    public function add(Tensor|float|int $other): static
     {
         $mo = self::getMo();
 
-        $ndArray = $mo->add($this, $other);
+        $ndArray = is_scalar($other) ? $mo->op($this, '+', $other) : $mo->add($this, $other);
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
-    /**
-     * Return a new Tensor with every element added by a constant.
-     *
-     * @param float|int $scalar The constant to add.
-     * @return static
-     */
-    public function addScalar(float|int $scalar): static
-    {
-        $mo = self::getMo();
-
-        $ndArray = $mo->op($this, '+', $scalar);
-
-        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
-    }
 
     /**
      * Return a new Tensor with the sigmoid function applied to each element.
@@ -526,13 +513,36 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @return self
      */
-    public function multiplyScalar(float|int $scalar): self
+    public function multiply(float|int $scalar): self
     {
         $mo = self::getMo();
 
         $ndArray = $mo->la()->scal($scalar, $this);
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Calculate the dot product of this tensor and another tensor.
+     */
+    public function dot(Tensor $other): float
+    {
+        $mo = self::getMo();
+
+        return $mo->dot($this, $other);
+    }
+
+    /**
+     * Calculate the cross product of this tensor and another tensor. The shapes of the tensors must be compatible for
+     * cross product
+     */
+    public function cross(Tensor $other): Tensor
+    {
+        $mo = self::getMo();
+
+        $crossProduct = $mo->cross($this, $other);
+
+        return new static($crossProduct->buffer(), $crossProduct->dtype(), $crossProduct->shape(), $crossProduct->offset());
     }
 
     /**
