@@ -7,8 +7,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
-use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageToImage;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageFeatureExtraction;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageToImage;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForMaskedLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForObjectDetection;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
@@ -212,7 +212,7 @@ enum Task: string
             self::Ner,
             self::ImageToText,
             self::ZeroShotImageClassification,
-            self::ZeroShotObjectDetection => AutoTokenizer::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, null, $output),
+            self::ZeroShotObjectDetection => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $output),
         };
     }
 
