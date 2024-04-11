@@ -737,17 +737,23 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Returns the mean value of each row of the tensor in the given dimension dim.
      */
-    public function mean(?int $dim = null, bool $keepdims = false): static
+    public function mean(?int $axis = null, bool $keepdims = false): static|float|int
     {
         $mo = self::getMo();
 
-        $ndArray = $mo->mean($this, $dim);
+        $mean = $mo->mean($this, $axis);
 
-        if (!$keepdims) {
-            array_splice($ndArray->shape, $dim, 1);
+        if ($mean instanceof NDArray) {
+            $shape = $mean->shape();
+
+            if (!$keepdims) {
+                array_splice($shape, $axis, 1);
+            }
+
+            return new static($mean->buffer(), $mean->dtype(), $shape, $mean->offset());
         }
 
-        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+        return $mean;
     }
 
     /**
@@ -971,6 +977,32 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         }
 
         return $argMax;
+    }
+
+    public function min(?int $axis = null): static|int|float
+    {
+        $mo = self::getMo();
+
+        $min = $mo->min($this, $axis);
+
+        if ($min instanceof NDArray) {
+            return new static($min->buffer(), $min->dtype(), $min->shape(), $min->offset());
+        }
+
+        return $min;
+    }
+
+    public function argMin(?int $axis = null): static|int|float
+    {
+        $mo = self::getMo();
+
+        $argMin = $mo->argMin($this, $axis);
+
+        if ($argMin instanceof NDArray) {
+            return new static($argMin->buffer(), $argMin->dtype(), $argMin->shape(), $argMin->offset());
+        }
+
+        return $argMin;
     }
 
 
