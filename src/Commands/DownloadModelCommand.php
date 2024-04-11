@@ -6,15 +6,12 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Commands;
 
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
-use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
-use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
-use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
 use Codewithkyrian\Transformers\Pipelines\Task;
 use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
+use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -60,7 +57,7 @@ class DownloadModelCommand extends Command
 
         $model = $input->getArgument('model');
         $cacheDir = $input->getOption('cache-dir');
-        $quantized = $input->getOption('quantized');
+        $quantized = filter_var($input->getOption('quantized'), FILTER_VALIDATE_BOOLEAN);
         $task = $input->getArgument('task');
 
         Transformers::setup()
@@ -71,9 +68,9 @@ class DownloadModelCommand extends Command
             $task = $task ? Task::tryFrom($task) : null;
 
             if ($task != null) {
-                pipeline($task, $model, output: $output);
+                pipeline($task, $model, quantized: $quantized, output: $output);
             } else {
-                AutoTokenizer::fromPretrained($model, quantized: $quantized, output: $output);
+                AutoTokenizer::fromPretrained($model, output: $output);
                 AutoModel::fromPretrained($model, $quantized, output: $output);
             }
 
@@ -83,8 +80,8 @@ class DownloadModelCommand extends Command
             $this->askToStar($input, $output);
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
-            $output->writeln('✘ '. $e->getMessage());
+        } catch (Exception $e) {
+            $output->writeln('✘ ' . $e->getMessage());
             return Command::FAILURE;
         }
     }

@@ -6,14 +6,11 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
-use Codewithkyrian\Transformers\Processors\AutoProcessor;
 use Codewithkyrian\Transformers\Processors\Processor;
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use Symfony\Component\Console\Output\OutputInterface;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class Pipeline
 {
@@ -83,7 +80,7 @@ function pipeline(
 
     $model = $task->autoModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
 
-    $tokenizer = $task->autoTokenizer($modelName, $quantized, $config, $cacheDir, $revision, $output);
+    $tokenizer = $task->autoTokenizer($modelName, $cacheDir, $revision, $output);
 
     $processor = $task->autoProcessor($modelName, $config, $cacheDir, $revision, $output);
 
