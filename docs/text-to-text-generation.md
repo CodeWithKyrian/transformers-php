@@ -55,7 +55,7 @@ When running the `text2text-generation` pipeline, you can the following options:
 - ### `streamer` *(Streamer)*
   [Optional] This is an instance of the `Streamer` class and is used to stream the output of the pipeline. It's useful
   when you want to process the output in real-time or when the output is too large to fit into memory. Visit the
-  [Streamers](/docs/utils/generation.md#streamers) documentation for more information on how to use streamers.
+  [Streamers](/utils/generation#streamers) documentation for more information on how to use streamers.
 
     ```php
     use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
@@ -92,7 +92,7 @@ When running the `text2text-generation` pipeline, you can the following options:
 arguments used to either control the length of the output, or the generation strategy used, or the manipulation process
 for the output logits, or the nature of the output, or the special tokens to be used. They are only valid for pipelines
 that use the `generate`, For a complete list of all possible arguments, refer to
-the [generation documentation](/docs/utils/generation.md).
+the [generation documentation](/utils/generation).
 
 ```php
 $output = $generator(
