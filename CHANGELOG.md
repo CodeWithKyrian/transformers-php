@@ -2,6 +2,33 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.3.0 - 2024-04-13
+
+### What's Changed
+
+* Add Image Classification pipelines support by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/9
+* Add Zero shot Image Classification pipelines support by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/9
+* Add New Image Driver - VIPS by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/10
+* Add Object Detection Pipeline by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/11
+* Download ONNXRuntime automatically after composer install by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/12
+* Add Zero Shot Object Detection Pipeline and OwlVit models by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/14
+* Improve tensor performance by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/13
+* Set [MASK] usage in prompts for default Xenova/bert-base-uncased model by @takielias in https://github.com/CodeWithKyrian/transformers-php/pull/15
+* Add image feature extraction pipeline by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/16
+* Add image to image pipeline by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/17
+* bugfix: https slashes affected when joining paths by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/19
+
+### Breaking Changes
+
+* The install command no longer exists, as the required libraries are downloaded automatically on composer install.
+* New Image driver configuration settings added that required either GD, Imagick or Vips
+
+### New Contributors
+
+* @takielias made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/15
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.2.2...0.3.0
+
 ## v0.2.2 - 2024-03-25
 
 ### What's new
@@ -55,11 +82,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -75,6 +104,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
