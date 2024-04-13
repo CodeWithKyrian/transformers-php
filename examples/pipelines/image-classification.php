@@ -11,11 +11,11 @@ require_once './bootstrap.php';
 $classifier = pipeline('image-classification', 'Xenova/vit-base-patch16-224');
 
 $urls = [
-    __DIR__. '/../images/tiger.jpg',
-    __DIR__. '/../images/corgi.jpg',
-    __DIR__. '/../images/cats.jpg',
+    __DIR__ . '/../images/tiger.jpg',
+    __DIR__ . '/../images/corgi.jpg',
+    __DIR__ . '/../images/cats.jpg',
 ];
 
-$output =  $classifier($urls);
+$output = $classifier(__DIR__ . '/../images/tiger.jpg');
 
 dd($output, timeUsage(), memoryUsage());

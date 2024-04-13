@@ -11,7 +11,7 @@ export default defineConfig({
             {text: 'Home', link: '/'},
             {text: 'Docs', link: '/introduction'},
             {
-                text: '0.1.x',
+                text: '0.3.x',
                 items: [
                     {
                         text: 'Changelog',
@@ -41,31 +41,52 @@ export default defineConfig({
                 collapsed: false,
                 link: '/pipelines',
                 items: [
-                    {text: 'Text Classification', link: '/text-classification'},
-                    {text: 'Fill Mask', link: '/fill-mask'},
-                    {text: 'Zero Shot Classification', link: '/zero-shot-classification'},
-                    {text: 'Question Answering', link: '/question-answering'},
-                    {text: 'Token Classification', link: '/token-classification'},
-                    {text: 'Feature Extraction', link: '/feature-extraction'},
-                    {text: 'Text to Text Generation', link: '/text-to-text-generation'},
-                    {text: 'Translation', link: '/translation'},
-                    {text: 'Summarization', link: '/summarization'},
-                    {text: 'Text Generation', link: '/text-generation'},
+                    {
+                        text: 'NLP Tasks',
+                        collapsed: true,
+                        items: [
+                            {text: 'Text Classification', link: '/text-classification'},
+                            {text: 'Fill Mask', link: '/fill-mask'},
+                            {text: 'Zero Shot Classification', link: '/zero-shot-classification'},
+                            {text: 'Question Answering', link: '/question-answering'},
+                            {text: 'Token Classification', link: '/token-classification'},
+                            {text: 'Feature Extraction', link: '/feature-extraction'},
+                            {text: 'Text to Text Generation', link: '/text-to-text-generation'},
+                            {text: 'Translation', link: '/translation'},
+                            {text: 'Summarization', link: '/summarization'},
+                            {text: 'Text Generation', link: '/text-generation'},
+                        ]
+                    },
+                    {
+                        text: 'Computer Vision Tasks',
+                        collapsed: true,
+                        items: [
+                            {text: 'Image Classification', link: '/image-classification'},
+                            {text: 'Zero Shot Image Classification', link: '/zero-shot-image-classification'},
+                            {text: 'Object Detection', link: '/object-detection'},
+                            {text: 'Zero Shot Object Detection', link: '/zero-shot-object-detection'},
+                            {text: 'Image Feature Extraction', link: '/image-feature-extraction'},
+                            {text: 'Image To Text', link: '/image-to-text'},
+                            {text: 'Image To Image', link: '/image-to-image'},
+                        ]
+                    }
                 ]
             },
             {
                 text: 'Advanced Usage',
                 collapsed: false,
                 items: [
-                    {text: 'Auto Models', link: '/auto-models'},
-                    {text: 'Auto Tokenizers', link: '/auto-tokenizers'},
+                    {text: 'Models', link: '/models'},
+                    {text: 'Tokenizers', link: '/tokenizers'},
                 ]
             },
             {
                 text: 'Utilities',
                 collapsed: false,
                 items: [
-                    {text: 'Generation', link: '/generation'},
+                    {text: 'Generation', link: '/utils/generation'},
+                    {text: 'Image', link: '/utils/image'},
+                    {text: 'Tensor', link: '/utils/tensor'},
                 ]
             }
         ],
@@ -77,7 +98,7 @@ export default defineConfig({
 
         footer: {
             message: 'Released under the MIT License.',
-            copyright: 'Copyright © 2024 <a href="https://github.com/CodeWithKyrian">Kyrian Obikwelu</a>'
+            copyright: 'Copyright © 2024 <a href="https://twitter.com/CodeWithKyrian">Kyrian Obikwelu</a>'
         },
 
         editLink: {

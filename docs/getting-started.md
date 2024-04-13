@@ -21,17 +21,14 @@ You can install the library via Composer. This is the recommended way to install
 composer require codewithkyrian/transformers
 ```
 
-After installation, you need to initialize the package to download the necessary shared libraries for running the ONNX
-models:
-
-```bash
-./vendor/bin/transformers install
-```
+ONNX runtime will be installed automatically as well. For Windows users, it may take more time to install the ONNX
+library compared to Linux or macOS users (no shades 😅).
 
 > [!CAUTION]
-> These shared libraries to be downloaded are platform-specific, so it's important to run this command on the target
-> platform where the code will be executed. For example, if you're using a Docker container, run the `install` command
-> inside that container.
+> The ONNX library is platform-specific, so it's important to run the composer require command on the target platform
+> where the code will be executed. In most cases, this will be your development machine or a server where you deploy
+> your
+> application, but if you're using a Docker container, run the `composer require` command inside that container.
 
 This command sets up everything you need to start using pre-trained ONNX models with TransformersPHP.
 
@@ -142,7 +139,7 @@ in PHP 7.4 and later, but it may not be enabled by default. To check if the FFI 
 command:
 
 ```bash
-php -m | grep ffi
+php -m | grep FFI
 ```
 
 If the FFI extension is not enabled, you can enable it by uncommenting(remove the `;` from the beginning of the line)
@@ -153,7 +150,7 @@ following line in your `php.ini` file:
 extension = ffi
 ```
 
-Also, you need to set the `ffi.enable` directive to `true` in your `php.ini` file:
+TransformersPHP does not support FFI preloading yet, so you need to enable the `ffi.enable` directive in your `php.ini`
 
 ```ini
 ffi.enable = true
@@ -166,7 +163,7 @@ After making these changes, restart your web server or PHP-FPM service, and you 
 Just-In-Time (JIT) compilation is a feature that allows PHP to compile and execute code at runtime. JIT compilation can
 improve the performance of your application by compiling frequently executed code paths into machine code. While you
 can use TransformersPHP without JIT compilation, enabling it can provide a significant performance boost (> 2x in some
-cases).
+cases) since there are many matrix multiplications and other mathematical operations involved in running ONNX models.
 
 JIT compilation is available in PHP 8.0 and later, but it may not be enabled by default. To enable JIT compilation,
 change the `opcache.jit` directive in your `php.ini` file:

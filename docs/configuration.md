@@ -14,9 +14,11 @@ models, and the remote path template. These settings allow you to tailor how and
 
 ```php
 use Codewithkyrian\Transformers\Transformers;
+use Codewithkyrian\Transformers\Utils\ImageDriver;
 
  Transformers::setup()
         ->setCacheDir('/path/to/models')
+        ->setImageDriver(ImageDriver::IMAGICK)
         ->setRemoteHost('https://yourmodelshost.com')
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
@@ -94,6 +96,20 @@ Transformers::setup()
     ->apply();
 ```
 
+### `setImageDriver(ImageDriver $imageDriver)`
+
+This setting allows you to specify the image backend to use for image processing tasks. By default, TransformersPHP uses
+the `IMAGICK` image driver. You can change this to `GD` or `VIPS` if you prefer, just make sure to have the required
+extensions installed.
+
+```php
+use Codewithkyrian\Transformers\Utils\ImageDriver;
+
+Transformers::setup()
+    ->setImageDriver(ImageDriver::GD)
+    ->apply();
+```
+
 ## Applying Configuration
 
 ::: danger VERY IMPORTANT
@@ -127,7 +143,7 @@ use Codewithkyrian\Transformers\Transformers;
 ### Laravel Projects
 
 In a Laravel project, you can add global configuration in the `AppServiceProvider` class. Laravel service providers are
-excellent locations for bootstrap code, making them the best place to set up global configurations. It's recommended to 
+excellent locations for bootstrap code, making them the best place to set up global configurations. It's recommended to
 set the cache directory to the a subdirectory of the `storage` directory, as it's writable and not publicly accessible.
 
 ::: code-group

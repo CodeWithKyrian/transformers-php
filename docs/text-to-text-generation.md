@@ -20,7 +20,8 @@ foundational for many NLP applications.
 
 Text-to-Text Generation is applicable in various scenarios, including but not limited to:
 
-- **Language Translation:** Translating text from one language to another (it's recommended to use the [translation](/translation)
+- **Language Translation:** Translating text from one language to another (it's recommended to use
+  the [translation](/translation)
   pipeline for this task though).
 - **Summarization:** Condensing long documents into shorter versions while retaining the essential information (it's
   recommended to use the [summarization](/summarization) pipeline for this task though).
@@ -54,7 +55,7 @@ When running the `text2text-generation` pipeline, you can the following options:
 - ### `streamer` *(Streamer)*
   [Optional] This is an instance of the `Streamer` class and is used to stream the output of the pipeline. It's useful
   when you want to process the output in real-time or when the output is too large to fit into memory. Visit the
-  [Streamers](/generation#streamers) documentation for more information on how to use streamers.
+  [Streamers](/docs/utils/generation.md#streamers) documentation for more information on how to use streamers.
 
     ```php
     use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
@@ -90,7 +91,8 @@ When running the `text2text-generation` pipeline, you can the following options:
 `maxNewTokens`, `doSample`, `numBeams`, `temperature`, and `repetitionPenalty` are few out of the many possible
 arguments used to either control the length of the output, or the generation strategy used, or the manipulation process
 for the output logits, or the nature of the output, or the special tokens to be used. They are only valid for pipelines
-that use the `generate`,  For a complete list of all possible arguments, refer to the [generation documentation](/generation).
+that use the `generate`, For a complete list of all possible arguments, refer to
+the [generation documentation](/docs/utils/generation.md).
 
 ```php
 $output = $generator(
@@ -103,7 +105,8 @@ $output = $generator(
 
 ## Pipeline Outputs
 
-The output is an array where each element corresponds to an input text and contains a key `generated_text` with the generated content. Here’s how the output looks:
+The output is an array where each element corresponds to an input text and contains a key `generated_text` with the
+generated content. Here’s how the output looks:
 
 ```php
 [
@@ -111,7 +114,8 @@ The output is an array where each element corresponds to an input text and conta
 ]
 ```
 
-For batched inputs or scenarios requiring simultaneous processing of multiple prompts, the output array will contain one entry per input.
+For batched inputs or scenarios requiring simultaneous processing of multiple prompts, the output array will contain one
+entry per input.
 
   
 

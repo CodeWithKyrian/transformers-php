@@ -26,3 +26,44 @@ features:
     details: Enjoy fast processing and efficient resource use, allowing for scalable AI solutions across projects of any size without sacrificing speed or performance.
 ---
 
+[//]: # (<style>)
+
+[//]: # (:root {)
+
+[//]: # (  --vp-home-hero-name-color: transparent;)
+
+[//]: # (  --vp-home-hero-name-background: -webkit-linear-gradient&#40;120deg, #bd34fe 30%, #41d1ff&#41;;)
+
+[//]: # ()
+
+[//]: # (  --vp-home-hero-image-background-image: linear-gradient&#40;-45deg, #bd34fe 50%, #47caff 50%&#41;;)
+
+[//]: # (  --vp-home-hero-image-filter: blur&#40;44px&#41;;)
+
+[//]: # (})
+
+[//]: # ()
+
+[//]: # (@media &#40;min-width: 640px&#41; {)
+
+[//]: # (  :root {)
+
+[//]: # (    --vp-home-hero-image-filter: blur&#40;56px&#41;;)
+
+[//]: # (  })
+
+[//]: # (})
+
+[//]: # ()
+
+[//]: # (@media &#40;min-width: 960px&#41; {)
+
+[//]: # (  :root {)
+
+[//]: # (    --vp-home-hero-image-filter: blur&#40;68px&#41;;)
+
+[//]: # (  })
+
+[//]: # (})
+
+[//]: # (</style>)

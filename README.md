@@ -96,16 +96,10 @@ You can install the library via Composer. This is the recommended way to install
 composer require codewithkyrian/transformers
 ```
 
-Next, you must run the installation/initialize command to download the shared library necessary to run the ONNX models
-
-```bash
-./vendor/bin/transformers install
-```
-
 > [!CAUTION]
-> These shared libraries to be downloaded are platform-specific, so it's important to run this command on the target
-> platform where the code will be executed. For example, if you're using a Docker container, run the `install` command
-> inside that container.
+> The ONNX library is platform-specific, so it's important to run the composer require command on the target platform
+> where the code will be executed. In most cases, this will be your development machine or a server where you deploy
+> your application, but if you're using a Docker container, run the `composer require` command inside that container.
 
 ## PHP FFI Extension
 
@@ -150,6 +144,7 @@ Transformers::setup()
     ->setRemotePathTemplate('...') // Set the remote path template for downloading models. Defaults to `{model}/resolve/{revision}/{file}`
     ->setAuthToken('...') // Set the auth token for downloading models. Defaults to `null`
     ->setUserAgent('...') // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
+    ->setImageDriver('...') // Set the image driver for processing images. Defaults to `IMAGICK'
     ->apply(); // Apply the configuration
 ```
 
@@ -203,30 +198,28 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 
 | Task                                                                                                   | ID                                            | Description                                                                                    | Supported? |
 |--------------------------------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------|------------|
-| [Fill-Mask](https://huggingface.co/tasks/fill-mask)                                                    | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
-| [Question Answering](https://huggingface.co/tasks/question-answering)                                  | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
-| [Sentence Similarity](https://huggingface.co/tasks/sentence-similarity)                                | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
-| [Summarization](https://huggingface.co/tasks/summarization)                                            | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
+| [Fill-Mask](https://codewithkyrian.github.io/transformers-php/fill-mask)                               | `fill-mask`                                   | Masking some of the words in a sentence and predicting which words should replace those masks. | ✅          |
+| [Question Answering](https://codewithkyrian.github.io/transformers-php/question-answering)             | `question-answering`                          | Retrieve the answer to a question from a given text.                                           | ✅          |
+| [Sentence Similarity](https://codewithkyrian.github.io/transformers-php/sentence-similarity)           | `sentence-similarity`                         | Determining how similar two texts are.                                                         | ✅          |
+| [Summarization](https://codewithkyrian.github.io/transformers-php/summarization)                       | `summarization`                               | Producing a shorter version of a document while preserving its important information.          | ✅          |
 | [Table Question Answering](https://huggingface.co/tasks/table-question-answering)                      | `table-question-answering`                    | Answering a question about information from a given table.                                     | ❌          |
-| [Text Classification](https://huggingface.co/tasks/text-classification)                                | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
-| [Text Generation](https://huggingface.co/tasks/text-generation#completion-generation-models)           | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
-| [Text-to-text Generation](https://huggingface.co/tasks/text-generation#text-to-text-generation-models) | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
-| [Token Classification](https://huggingface.co/tasks/token-classification)                              | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
-| [Translation](https://huggingface.co/tasks/translation)                                                | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
-| [Zero-Shot Classification](https://huggingface.co/tasks/zero-shot-classification)                      | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
+| [Text Classification](https://codewithkyrian.github.io/transformers-php/text-classification)           | `text-classification` or `sentiment-analysis` | Assigning a label or class to a given text.                                                    | ✅          |
+| [Text Generation](https://codewithkyrian.github.io/transformers-php/text-generation)                   | `text-generation`                             | Producing new text by predicting the next word in a sequence.                                  | ✅          |
+| [Text-to-text Generation](https://codewithkyrian.github.io/transformers-php/text-to-text-generation)   | `text2text-generation`                        | Converting one text sequence into another text sequence.                                       | ✅          |
+| [Token Classification](https://codewithkyrian.github.io/transformers-php/token-classification)         | `token-classification` or `ner`               | Assigning a label to each token in a text.                                                     | ✅          |
+| [Translation](https://codewithkyrian.github.io/transformers-php/translation)                           | `translation`                                 | Converting text from one language to another.                                                  | ✅          |
+| [Zero-Shot Classification](https://codewithkyrian.github.io/transformers-php/zero-shot-classification) | `zero-shot-classification`                    | Classifying text into classes that are unseen during training.                                 | ✅          |
 
 #### Vision
 
-| Task                                                                                          | ID                     | Description                                                                                                                                                                             | Supported? |
-|-----------------------------------------------------------------------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
-| [Depth Estimation](https://huggingface.co/tasks/depth-estimation)                             | `depth-estimation`     | Predicting the depth of objects present in an image.                                                                                                                                    | ❌          |
-| [Image Classification](https://huggingface.co/tasks/image-classification)                     | `image-classification` | Assigning a label or class to an entire image.                                                                                                                                          | ❌          |
-| [Image Segmentation](https://huggingface.co/tasks/image-segmentation)                         | `image-segmentation`   | Divides an image into segments where each pixel is mapped to an object. This task has multiple variants such as instance segmentation, panoptic segmentation and semantic segmentation. | ❌          |
-| [Image-to-Image](https://huggingface.co/tasks/image-to-image)                                 | `image-to-image`       | Transforming a source image to match the characteristics of a target image or a target image domain.                                                                                    | ❌          |
-| [Mask Generation](https://huggingface.co/tasks/mask-generation)                               | `mask-generation`      | Generate masks for the objects in an image.                                                                                                                                             | ❌          |
-| [Object Detection](https://huggingface.co/tasks/object-detection)                             | `object-detection`     | Identify objects of certain defined classes within an image.                                                                                                                            | ❌          |
-| [Video Classification](https://huggingface.co/tasks/video-classification)                     | N/A                    | Assigning a label or class to an entire video.                                                                                                                                          | ❌          |
-| [Unconditional Image Generation](https://huggingface.co/tasks/unconditional-image-generation) | N/A                    | Generating images with no condition in any context (like a prompt text or another image).                                                                                               | ❌          |
+| Task                                                                                           | ID                     | Description                                                                                                                                                                             | Supported? |
+|------------------------------------------------------------------------------------------------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| [Depth Estimation](https://codewithkyrian.github.io/transformers-php/depth-estimation)         | `depth-estimation`     | Predicting the depth of objects present in an image.                                                                                                                                    | ❌          |
+| [Image Classification](https://codewithkyrian.github.io/transformers-php/image-classification) | `image-classification` | Assigning a label or class to an entire image.                                                                                                                                          | ✅          |
+| [Image Segmentation](https://codewithkyrian.github.io/transformers-php/image-segmentation)     | `image-segmentation`   | Divides an image into segments where each pixel is mapped to an object. This task has multiple variants such as instance segmentation, panoptic segmentation and semantic segmentation. | ❌          |
+| [Image-to-Image](https://codewithkyrian.github.io/transformers-php/image-to-image)             | `image-to-image`       | Transforming a source image to match the characteristics of a target image or a target image domain.                                                                                    | ✅          |
+| [Mask Generation](https://codewithkyrian.github.io/transformers-php/mask-generation)           | `mask-generation`      | Generate masks for the objects in an image.                                                                                                                                             | ❌          |
+| [Object Detection](https://codewithkyrian.github.io/transformers-php/object-detection)         | `object-detection`     | Identify objects of certain defined classes within an image.                                                                                                                            | ✅          |
 
 #### Audio
 
@@ -249,13 +242,14 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 | Task                                                                                                                                      | ID                               | Description                                                                                                                   | Supported? |
 |-------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------|------------|
 | [Document Question Answering](https://huggingface.co/tasks/document-question-answering)                                                   | `document-question-answering`    | Answering questions on document images.                                                                                       | ❌          |
-| [Feature Extraction](https://huggingface.co/tasks/feature-extraction)                                                                     | `feature-extraction`             | Transforming raw data into numerical features that can be processed while preserving the information in the original dataset. | ✅          |
-| [Image-to-Text](https://huggingface.co/tasks/image-to-text)                                                                               | `image-to-text`                  | Output text from a given image.                                                                                               | ❌          |
-| [Text-to-Image](https://huggingface.co/tasks/text-to-image)                                                                               | `text-to-image`                  | Generates images from input text.                                                                                             | ❌          |
+| [Feature Extraction](https://codewithkyrian.github.io/transformers-php/feature-extraction)                                                | `feature-extraction`             | Transforming raw data into numerical features that can be processed while preserving the information in the original dataset. | ✅          |
+| [Image Feature Extraction](https://codewithkyrian.github.io/transformers-php/image-feature-extraction)                                    | `image-feature-extraction`       | Extracting features from images.                                                                                              | ✅          |
+| [Image-to-Text](https://codewithkyrian.github.io/transformers-php/image-to-text)                                                          | `image-to-text`                  | Output text from a given image.                                                                                               | ❌          |
+| [Text-to-Image](https://huggingface.co/tasks/text-to-image)                                                                               | `text-to-image`                  | Generates images from input text.                                                                                             | ✅          |
 | [Visual Question Answering](https://huggingface.co/tasks/visual-question-answering)                                                       | `visual-question-answering`      | Answering open-ended questions based on an image.                                                                             | ❌          |
 | [Zero-Shot Audio Classification](https://huggingface.co/learn/audio-course/chapter4/classification_models#zero-shot-audio-classification) | `zero-shot-audio-classification` | Classifying audios into classes that are unseen during training.                                                              | ❌          |
-| [Zero-Shot Image Classification](https://huggingface.co/tasks/zero-shot-image-classification)                                             | `zero-shot-image-classification` | Classifying images into classes that are unseen during training.                                                              | ❌          |
-| [Zero-Shot Object Detection](https://huggingface.co/tasks/zero-shot-object-detection)                                                     | `zero-shot-object-detection`     | Identify objects of classes that are unseen during training.                                                                  | ❌          |
+| [Zero-Shot Image Classification](https://codewithkyrian.github.io/transformers-php/zero-shot-image-classification)                        | `zero-shot-image-classification` | Classifying images into classes that are unseen during training.                                                              | ✅          |
+| [Zero-Shot Object Detection](https://codewithkyrian.github.io/transformers-php/zero-shot-object-detection)                                | `zero-shot-object-detection`     | Identify objects of classes that are unseen during training.                                                                  | ✅          |
 
 #### Reinforcement Learning
 
@@ -291,6 +285,10 @@ This package is a WIP, but here's a list of tasks and architectures currently te
    with the paper [Big Bird: Transformers for Longer Sequences](https://arxiv.org/abs/2007.14062) by Manzil Zaheer, Guru
    Guruganesh, Avinava Dubey, Joshua Ainslie, Chris Alberti, Santiago Ontanon, Philip Pham, Anirudh Ravula, Qifan Wang,
    Li Yang, Amr Ahmed.
+1. **[CLIP](https://huggingface.co/docs/transformers/model_doc/clip)** (from OpenAI) released with the
+   paper [Learning Transferable Visual Models From Natural Language Supervision](https://arxiv.org/abs/2103.00020) by
+   Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry, Amanda
+   Askell, Pamela Mishkin, Jack Clark, Gretchen Krueger, Ilya Sutskever.
 1. **[CodeGen](https://huggingface.co/docs/transformers/model_doc/codegen)** (from Salesforce) released with the
    paper [A Conversational Paradigm for Program Synthesis](https://arxiv.org/abs/2203.13474) by Erik Nijkamp, Bo Pang,
    Hiroaki Hayashi, Lifu Tu, Huan Wang, Yingbo Zhou, Silvio Savarese, Caiming Xiong.
@@ -303,6 +301,9 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 1. **[DeBERTa-v2](https://huggingface.co/docs/transformers/model_doc/deberta-v2)** (from Microsoft) released with the
    paper [DeBERTa: Decoding-enhanced BERT with Disentangled Attention](https://arxiv.org/abs/2006.03654) by Pengcheng
    He, Xiaodong Liu, Jianfeng Gao, Weizhu Chen.
+1. **[DETR](https://huggingface.co/docs/transformers/model_doc/detr)** (from Facebook) released with the
+   paper [End-to-End Object Detection with Transformers](https://arxiv.org/abs/2005.12872) by Nicolas Carion, Francisco
+   Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, Sergey Zagoruyko.
 1. **[DistilBERT](https://huggingface.co/docs/transformers/model_doc/distilbert)** (from HuggingFace), released together
    with the
    paper [DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter](https://arxiv.org/abs/1910.01108)
@@ -313,6 +314,9 @@ This package is a WIP, but here's a list of tasks and architectures currently te
    Multilingual BERT
    into [DistilmBERT](https://github.com/huggingface/transformers/tree/main/examples/research_projects/distillation) and
    a German version of DistilBERT.
+1. **[Donut](https://huggingface.co/docs/transformers/model_doc/donut)** (from NAVER), released together with the
+   paper [OCR-free Document Understanding Transformer](https://arxiv.org/abs/2111.15664) by Geewook Kim, Teakgyu Hong,
+   Moonbin Yim, Jeongyeon Nam, Jinyoung Park, Jinyeong Yim, Wonseok Hwang, Sangdoo Yun, Dongyoon Han, Seunghyun Park.
 1. **[ELECTRA](https://huggingface.co/docs/transformers/model_doc/electra)** (from Google Research/Stanford University)
    released with the
    paper [ELECTRA: Pre-training text encoders as discriminators rather than generators](https://arxiv.org/abs/2003.10555)
@@ -345,12 +349,30 @@ This package is a WIP, but here's a list of tasks and architectures currently te
 1. **[MobileBERT](https://huggingface.co/docs/transformers/model_doc/mobilebert)** (from CMU/Google Brain) released with
    the paper [MobileBERT: a Compact Task-Agnostic BERT for Resource-Limited Devices](https://arxiv.org/abs/2004.02984)
    by Zhiqing Sun, Hongkun Yu, Xiaodan Song, Renjie Liu, Yiming Yang, and Denny Zhou.
+1. **[OWL-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)** (from Google AI) released with the
+   paper [Simple Open-Vocabulary Object Detection with Vision Transformers](https://arxiv.org/abs/2205.06230) by
+   Matthias Minderer, Alexey Gritsenko, Austin Stone, Maxim Neumann, Dirk Weissenborn, Alexey Dosovitskiy, Aravindh
+   Mahendran, Anurag Arnab, Mostafa Dehghani, Zhuoran Shen, Xiao Wang, Xiaohua Zhai, Thomas Kipf, and Neil Houlsby.
+1. **[OWLv2](https://huggingface.co/docs/transformers/model_doc/owlv2)** (from Google AI) released with the
+   paper [Scaling Open-Vocabulary Object Detection](https://arxiv.org/abs/2306.09683) by Matthias Minderer, Alexey
+   Gritsenko, Neil Houlsby.
 1. **[RoBERTa](https://huggingface.co/docs/transformers/model_doc/roberta)** (from Facebook), released together with the
    paper [RoBERTa: A Robustly Optimized BERT Pretraining Approach](https://arxiv.org/abs/1907.11692) by Yinhan Liu, Myle
    Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, Veselin Stoyanov.
 1. **[RoBERTa-PreLayerNorm](https://huggingface.co/docs/transformers/model_doc/roberta-prelayernorm)** (from Facebook)
    released with the paper [fairseq: A Fast, Extensible Toolkit for Sequence Modeling](https://arxiv.org/abs/1904.01038)
    by Myle Ott, Sergey Edunov, Alexei Baevski, Angela Fan, Sam Gross, Nathan Ng, David Grangier, Michael Auli.
+1. **[RoFormer](https://huggingface.co/docs/transformers/model_doc/roformer)** (from ZhuiyiTechnology), released
+   together with the
+   paper [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864) by Jianlin Su
+   and Yu Lu and Shengfeng Pan and Bo Wen and Yunfeng Liu.
+1. **[SigLIP](https://huggingface.co/docs/transformers/main/model_doc/siglip)** (from Google AI) released with the
+   paper [Sigmoid Loss for Language Image Pre-Training](https://arxiv.org/abs/2303.15343) by Xiaohua Zhai, Basil
+   Mustafa, Alexander Kolesnikov, Lucas Beyer.
+1. **[Swin2SR](https://huggingface.co/docs/transformers/model_doc/swin2sr)** (from University of Würzburg) released with
+   the
+   paper [Swin2SR: SwinV2 Transformer for Compressed Image Super-Resolution and Restoration](https://arxiv.org/abs/2209.11345)
+   by Marcos V. Conde, Ui-Jin Choi, Maxime Burchi, Radu Timofte.
 1. **[T5](https://huggingface.co/docs/transformers/model_doc/t5)** (from Google AI) released with the
    paper [Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer](https://arxiv.org/abs/1910.10683)
    by Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi
@@ -359,5 +381,15 @@ This package is a WIP, but here's a list of tasks and architectures currently te
    repository [google-research/text-to-text-transfer-transformer](https://github.com/google-research/text-to-text-transfer-transformer/blob/main/released_checkpoints.md#t511)
    by Colin Raffel and Noam Shazeer and Adam Roberts and Katherine Lee and Sharan Narang and Michael Matena and Yanqi
    Zhou and Wei Li and Peter J. Liu.
-
-[//]: # (docker run  -e QUANTIZE=true -e MODEL_ID="sentence-transformers/paraphrase-albert-base-v2" -v ./models:/app/models onnx-converter )
+1. **[TrOCR](https://huggingface.co/docs/transformers/model_doc/trocr)** (from Microsoft), released together with the
+   paper [TrOCR: Transformer-based Optical Character Recognition with Pre-trained Models](https://arxiv.org/abs/2109.10282)
+   by Minghao Li, Tengchao Lv, Lei Cui, Yijuan Lu, Dinei Florencio, Cha Zhang, Zhoujun Li, Furu Wei.
+1. **[Vision Transformer (ViT)](https://huggingface.co/docs/transformers/model_doc/vit)** (from Google AI) released with
+   the
+   paper [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](https://arxiv.org/abs/2010.11929)
+   by Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa
+   Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, Neil Houlsby.
+1. **[YOLOS](https://huggingface.co/docs/transformers/model_doc/yolos)** (from Huazhong University of Science &
+   Technology) released with the
+   paper [You Only Look at One Sequence: Rethinking Transformer in Vision through Object Detection](https://arxiv.org/abs/2106.00666)
+   by Yuxin Fang, Bencheng Liao, Xinggang Wang, Jiemin Fang, Jiyang Qi, Rui Wu, Jianwei Niu, Wenyu Liu.
