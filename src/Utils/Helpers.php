@@ -81,7 +81,7 @@ function joinPaths(string ...$args): string
         }
     }
 
-    return preg_replace('#/+#', '/', implode(DIRECTORY_SEPARATOR, $paths));
+    return preg_replace('#(?<!:)//+#', '/', implode(DIRECTORY_SEPARATOR, $paths));
 }
 
 function ensureDirectory($filePath): void
