@@ -28,7 +28,6 @@ use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\Tensor;
-use Error;
 use Exception;
 use OnnxRuntime\InferenceSession;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -92,27 +91,15 @@ class PretrainedModel
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
         }
 
-        $quantizedSuffix = $quantized ? '_quantized' : '';
 
         switch ($modelArchitecture) {
             case ModelArchitecture::DecoderOnly:
             {
-                $session = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: $modelFilename ?? 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision, output: $output);
 
-                $generatorConfigArr = Hub::getJson(
-                    pathOrRepoID: $modelNameOrPath,
-                    fileName: 'generation_config.json',
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    fatal: false,
-                    output: $output
-                );
+                $generatorConfigArr = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generation_config.json',
+                    cacheDir: $cacheDir, revision: $revision, fatal: false, output: $output);
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
@@ -122,30 +109,14 @@ class PretrainedModel
             case ModelArchitecture::Seq2SeqLM:
             case ModelArchitecture::Vision2Seq:
             {
-                $encoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "encoder_model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
 
-                $decoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
 
-                $generatorConfigArr = Hub::getJson(
-                    pathOrRepoID: $modelNameOrPath,
-                    fileName: 'generation_config.json',
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    fatal: false,
-                    output: $output
-                );
+                $generatorConfigArr = Hub::getJson(pathOrRepoID: $modelNameOrPath, fileName: 'generation_config.json',
+                    cacheDir: $cacheDir, revision: $revision, fatal: false);
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
@@ -155,42 +126,22 @@ class PretrainedModel
 
             case ModelArchitecture::MaskGeneration:
             {
-                $visionEncoder = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "vision_encoder$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $visionEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'vision_encoder', cacheDir: $cacheDir, revision: $revision);
 
-                $promptMaskEncoder = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $promptMaskEncoder = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'prompt_encoder_mask_decoder', cacheDir: $cacheDir, revision: $revision);
 
                 return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
             }
 
             case ModelArchitecture::EncoderDecoder:
             {
-                $encoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "encoder_model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $encoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'encoder_model', cacheDir: $cacheDir, revision: $revision);
 
-                $decoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
+                $decoderSession = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'decoder_model_merged', cacheDir: $cacheDir, revision: $revision);
 
                 return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
             }
@@ -201,55 +152,12 @@ class PretrainedModel
                     echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
                 }
 
-
-                $session = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: $modelFilename ?? "model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    output: $output
-                );
-
+                $session = self::constructSession(modelNameOrPath: $modelNameOrPath,
+                    fileName: 'model', cacheDir: $cacheDir, revision: $revision);
 
                 return new static($config, $session, $modelArchitecture);
             }
         }
-    }
-
-    /**
-     * Constructs an InferenceSession using a model file located at the specified path.
-     *
-     * @param string $modelNameOrPath The path to the directory containing the model file.
-     * @param string $fileName The name of the model file.
-     * @param string|null $cacheDir Path to a directory in which a downloaded pretrained model should
-     * @param string $revision The specific model version to use. It can be a branch name, a tag name,
-     * @param string $subFolder In case the relevant files are located inside a subfolder of the model repo or
-     * directory, indicate it here.
-     * @param bool $fatal Whether to raise an error if the file could not be loaded.
-     * @param OutputInterface|null $output
-     * @param mixed ...$sessionOptions
-     * @return InferenceSession|null
-     * @throws HubException
-     */
-
-    public static function constructSession(
-        string           $modelNameOrPath,
-        string           $fileName,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        string           $subFolder = '',
-        bool             $fatal = true,
-        ?OutputInterface $output = null,
-                         ...$sessionOptions
-    ): ?InferenceSession
-    {
-        $modelFileName = sprintf('onnx/%s.onnx', $fileName);
-
-        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
-
-        if ($file === null) return null;
-
-        return new InferenceSession($file, ...$sessionOptions);
     }
 
     public function __invoke(array $modelInputs): array|ModelOutput
@@ -269,26 +177,89 @@ class PretrainedModel
     }
 
     /**
-     * @throws ModelExecutionException
-     * @throws MissingModelInputException
+     *  Initializes and returns the beam for text generation task
+     *
+     * @param Tensor $inputTokenIds The input token ids.
+     * @param GenerationConfig $generationConfig The generation config.
+     * @param int $numOutputTokens The number of tokens to generate.
+     * @param Tensor|null $inputsAttentionMask The attention mask for the input token ids.
+     * @return array{ inputs: Tensor, output_token_ids: Tensor, score: float, done: bool, id: int } The initial beam for text generation.
+     *
      */
-    public function runSession(InferenceSession $session, array $inputs): array
+    public function getStartBeams(
+        Tensor           $inputTokenIds,
+        GenerationConfig $generationConfig,
+        int              $numOutputTokens,
+        Tensor           $inputsAttentionMask = null
+    ): array
     {
-        try {
-            $inputNames = array_column($session->inputs(), 'name');
+        return $this->modelArchitecture->startBeams(
+            $this,
+            $inputTokenIds,
+            $generationConfig,
+            $numOutputTokens,
+            $inputsAttentionMask
+        );
+    }
 
-            $inputs = $this->validateInputs($inputNames, $inputs);
+    /**
+     *  Runs the beam for text generation task
+     *
+     * @param array $beam The current beam being generated.
+     * @return array The updated beam after a single generation step.
+     *
+     */
+    public function runBeam(array &$beam): array
+    {
+        return $this->modelArchitecture->runBeam($this, $beam);
+    }
 
-            $outputNames = array_column($session->outputs(), 'name');
+    /**
+     *  Update a beam with a new token ID.
+     *
+     * @param array $beam The beam to update.
+     * @param int $newTokenId The new token id to add to the beam.
+     *
+     */
+    public function updateBeam(array &$beam, int $newTokenId): void
+    {
+        $this->modelArchitecture->updateBeam($beam, $newTokenId);
+    }
 
-            $outputs = $session->run($outputNames, $inputs);
+    /**
+     * Constructs an InferenceSession using a model file located at the specified path.
+     *
+     * @param string $modelNameOrPath The path to the directory containing the model file.
+     * @param string $fileName The name of the model file.
+     * @param string|null $cacheDir Path to a directory in which a downloaded pretrained model should
+     * @param string|null $token The token to use as an authorization to download from private model repos.
+     * @param string $revision The specific model version to use. It can be a branch name, a tag name,
+     * @param string $subFolder In case the relevant files are located inside a subfolder of the model repo or
+     * directory, indicate it here.
+     * @param bool $fatal Whether to raise an error if the file could not be loaded.
+     * @return InferenceSession|null
+     */
 
-            return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
-        } catch (MissingModelInputException $e) {
-            throw $e;
-        } catch (Exception $e) {
-            throw ModelExecutionException::make($e->getMessage());
-        }
+    public static function constructSession(
+        string           $modelNameOrPath,
+        string           $fileName,
+        bool             $quantized = true,
+        ?string          $cacheDir = null,
+        ?string          $token = null,
+        string           $revision = 'main',
+        string           $subFolder = '',
+        bool             $fatal = true,
+        ?OutputInterface $output = null,
+                         ...$sessionOptions
+    ): ?InferenceSession
+    {
+        $modelFileName = sprintf('onnx/%s%s.onnx', $fileName, $quantized ? '_quantized' : '');
+
+        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
+
+        if ($file === null) return null;
+
+        return new InferenceSession($file, ...$sessionOptions);
     }
 
     /**
@@ -333,6 +304,132 @@ class PretrainedModel
 
         return array_map(fn($i) => $i->toArray(), $inputs);
     }
+
+    /**
+     * @throws ModelExecutionException
+     * @throws MissingModelInputException
+     */
+    public function runSession(InferenceSession $session, array $inputs): array
+    {
+        try {
+            $inputNames = array_column($session->inputs(), 'name');
+
+            $inputs = $this->validateInputs($inputNames, $inputs);
+
+            $outputNames = array_column($session->outputs(), 'name');
+
+            file_put_contents('inputs.json', json_encode($inputs));
+
+            $outputs = $session->run($outputNames, $inputs);
+
+            return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
+        } catch (MissingModelInputException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            throw ModelExecutionException::make($e->getMessage());
+        }
+    }
+
+    /**
+     * This function merges multiple generation configs together to form a final generation config to be used by the model for text generation.
+     * It first creates an empty `GenerationConfig` object, then it applies the model's own `generation_config` property to it. Finally, if a `generation_config` object was passed in the arguments, it overwrites the corresponding properties in the final config with those of the passed config object.
+     * @param ?GenerationConfig $generationConfig A `GenerationConfig` object containing generation parameters.
+     * @return GenerationConfig The final generation config object to be used by the model for text generation.
+     */
+    protected function getGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
+    {
+        // Create empty generation config (contains defaults)
+        // We pass `$this->config` so that if `eos_token_id` or `bos_token_id` exist in the model's config, we will use them
+        $genConfig = new GenerationConfig($this->config->config);
+
+
+        $genConfigArray = $genConfig->toArray();
+
+        // Apply model's generation config, if it exists
+        if (property_exists($this, 'generationConfig')) {
+            $genConfigArray = array_merge($genConfigArray, $this->generationConfig->toArray());
+        }
+
+
+        // Finally, use any generation config specified by the user
+        // when calling `generate`
+        if ($generationConfig !== null) {
+            $genConfigArray = array_merge($genConfigArray, $generationConfig->toArray());
+        }
+
+
+        return new GenerationConfig($genConfigArray);
+    }
+
+    protected function getLogitsProcessor(
+        GenerationConfig     $generationConfig,
+        int                  $inputIdsSeqLength,
+        ?LogitsProcessorList $logitsProcessor = null
+    ): LogitsProcessorList
+    {
+        $processors = new LogitsProcessorList();
+
+        if ($generationConfig->repetition_penalty != null && $generationConfig->repetition_penalty !== 1.0) {
+            $processors->push(new RepetitionPenaltyLogitsProcessor($generationConfig->repetition_penalty));
+        }
+
+        if ($generationConfig->no_repeat_ngram_size != null && $generationConfig->no_repeat_ngram_size > 0) {
+            $processors->push(new NoRepeatNGramLogitsProcessor($generationConfig->no_repeat_ngram_size));
+        }
+
+        if ($generationConfig->bad_words_ids != null) {
+            $processors->push(new BadWordsLogitsProcessor($generationConfig->bad_words_ids, $inputIdsSeqLength));
+        }
+
+        if ($generationConfig->min_length != null && $generationConfig->eos_token_id != null && $generationConfig->min_length > 0) {
+            $processors->push(new MinLengthLogitsProcessor($generationConfig->min_length, $generationConfig->eos_token_id));
+        }
+
+        if ($generationConfig->min_new_tokens != null && $generationConfig->eos_token_id != null && $generationConfig->min_new_tokens > 0) {
+            $processors->push(new MinNewTokensLengthLogitsProcessor(
+                    $inputIdsSeqLength,
+                    $generationConfig->min_new_tokens,
+                    $generationConfig->eos_token_id)
+            );
+        }
+
+        if ($generationConfig->forced_bos_token_id !== null) {
+            $processors->push(new ForcedBOSTokenLogitsProcessor($generationConfig->forced_bos_token_id));
+        }
+
+        if ($generationConfig->max_new_tokens == null && $generationConfig->forced_eos_token_id !== null) {
+            $processors->push(new ForcedEOSTokenLogitsProcessor($generationConfig->max_length, $generationConfig->forced_eos_token_id));
+        }
+
+        if ($generationConfig->begin_suppress_tokens !== null) {
+            $beginIndex = ($inputIdsSeqLength > 1 || $generationConfig->forced_bos_token_id == null)
+                ? $inputIdsSeqLength
+                : $inputIdsSeqLength + 1;
+
+            if ($generationConfig->forced_decoder_ids != null) {
+                $beginIndex += $generationConfig->forced_decoder_ids[array_key_last($generationConfig->forced_decoder_ids)][0];
+            }
+
+            $processors->push(new SuppressTokensAtBeginLogitsProcessor($generationConfig->begin_suppress_tokens, $beginIndex));
+        }
+
+        if ($generationConfig->forced_decoder_ids !== null) {
+            $processors->push(new ForceTokensLogitsProcessor($generationConfig->forced_decoder_ids));
+        }
+
+        if ($logitsProcessor !== null) {
+            $processors->extend($logitsProcessor);
+        }
+
+//         `LogitNormalization` should always be the last logit processor, when present
+//        if($generationConfig->renormalize_logits) {
+//            $processors->push(new LogitNormalization());
+//        }
+
+        return $processors;
+
+    }
+
 
     /**
      * Prepares an attention mask for a sequence of tokens based on configuration options.
@@ -404,6 +501,63 @@ class PretrainedModel
     }
 
     /**
+     * Helper function to add attentions to beam.
+     *
+     * @param array $beam
+     * @param array $output
+     * @throws Exception
+     */
+    public function addAttentionsToBeam(array &$beam, array $output): void
+    {
+        if ($this->config->isEncoderDecoder) {
+            if (empty($output['cross_attentions'])) {
+                throw new Exception(
+                    "`output_attentions` is true, but the model did not produce cross-attentions. " .
+                    "This is most likely because the model was not exported with `output_attentions=True`."
+                );
+            }
+            if (!isset($beam['cross_attentions'])) {
+                $beam['cross_attentions'] = [];
+            }
+            $beam['cross_attentions'][] = $output['cross_attentions'];
+        }
+
+        if (empty($output['decoder_attentions'])) {
+            throw new Exception(
+                "`output_attentions` is true, but the model did not produce decoder-attentions. " .
+                "This is most likely because the model was not exported with `output_attentions=True`."
+            );
+        }
+        if (!isset($beam['decoder_attentions'])) {
+            $beam['decoder_attentions'] = [];
+        }
+        $beam['decoder_attentions'][] = $output['decoder_attentions'];
+    }
+
+    /**
+     * Groups an array of beam objects by their ids.
+     *
+     * @param array $beams The array of beam objects to group.
+     * @return array An array of arrays, where each inner array contains beam objects with the same id.
+     */
+    public function groupBeams(array $beams): array
+    {
+        $groups = [];
+
+        foreach ($beams as $obj) {
+//            $groups[$obj['id']][] = $obj;
+            if (!isset($groups[$obj['id']])) {
+                $groups[$obj['id']] = [$obj];
+            } else {
+                $groups[$obj['id']][] = $obj;
+            }
+        }
+
+        return array_values($groups);
+    }
+
+
+    /**
      * Returns an object containing past key values from the given decoder results object.
      *
      * @param array $decoderResults The decoder results object.
@@ -455,6 +609,7 @@ class PretrainedModel
 
         return $attns;
     }
+
 
     /**
      * Adds past key values to the decoder feeds object. If pastKeyValues is null, creates new tensors for past key values.
@@ -517,6 +672,7 @@ class PretrainedModel
         }
     }
 
+
     /** Generates text based on the given inputs and generation configuration using the model.
      * @param Tensor $inputs The input token ids.
      * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
@@ -545,7 +701,7 @@ class PretrainedModel
                 $errorMsg .= " Try using `{$possibleInfo}` instead.";
             }
 
-            throw new Error($errorMsg);
+            throw new \Error($errorMsg);
 
         }
 
@@ -559,7 +715,7 @@ class PretrainedModel
 
             // decoder-only
             if ($inputIdsSeqLength === 0) {
-                throw new Error("Must supply a non-empty Tensor of input token ids.");
+                throw new \Error("Must supply a non-empty Tensor of input token ids.");
             }
         }
 
@@ -728,211 +884,5 @@ class PretrainedModel
         } else {
             return $sequences;
         }
-    }
-
-    /**
-     * This function merges multiple generation configs together to form a final generation config to be used by the model for text generation.
-     * It first creates an empty `GenerationConfig` object, then it applies the model's own `generation_config` property to it. Finally, if a `generation_config` object was passed in the arguments, it overwrites the corresponding properties in the final config with those of the passed config object.
-     * @param ?GenerationConfig $generationConfig A `GenerationConfig` object containing generation parameters.
-     * @return GenerationConfig The final generation config object to be used by the model for text generation.
-     */
-    protected function getGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
-    {
-        // Create empty generation config (contains defaults)
-        // We pass `$this->config` so that if `eos_token_id` or `bos_token_id` exist in the model's config, we will use them
-        $genConfig = new GenerationConfig($this->config->config);
-
-
-        $genConfigArray = $genConfig->toArray();
-
-        // Apply model's generation config, if it exists
-        if (property_exists($this, 'generationConfig')) {
-            $genConfigArray = array_merge($genConfigArray, $this->generationConfig->toArray());
-        }
-
-
-        // Finally, use any generation config specified by the user
-        // when calling `generate`
-        if ($generationConfig !== null) {
-            $genConfigArray = array_merge($genConfigArray, $generationConfig->toArray());
-        }
-
-
-        return new GenerationConfig($genConfigArray);
-    }
-
-    protected function getLogitsProcessor(
-        GenerationConfig     $generationConfig,
-        int                  $inputIdsSeqLength,
-        ?LogitsProcessorList $logitsProcessor = null
-    ): LogitsProcessorList
-    {
-        $processors = new LogitsProcessorList();
-
-        if ($generationConfig->repetition_penalty != null && $generationConfig->repetition_penalty !== 1.0) {
-            $processors->push(new RepetitionPenaltyLogitsProcessor($generationConfig->repetition_penalty));
-        }
-
-        if ($generationConfig->no_repeat_ngram_size != null && $generationConfig->no_repeat_ngram_size > 0) {
-            $processors->push(new NoRepeatNGramLogitsProcessor($generationConfig->no_repeat_ngram_size));
-        }
-
-        if ($generationConfig->bad_words_ids != null) {
-            $processors->push(new BadWordsLogitsProcessor($generationConfig->bad_words_ids, $inputIdsSeqLength));
-        }
-
-        if ($generationConfig->min_length != null && $generationConfig->eos_token_id != null && $generationConfig->min_length > 0) {
-            $processors->push(new MinLengthLogitsProcessor($generationConfig->min_length, $generationConfig->eos_token_id));
-        }
-
-        if ($generationConfig->min_new_tokens != null && $generationConfig->eos_token_id != null && $generationConfig->min_new_tokens > 0) {
-            $processors->push(new MinNewTokensLengthLogitsProcessor(
-                    $inputIdsSeqLength,
-                    $generationConfig->min_new_tokens,
-                    $generationConfig->eos_token_id)
-            );
-        }
-
-        if ($generationConfig->forced_bos_token_id !== null) {
-            $processors->push(new ForcedBOSTokenLogitsProcessor($generationConfig->forced_bos_token_id));
-        }
-
-        if ($generationConfig->max_new_tokens == null && $generationConfig->forced_eos_token_id !== null) {
-            $processors->push(new ForcedEOSTokenLogitsProcessor($generationConfig->max_length, $generationConfig->forced_eos_token_id));
-        }
-
-        if ($generationConfig->begin_suppress_tokens !== null) {
-            $beginIndex = ($inputIdsSeqLength > 1 || $generationConfig->forced_bos_token_id == null)
-                ? $inputIdsSeqLength
-                : $inputIdsSeqLength + 1;
-
-            if ($generationConfig->forced_decoder_ids != null) {
-                $beginIndex += $generationConfig->forced_decoder_ids[array_key_last($generationConfig->forced_decoder_ids)][0];
-            }
-
-            $processors->push(new SuppressTokensAtBeginLogitsProcessor($generationConfig->begin_suppress_tokens, $beginIndex));
-        }
-
-        if ($generationConfig->forced_decoder_ids !== null) {
-            $processors->push(new ForceTokensLogitsProcessor($generationConfig->forced_decoder_ids));
-        }
-
-        if ($logitsProcessor !== null) {
-            $processors->extend($logitsProcessor);
-        }
-
-//         `LogitNormalization` should always be the last logit processor, when present
-//        if($generationConfig->renormalize_logits) {
-//            $processors->push(new LogitNormalization());
-//        }
-
-        return $processors;
-
-    }
-
-    /**
-     *  Initializes and returns the beam for text generation task
-     *
-     * @param Tensor $inputTokenIds The input token ids.
-     * @param GenerationConfig $generationConfig The generation config.
-     * @param int $numOutputTokens The number of tokens to generate.
-     * @param Tensor|null $inputsAttentionMask The attention mask for the input token ids.
-     * @return array{ inputs: Tensor, output_token_ids: Tensor, score: float, done: bool, id: int } The initial beam for text generation.
-     *
-     */
-    public function getStartBeams(
-        Tensor           $inputTokenIds,
-        GenerationConfig $generationConfig,
-        int              $numOutputTokens,
-        Tensor           $inputsAttentionMask = null
-    ): array
-    {
-        return $this->modelArchitecture->startBeams(
-            $this,
-            $inputTokenIds,
-            $generationConfig,
-            $numOutputTokens,
-            $inputsAttentionMask
-        );
-    }
-
-    /**
-     *  Runs the beam for text generation task
-     *
-     * @param array $beam The current beam being generated.
-     * @return array The updated beam after a single generation step.
-     *
-     */
-    public function runBeam(array &$beam): array
-    {
-        return $this->modelArchitecture->runBeam($this, $beam);
-    }
-
-    /**
-     * Helper function to add attentions to beam.
-     *
-     * @param array $beam
-     * @param array $output
-     * @throws Exception
-     */
-    public function addAttentionsToBeam(array &$beam, array $output): void
-    {
-        if ($this->config->isEncoderDecoder) {
-            if (empty($output['cross_attentions'])) {
-                throw new Exception(
-                    "`output_attentions` is true, but the model did not produce cross-attentions. " .
-                    "This is most likely because the model was not exported with `output_attentions=True`."
-                );
-            }
-            if (!isset($beam['cross_attentions'])) {
-                $beam['cross_attentions'] = [];
-            }
-            $beam['cross_attentions'][] = $output['cross_attentions'];
-        }
-
-        if (empty($output['decoder_attentions'])) {
-            throw new Exception(
-                "`output_attentions` is true, but the model did not produce decoder-attentions. " .
-                "This is most likely because the model was not exported with `output_attentions=True`."
-            );
-        }
-        if (!isset($beam['decoder_attentions'])) {
-            $beam['decoder_attentions'] = [];
-        }
-        $beam['decoder_attentions'][] = $output['decoder_attentions'];
-    }
-
-    /**
-     *  Update a beam with a new token ID.
-     *
-     * @param array $beam The beam to update.
-     * @param int $newTokenId The new token id to add to the beam.
-     *
-     */
-    public function updateBeam(array &$beam, int $newTokenId): void
-    {
-        $this->modelArchitecture->updateBeam($beam, $newTokenId);
-    }
-
-    /**
-     * Groups an array of beam objects by their ids.
-     *
-     * @param array $beams The array of beam objects to group.
-     * @return array An array of arrays, where each inner array contains beam objects with the same id.
-     */
-    public function groupBeams(array $beams): array
-    {
-        $groups = [];
-
-        foreach ($beams as $obj) {
-//            $groups[$obj['id']][] = $obj;
-            if (!isset($groups[$obj['id']])) {
-                $groups[$obj['id']] = [$obj];
-            } else {
-                $groups[$obj['id']][] = $obj;
-            }
-        }
-
-        return array_values($groups);
     }
 }

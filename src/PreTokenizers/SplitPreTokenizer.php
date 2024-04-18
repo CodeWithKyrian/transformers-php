@@ -23,15 +23,14 @@ class SplitPreTokenizer extends PreTokenizer
             return explode($this->pattern, $text);
         }
 
-        $regex = $this->pattern['Regex'] ?? null;
+        $regex = $this->pattern['Regex'] ?? $this->pattern['String'] ?? null;
 
-        if($regex != null)
-        {
-           $split =  preg_split($regex, $text, -1, PREG_SPLIT_NO_EMPTY);
-           dd($split);
+        if ($regex != null) {
+            preg_match_all("/$regex/u", $text, $matches, PREG_SPLIT_NO_EMPTY);
+
+            $text = array_map(fn($match) => $match, $matches[0]);
         }
 
-        // TODO: Handle all types of Regex
         return $text;
     }
 }
