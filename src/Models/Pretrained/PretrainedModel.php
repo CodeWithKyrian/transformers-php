@@ -263,7 +263,7 @@ class PretrainedModel
     }
 
     /**
-     * @param InferenceSession $session
+     * @param array $inputNames
      * @param Tensor[] $inputs
      * @return Tensor[]
      * @throws MissingModelInputException
@@ -317,8 +317,6 @@ class PretrainedModel
             $inputs = $this->validateInputs($inputNames, $inputs);
 
             $outputNames = array_column($session->outputs(), 'name');
-
-            file_put_contents('inputs.json', json_encode($inputs));
 
             $outputs = $session->run($outputNames, $inputs);
 
@@ -495,7 +493,6 @@ class PretrainedModel
         $feeds['position_ids'] = new Tensor($data, shape: $feeds['attention_mask']->shape());
 
         if ($useCacheBranch) {
-            // TODO: Fix this
             $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1)->unsqueeze(-1);
         }
     }
@@ -677,8 +674,10 @@ class PretrainedModel
      * @param Tensor $inputs The input token ids.
      * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
      * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
-     * @param array|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Tensor|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Streamer|null $streamer
      * @return array An array of generated output sequences, where each sequence is an array of token IDs.
+     * @throws Exception
      */
     public function generate(
         Tensor               $inputs,
@@ -793,7 +792,6 @@ class PretrainedModel
 
                     // update new beam
                     $this->updateBeam($newBeam, $newTokenId);
-
                     $newBeam['score'] += $logProb;
 
                     if ($eosTokenIds && in_array($newTokenId, $eosTokenIds, true)) {
@@ -812,15 +810,10 @@ class PretrainedModel
             $newestBeams = array_merge(...array_map(
                 function ($group) use ($generationConfig) {
                     usort($group, fn($a, $b) => $b['score'] <=> $a['score']);
-                    return array_slice(
-                        $group,
-                        0,
-                        $generationConfig->num_beams
-                    );
+                    return array_slice($group, 0, $generationConfig->num_beams);
                 },
                 $this->groupBeams($newestBeams)
             ));
-
 
             // Flatten beams
             $beams = $newestBeams;

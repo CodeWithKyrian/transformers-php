@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
+use Interop\Polite\Math\Matrix\NDArray;
 
 enum ModelArchitecture: string
 {
@@ -34,7 +35,7 @@ enum ModelArchitecture: string
     {
         return match ($this) {
             self::DecoderOnly => $this->decoderRunBeam($model, $beam),
-            self::Seq2SeqLM, self::Vision2Seq  => $this->seq2seqRunBeam($model, $beam),
+            self::Seq2SeqLM, self::Vision2Seq => $this->seq2seqRunBeam($model, $beam),
             default => throw new \Error('This model type does not support beam search'),
         };
     }
@@ -114,9 +115,10 @@ enum ModelArchitecture: string
         // 1. Prepare
         $modelInputs = [
             'input_ids' => $beam['model_input_ids'],
-            'attention_mask' => new Tensor($attnMaskData, shape: [1, $attnMaskLength]),
+            'attention_mask' => new Tensor($attnMaskData, NDArray::int64, [1, $attnMaskLength]),
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
+
 
         // 2. Run
         $output = $model->forward($modelInputs);
@@ -155,7 +157,7 @@ enum ModelArchitecture: string
             $attnMask = null;
             if ($inputsAttentionMask !== null) {
                 $attnMask = $inputsAttentionMask[$beamId];
-                $attnMask->reshape([1, ...$attnMask->shape()]);
+                $attnMask = $attnMask->reshape([1, ...$attnMask->shape()]);
             } else {
                 $attnMask = $model->prepareAttentionMask($tokens);
             }
@@ -189,8 +191,7 @@ enum ModelArchitecture: string
     protected function decoderUpdatebeam(array &$beam, int $newTokenId): void
     {
         $beam['output_token_ids'][] = $newTokenId;
-
-        $beam['model_input_ids'] = new Tensor([$newTokenId], shape: [1, 1]);
+        $beam['model_input_ids'] = new Tensor([$newTokenId], NDArray::int64, [1, 1]);
     }
 
     /**
@@ -220,6 +221,14 @@ enum ModelArchitecture: string
 
         $model->preparePositionIds($inputNames, $decoderFeeds, $useCacheBranch);
         $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
+
+        // The initial past key values should have a shape of 0 in one of the dimensions, which
+        // is the sequence length. However, I haven't found a way to pass a tensor with a shape of 0
+        // to the model, so I'm using a sequence length of 1 instead for the first step, and then
+        // offsetting the sequence length by 1 for the subsequent steps. This is a workaround for now.
+        $prevSequenceLength = $decoderFeeds['past_key_values.0.key']->shape()[2];
+        $attnMaskLength = $prevSequenceLength == 1 ? 1 : $prevSequenceLength + 1;
+        $decoderFeeds['attention_mask'] = Tensor::ones([1, $attnMaskLength], dtype: NDArray::int64);
 
         $decoderResults = $model->runSession($model->session, $decoderFeeds);
 
