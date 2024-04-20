@@ -399,7 +399,7 @@ class PretrainedModel
 
         if ($useCacheBranch) {
             // TODO: Fix this
-            $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1)->unsqueeze(-1);
+            $feeds['position_ids'] = $feeds['position_ids']->slice(null, -1);
         }
     }
 

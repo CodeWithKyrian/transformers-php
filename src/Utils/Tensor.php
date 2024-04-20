@@ -258,13 +258,13 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Return a one matrix with the given dimensions.
+     * Return a one matrix with the given shape.
      *
      * @param array $shape The shape of the one matrix to return.
-     * @param string|null $dtype The data type of the one matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     * @param ?int $dtype The data type of the one matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
      * @return static
      */
-    public static function ones(array $shape, ?string $dtype = null): static
+    public static function ones(array $shape, ?int $dtype = null): static
     {
         $mo = self::getMo();
 
@@ -289,7 +289,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
-    public static function fromArray(array|NDArray $array, ?string $dtype = null, $shape = null): ?static
+    public static function fromArray(array|NDArray $array, ?int $dtype = null, $shape = null): ?static
     {
         if (empty($array)) return null;
 
@@ -303,7 +303,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Reshape the tensor into the given shape.
      */
-    public function reshape(array $shape): NDArray
+    public function reshape(array $shape): static
     {
         $this->assertShape($shape);
 
@@ -324,39 +324,39 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Stack an array of tensors along a specified dimension.
+     * Stack an array of tensors along a specified axis.
      *
      * @param Tensor[] $tensors The array of tensors to stack.
-     * @param int $dim The dimension to stack along.
+     * @param int $axis The axis to stack along.
      *
      * @return Tensor The stacked tensor.
      */
-    public static function stack(array $tensors, int $dim = 0): Tensor
+    public static function stack(array $tensors, int $axis = 0): Tensor
     {
         // TODO: Perform validation of shapes
         // NOTE: stack expects each tensor to be equal size
-        return self::cat(array_map(fn($t) => $t->unsqueeze($dim), $tensors), $dim);
+        return self::cat(array_map(fn($t) => $t->unsqueeze($axis), $tensors), $axis);
     }
 
     /**
      * Concatenates an array of tensors along a specified dimension.
      *
      * @param Tensor[] $tensors The array of tensors to concatenate.
-     * @param int $dim The dimension to concatenate along.
+     * @param int $axis The dimension to concatenate along.
      *
      * @return Tensor The concatenated tensor.
      * @throws Exception
      */
-    public static function cat(array $tensors, int $dim = 0): Tensor
+    public static function cat(array $tensors, int $axis = 0): Tensor
     {
-        $dim = self::safeIndex($dim, $tensors[0]->ndim());
+        $axis = self::safeIndex($axis, $tensors[0]->ndim());
 
         // TODO: Perform validation of shapes
 
         $resultShape = $tensors[0]->shape();
         $resultOffset = $tensors[0]->offset();
         $resultType = $tensors[0]->dtype();
-        $resultShape[$dim] = array_reduce($tensors, fn($carry, $tensor) => $carry + $tensor->shape()[$dim], 0);
+        $resultShape[$axis] = array_reduce($tensors, fn($carry, $tensor) => $carry + $tensor->shape()[$axis], 0);
 
         // Create a new array to store the accumulated values
         $resultSize = array_product($resultShape);
@@ -365,7 +365,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         // Create output tensor of same type as first
 
-        if ($dim === 0) {
+        if ($axis === 0) {
             // Handle special case for performance reasons
 
             $offset = 0;
@@ -375,7 +375,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 }
             }
         } else {
-            $currentDim = 0;
+            $currentShape = 0;
 
             foreach ($tensors as $tensor) {
                 for ($i = 0; $i < $tensor->buffer->count(); $i++) {
@@ -384,8 +384,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                     for ($j = $tensor->ndim() - 1, $num = $i, $resultMultiplier = 1; $j >= 0; --$j) {
                         $size = $tensor->shape()[$j];
                         $index = $num % $size;
-                        if ($j === $dim) {
-                            $index += $currentDim;
+                        if ($j === $axis) {
+                            $index += $currentShape;
                         }
                         $resultIndex += $index * $resultMultiplier;
                         $resultMultiplier *= $resultShape[$j];
@@ -394,7 +394,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                     $result[$resultIndex] = $tensor->buffer()[$i];
                 }
 
-                $currentDim += $tensor->shape()[$dim];
+                $currentShape += $tensor->shape()[$axis];
             }
         }
 
@@ -402,18 +402,18 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Safely calculates the positive index within the specified size and dimension.
+     * Safely calculates the positive index within the specified size and axis.
      * @param int $index The input index.
      * @param int $size The size of the dimension.
-     * @param int|null $dimension The dimension (optional).
+     * @param int|null $axis The axis (optional).
      * @return int The positive index within bounds.
      * @throws Exception If the index is out of bounds.
      */
-    protected static function safeIndex(int $index, int $size, ?int $dimension = null): int
+    protected static function safeIndex(int $index, int $size, ?int $axis = null): int
     {
         if ($index < -$size || $index >= $size) {
-            throw new Exception("IndexError: index $index is out of bounds for dimension"
-                . ($dimension === null ? '' : ' ' . $dimension) . " with size $size"
+            throw new Exception("IndexError: index $index is out of bounds for axis"
+                . ($axis === null ? '' : ' ' . $axis) . " with size $size"
             );
         }
 
@@ -443,37 +443,53 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Returns a tensor with all specified dimensions of input of size 1 removed.
+     * Returns a tensor with all specified axis of input of size 1 removed.
      *
-     * @param ?int $dim If given, the input will be squeezed only in the specified dimensions.
+     * @param ?int $axis If given, the input will be squeezed only in the specified axis.
      *
      * @return static The squeezed tensor.
      */
-    public function unsqueeze(?int $dim = null): static
+    public function squeeze(?int $axis = null): static
+    {
+        $mo = self::getMo();
+
+        $ndArray = $mo->la()->squeeze($this, $axis);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Returns a tensor with all specified axis of input of size 1 removed.
+     *
+     * @param ?int $axis If given, the input will be squeezed only in the specified axis.
+     *
+     * @return static The squeezed tensor.
+     */
+    public function unsqueeze(?int $axis = null): static
     {
         return new Tensor(
             $this->buffer(),
             $this->dtype,
-            $this->calcUnsqueezeDims($this->shape(), $dim),
+            $this->calcUnsqueezeShape($this->shape(), $axis),
             $this->offset
         );
     }
 
     /**
-     * Helper function to calculate new dimensions when performing an unsqueeze operation.
-     * @param array $dims The dimensions of the tensor.
-     * @param int $dim The dimension to unsqueeze.
-     * @return array The new dimensions.
+     * Helper function to calculate new shape when performing an unsqueeze operation.
+     * @param array $shape The shape of the tensor.
+     * @param int $axis The axis to unsqueeze.
+     * @return array The new shape.
      */
-    protected function calcUnsqueezeDims(array $dims, int $dim): array
+    protected function calcUnsqueezeShape(array $shape, int $axis): array
     {
         // Dimension out of range (e.g., "expected to be in range of [-4, 3], but got 4")
-        // + 1 since we allow inserting at the end (i.e. dim = -1)
-        $dim = self::safeIndex($dim, count($dims) + 1);
-        $newDims = $dims;
-        // Insert 1 into specified dimension
-        array_splice($newDims, $dim, 0, [1]);
-        return $newDims;
+        // + 1 since we allow inserting at the end (i.e. $axis = -1)
+        $axis = self::safeIndex($axis, count($shape) + 1);
+
+        array_splice($shape, $axis, 0, 1);
+
+        return $shape;
     }
 
     /**
@@ -562,19 +578,19 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * Performs `L_p` normalization of inputs over specified dimension.
      *
      * @param int $p Order of the norm. Supported values are 1, 2, Infinity.
-     * @param int|null $dim The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
+     * @param int|null $axis The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
      *
      * @return static The normalized tensor.
      */
-    public function normalize(int $p = 2, ?int $dim = null): static
+    public function normalize(int $p = 2, ?int $axis = null): static
     {
         $mo = self::getMo();
 
         $result = clone $this;
 
-        $dim = $result->safeIndex($dim, $result->ndim());
+        $axis = $result->safeIndex($axis, $result->ndim());
 
-        $norm = $result->norm($p, $dim, true);
+        $norm = $result->norm($p, $axis, true);
 
         foreach ($norm->buffer as $i => $value) {
             $resultIndex = 0;
@@ -584,7 +600,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             for ($j = $result->ndim() - 1; $j >= 0; --$j) {
                 $size = $result->shape()[$j];
 
-                if ($j !== $dim) {
+                if ($j !== $axis) {
                     $index = $num % $size;
                     $resultIndex += $index * $resultMultiplier;
                     $resultMultiplier *= $result->shape()[$j];
@@ -605,11 +621,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @param int $ord Order of the norm. Supported values are 1, 2, Infinity.
      * @param int|null $axis The axis or axes along which to perform the reduction. If null (default), reduces all dimensions.
-     * @param bool $keepdims If true, retains reduced dimensions with length 1.
+     * @param bool $keepShape If true, retains reduced shape with length 1.
      *
      * @return static
      */
-    public function norm(int $ord = 2, ?int $axis = null, bool $keepdims = false): static
+    public function norm(int $ord = 2, ?int $axis = null, bool $keepShape = false): static
     {
         $mo = self::getMo();
 
@@ -623,8 +639,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         $axis = $this->safeIndex($axis, $this->ndim());
 
         // Calculate the shape of the resulting array after summation
-        $resultDims = $this->shape();
-        $resultDims[$axis] = 1; // Remove the specified axis
+        $resultShape = $this->shape();
+        $resultShape[$axis] = 1; // Remove the specified axis
 
         // Create a new array to store the accumulated values
         $result = $this->zeros([count($this->buffer) / $this->shape()[$axis]]);
@@ -642,7 +658,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 if ($j !== $axis) {
                     $index = $num % $size;
                     $resultIndex += $index * $resultMultiplier;
-                    $resultMultiplier *= $resultDims[$j];
+                    $resultMultiplier *= $resultShape[$j];
                 }
 
                 $num = floor($num / $size);
@@ -656,11 +672,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             $result = $mo->op($result, '**', 1 / $ord);
         }
 
-        if (!$keepdims) {
-            array_splice($resultDims, $axis, 1);
+        if (!$keepShape) {
+            array_splice($resultShape, $axis, 1);
         }
 
-        return new static($result->buffer(), $result->dtype(), $resultDims, $result->offset());
+        return new static($result->buffer(), $result->dtype(), $resultShape, $result->offset());
     }
 
     /**
@@ -713,12 +729,12 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Return a zero matrix with the given dimensions.
+     * Return a zero matrix with the given shape.
      * @param array $shape The shape of the zero matrix to return.
-     * @param string|null $dtype The data type of the zero matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     * @param int|null $dtype The data type of the zero matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
      * @return static
      */
-    public static function zeros(array $shape, ?string $dtype = null): static
+    public static function zeros(array $shape, ?int $dtype = null): static
     {
         $mo = self::getMo();
 
@@ -727,21 +743,6 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
-    /**
-     * Returns a tensor with all specified dimensions of input of size 1 removed.
-     *
-     * @param ?int $dim If given, the input will be squeezed only in the specified dimensions.
-     *
-     * @return static The squeezed tensor.
-     */
-    public function squeeze(?int $dim = null): static
-    {
-        $mo = self::getMo();
-
-        $ndArray = $mo->la()->squeeze($this, $dim);
-
-        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
-    }
 
     /**
      * Clamps all elements in input into the range [ min, max ] and returns a resulting tensor.
@@ -792,9 +793,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
-     * Returns the mean value of each row of the tensor in the given dimension dim.
+     * Returns the mean value of each row of the tensor in the given axis.
      */
-    public function mean(?int $axis = null, bool $keepdims = false): static|float|int
+    public function mean(?int $axis = null, bool $keepShape = false): static|float|int
     {
         $mo = self::getMo();
 
@@ -803,7 +804,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         if ($mean instanceof NDArray) {
             $shape = $mean->shape();
 
-            if (!$keepdims) {
+            if (!$keepShape) {
                 array_splice($shape, $axis, 1);
             }
 
@@ -822,17 +823,17 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      */
     public function meanPooling(Tensor $other): Tensor
     {
-        // $this->shape should be : [batchSize, seqLength, embedDim]
+        // $this->shape should be : [batchSize, seqLength, embedAxis]
         // $other->shape should be : [batchSize, seqLength]
-        [$batchSize, $seqLength, $embedDim] = $this->shape();
+        [$batchSize, $seqLength, $embedAxis] = $this->shape();
 
         $returnedData = [];
         $outIndex = 0;
 
         for ($i = 0; $i < $batchSize; ++$i) {
-            $offset = $i * $embedDim * $seqLength;
+            $offset = $i * $embedAxis * $seqLength;
 
-            for ($k = 0; $k < $embedDim; ++$k) {
+            for ($k = 0; $k < $embedAxis; ++$k) {
                 $sum = 0;
                 $count = 0;
 
@@ -853,12 +854,12 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             }
         }
 
-        return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedDim]);
+        return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedAxis]);
     }
 
     public function slice(...$slices): Tensor
     {
-        $newTensorDims = [];
+        $newTensorShape = [];
         $newOffsets = [];
 
         for ($sliceIndex = 0; $sliceIndex < $this->ndim(); ++$sliceIndex) {
@@ -866,7 +867,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
             if ($slice === null) {
                 $newOffsets[] = [0, $this->shape()[$sliceIndex]];
-                $newTensorDims[] = $this->shape()[$sliceIndex];
+                $newTensorShape[] = $this->shape()[$sliceIndex];
 
             } elseif (is_int($slice)) {
                 $slice = $this->safeIndex($slice, $this->shape()[$sliceIndex], $sliceIndex);
@@ -881,36 +882,36 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                     min($slice[1], $this->shape()[$sliceIndex])
                 ];
                 $newOffsets[] = $offsets;
-                $newTensorDims[] = $offsets[1] - $offsets[0];
+                $newTensorShape[] = $offsets[1] - $offsets[0];
 
             } else {
                 throw new Exception("Invalid slice: " . json_encode($slice));
             }
         }
 
-        $newDims = array_map(fn($offsets) => $offsets[1] - $offsets[0], $newOffsets);
+        $newShape = array_map(fn($offsets) => $offsets[1] - $offsets[0], $newOffsets);
 
-        $newBufferSize = array_reduce($newDims, fn($a, $b) => $a * $b, 1);
+        $newBufferSize = array_reduce($newShape, fn($a, $b) => $a * $b, 1);
 
         $buffer = $this->newBuffer($newBufferSize, $this->dtype());
         $stride = $this->stride();
 
         for ($i = 0; $i < $newBufferSize; ++$i) {
             $originalIndex = 0;
-            for ($j = count($newDims) - 1, $num = $i; $j >= 0; --$j) {
-                $size = $newDims[$j];
+            for ($j = count($newShape) - 1, $num = $i; $j >= 0; --$j) {
+                $size = $newShape[$j];
                 $originalIndex += (($num % $size) + $newOffsets[$j][0]) * $stride[$j];
                 $num = floor($num / $size);
             }
             $buffer[$i] = $this->buffer[$originalIndex];
         }
 
-        return new Tensor($buffer, $this->dtype(), $newDims, $this->offset());
+        return new Tensor($buffer, $this->dtype(), $newShape, $this->offset());
     }
 
     /**
      * Compute and return the stride of this tensor.
-     * Stride is the jump necessary to go from one element to the next one in the specified dimension dim.
+     * Stride is the jump necessary to go from one element to the next one in the specified axis.
      * @return array The stride of this tensor.
      */
     public function stride(): array

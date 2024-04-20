@@ -9,8 +9,8 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 require_once './bootstrap.php';
 
 ini_set('memory_limit', -1);
-$captioner = pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
-//$captioner = pipeline('image-to-text', 'Xenova/trocr-small-handwritten');
+//$captioner = pipeline('image-to-text', 'Xenova/vit-gpt2-image-captioning');
+$captioner = pipeline('image-to-text', 'Xenova/trocr-small-handwritten');
 
 //$streamer = StdOutStreamer::make($captioner->tokenizer);
 

@@ -90,7 +90,12 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
-        $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generationConfig, streamer: $streamer);
+        $outputTokenIds = $this->model->generate(
+            $inputIds,
+            generationConfig: $generationConfig,
+            inputsAttentionMask: $attentionMask,
+            streamer: $streamer
+        );
 
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
