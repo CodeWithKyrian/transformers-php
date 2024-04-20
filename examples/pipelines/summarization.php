@@ -14,7 +14,7 @@ ini_set('memory_limit', -1);
 
 $summarizer = pipeline('summarization', 'Xenova/distilbart-cnn-6-6');
 
-$streamer = StdOutStreamer::make($summarizer->tokenizer);
+$streamer = StdOutStreamer::make();
 
 $article = 'The tower is 324 metres (1,063 ft) tall, about the same height as an 81-storey building, ' .
     'and the tallest structure in Paris. Its base is square, measuring 125 metres (410 ft) on each side. ' .
@@ -29,6 +29,6 @@ $article = 'The tower is 324 metres (1,063 ft) tall, about the same height as an
 //$article = "I called my friend to see if he wanted to go to the movies. However, he was busy and said he would " .
 //    "call me back. I didn't hear back from him, so I called him again. He didn't answer, so I decided to go to the movies by myself.";
 
-$summary = $summarizer($article, streamer: $streamer,  maxNewTokens: 512, temperature: 0.7);
+$summary = $summarizer($article, streamer: $streamer, maxNewTokens: 512, temperature: 0.7);
 
 dd("Done", timeUsage(), memoryUsage());

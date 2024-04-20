@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 
 /**
  * A pipeline for generating text using a model that performs text-to-text generation tasks.
@@ -31,6 +31,7 @@ class Text2TextGenerationPipeline extends Pipeline
         $streamer = null;
 
         if (array_key_exists('streamer', $args)) {
+            /** @var Streamer $streamer */
             $streamer = $args['streamer'];
             unset($args['streamer']);
         }
@@ -76,6 +77,9 @@ class Text2TextGenerationPipeline extends Pipeline
             ? $tokenizer->buildTranslationInputs($inputs, $generateKwargs, padding: true, truncation: true)['input_ids']
             : $tokenizer->__invoke($inputs, padding: true, truncation: true)['input_ids'];
 
+
+        // Streamer can only handle one input at a time for now, so we only pass the first input
+        $streamer->init($this->tokenizer, $inputIds[0]->toArray(), true);
 
         // Generate output token ids
         $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);

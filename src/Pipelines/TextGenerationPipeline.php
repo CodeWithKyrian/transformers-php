@@ -5,7 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 
 /**
@@ -53,10 +55,16 @@ class TextGenerationPipeline extends Pipeline
     public function __invoke(array|string $inputs, ...$args): array
     {
         $streamer = null;
-
         if (array_key_exists('streamer', $args)) {
+            /** @var Streamer $streamer */
             $streamer = $args['streamer'];
             unset($args['streamer']);
+        }
+
+        $returnFullText = true; // By default, return full text
+        if (array_key_exists('returnFullText', $args)) {
+            $returnFullText = $args['returnFullText'];
+            unset($args['returnFullText']);
         }
 
         // Convert the rest of the arguments key names from camelCase to snake_case
@@ -67,31 +75,48 @@ class TextGenerationPipeline extends Pipeline
 
         $generationConfig = new GenerationConfig($snakeCasedArgs);
 
-        $isChatMode = $this->isChatMode($inputs);
+        $isBatched = false;
+        $isChatInput = false;
 
-        if ($isChatMode) {
-            $inputs = $this->tokenizer->applyChatTemplate($inputs, addGenerationPrompt: true, tokenize: false);
-        }
+        // Normalize inputs
+        $texts = [];
 
-        $isBatched = is_array($inputs);
+        if (is_string($inputs)) {
+            $texts = $inputs = [$inputs];
+        } elseif (is_array($inputs) && array_every($inputs, fn($x) => is_string($x))) {
+            $isBatched = true;
+            $texts = $inputs;
+        } else {
+            if ($this->isChat($inputs)) {
+                $inputs = [$inputs];
+            } elseif (is_array($inputs) && array_every($inputs, [$this, 'isChat'])) {
+                $isBatched = true;
+            } else {
+                throw new \Exception('Input must be a string, an array of strings, a Chat, or an array of Chats');
+            }
+            $isChatInput = true;
 
-        if (!$isBatched) {
-            $inputs = [$inputs];
+            // If the input is a chat, apply the chat template
+            $texts = array_map(fn($x) => $this->tokenizer->applyChatTemplate($x, addGenerationPrompt: true, tokenize: false), $inputs);
         }
 
         // By default, do not add special tokens
-        $addSpecialTokens = $this->model->config['add_special_tokens'] ?? false;
+        $addSpecialTokens = $generationConfig['add_special_tokens'] ?? false;
+
+        $returnFullText = $isChatInput ? false : $returnFullText;
 
         $this->tokenizer->paddingSide = 'left';
         ['input_ids' => $inputIds, 'attention_mask' => $attentionMask] = $this->tokenizer->tokenize(
-            $inputs,
+            $texts,
             padding: true,
             addSpecialTokens: $addSpecialTokens,
             truncation: true
         );
 
-        $outputTokenIds = $this->model->generate(
-            $inputIds,
+        // Streamer can only handle one input at a time for now, so we only pass the first input
+        $streamer->init($this->tokenizer, $inputIds[0]->toArray(), false);
+
+        $outputTokenIds = $this->model->generate($inputIds,
             generationConfig: $generationConfig,
             inputsAttentionMask: $attentionMask,
             streamer: $streamer
@@ -99,13 +124,30 @@ class TextGenerationPipeline extends Pipeline
 
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
+        $promptLengths = null;
+        if (!$returnFullText && $inputIds->shape()[count($inputIds->shape()) - 1] > 0) {
+            $promptLengths = array_map(fn($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds->toArray(), skipSpecialTokens: true));
+        }
 
         $toReturn = array_fill(0, count($inputs), []);
 
         for ($i = 0; $i < count($decoded); ++$i) {
             $textIndex = floor($i / count($outputTokenIds) * count($inputs));
+
+            if ($promptLengths !== null) {
+                // Trim the decoded text to only include the generated part
+                $decoded[$i] = substr($decoded[$i], $promptLengths[$textIndex]);
+
+                // Remove the leading space
+                $decoded[$i] = ltrim($decoded[$i]);
+            }
+
             $toReturn[$textIndex][] = [
-                'generated_text' => $decoded[$i]
+                'generated_text' => $isChatInput
+                    ? array_merge($inputs[$textIndex], [
+                        ['role' => 'assistant', 'content' => $decoded[$i]]
+                    ])
+                    : $decoded[$i],
             ];
         }
 
@@ -114,9 +156,9 @@ class TextGenerationPipeline extends Pipeline
     }
 
     // Detect chat mode
-    protected function isChatMode(string|array $texts): bool
+    function isChat($x): bool
     {
-        return is_array($texts) && isset($texts[0]) && is_array($texts[0]) && !array_is_list($texts[0]);
-
+        return is_array($x) && array_every($x, fn($item) => isset($item['role']) && isset($item['content']));
     }
+
 }
