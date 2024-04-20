@@ -5,18 +5,16 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Streamers;
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
-
 class StdOutStreamer extends TextStreamer
 {
-    public function __construct(PretrainedTokenizer $tokenizer, StreamMode $streamMode = StreamMode::PARTIAL)
+    public function __construct(StreamMode $streamMode = StreamMode::PARTIAL)
     {
-        parent::__construct($tokenizer);
+        parent::__construct();
+
         $this->setStreamMode($streamMode);
-        if($streamMode === StreamMode::FULL) {
+        if ($streamMode === StreamMode::FULL) {
             $this->onStreamEnd(fn(string $full) => $this->echoToConsole($full, true));
-        }
-        else {
+        } else {
             $this->onStream(fn(string $partial) => $this->echoToConsole($partial));
             $this->onStreamEnd(fn(string $full) => $this->echoToConsole('', true));
         }

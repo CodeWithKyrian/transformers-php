@@ -12,7 +12,7 @@ ini_set('memory_limit', -1);
 $generator = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
 //$generator = pipeline('text2text-generation', 'Xenova/flan-t5-small', quantized: true);
 
-$streamer = StdOutStreamer::make($generator->tokenizer);
+$streamer = StdOutStreamer::make();
 
 //$query = 'Please let me know your thoughts on the given place and why you think it deserves to be visited: \n" Barcelona, Spain"';
 $query = 'How many continents are in the world? List them out';

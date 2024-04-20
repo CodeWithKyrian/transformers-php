@@ -88,6 +88,9 @@ use InvalidArgumentException;
  */
 class TextStreamer extends Streamer
 {
+    protected PretrainedTokenizer $tokenizer;
+    protected array $inputTokens = [];
+    protected bool $excludeInput = true;
     protected string $printedText = '';
     protected mixed $onStreamCallback = null;
     protected mixed $onStreamEndCallback = null;
@@ -96,13 +99,28 @@ class TextStreamer extends Streamer
     protected int $lastDecodedCheckpointForToken = 0;
     protected int $lastDecodedCheckpointForText = 0;
 
-    public function __construct(protected PretrainedTokenizer $tokenizer)
+    public function __construct()
     {
     }
 
-    public static function make(PretrainedTokenizer $tokenizer): self
+    public static function make(): self
     {
-        return new static($tokenizer);
+        return new static();
+    }
+
+    public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void
+    {
+        $this->tokenizer = $tokenizer;
+        $this->inputTokens = $inputTokens;
+        $this->excludeInput = $excludeInput;
+
+        if ($this->excludeInput) {
+            $this->printedText = $this->tokenizer->decode($this->inputTokens, skipSpecialTokens: true);
+            $this->printedLength = mb_strlen($this->printedText);
+
+            $this->lastDecodedCheckpointForToken = count($this->inputTokens);
+            $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
+        }
     }
 
     public function onStream(callable $callback): self
