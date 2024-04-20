@@ -12,7 +12,7 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
  */
 abstract class Streamer
 {
-    abstract public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $includeInput): void;
+    abstract public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void;
 
     abstract public function put(mixed $value): void;
 

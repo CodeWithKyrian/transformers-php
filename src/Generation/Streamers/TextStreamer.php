@@ -90,7 +90,7 @@ class TextStreamer extends Streamer
 {
     protected PretrainedTokenizer $tokenizer;
     protected array $inputTokens = [];
-    protected bool $includeInput = false;
+    protected bool $excludeInput = true;
     protected string $printedText = '';
     protected mixed $onStreamCallback = null;
     protected mixed $onStreamEndCallback = null;
@@ -108,13 +108,13 @@ class TextStreamer extends Streamer
         return new static();
     }
 
-    public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $includeInput): void
+    public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void
     {
         $this->tokenizer = $tokenizer;
         $this->inputTokens = $inputTokens;
-        $this->includeInput = $includeInput;
+        $this->excludeInput = $excludeInput;
 
-        if (!$this->includeInput) {
+        if ($this->excludeInput) {
             $this->printedText = $this->tokenizer->decode($this->inputTokens, skipSpecialTokens: true);
             $this->printedLength = mb_strlen($this->printedText);
 

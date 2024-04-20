@@ -114,7 +114,7 @@ class TextGenerationPipeline extends Pipeline
         );
 
         // Streamer can only handle one input at a time for now, so we only pass the first input
-        $streamer->init($this->tokenizer, $inputIds[0]->toArray(), false);
+        $streamer->init($this->tokenizer, $inputIds[0]->toArray(), true);
 
         $outputTokenIds = $this->model->generate($inputIds,
             generationConfig: $generationConfig,
