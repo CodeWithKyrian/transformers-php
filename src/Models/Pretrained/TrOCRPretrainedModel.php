@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\Models\Pretrained;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use OnnxRuntime\InferenceSession;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 
 class TrOCRPretrainedModel extends PretrainedModel
 {
@@ -29,8 +29,8 @@ class TrOCRPretrainedModel extends PretrainedModel
         parent::__construct($config, $session, $modelArchitecture);
 
 
-        $this->numEncoderLayers =  $this->numDecoderLayers = $this->config['decoder_layers'];
-        $this->numEncoderHeads =  $this->numDecoderHeads = $this->config['decoder_attention_heads'];
-        $this->encoderDimKv =  $this->decoderDimKv = $this->config['d_model'] / $this->numDecoderHeads;
+        $this->numEncoderLayers = $this->numDecoderLayers = $this->config['decoder_layers'];
+        $this->numEncoderHeads = $this->numDecoderHeads = $this->config['decoder_attention_heads'];
+        $this->encoderDimKv = $this->decoderDimKv = $this->config['d_model'] / $this->numDecoderHeads;
     }
 }
