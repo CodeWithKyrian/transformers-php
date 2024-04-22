@@ -79,7 +79,7 @@ class Text2TextGenerationPipeline extends Pipeline
 
 
         // Streamer can only handle one input at a time for now, so we only pass the first input
-        $streamer->init($this->tokenizer, $inputIds[0]->toArray());
+        $streamer?->init($this->tokenizer, $inputIds[0]->toArray());
 
         // Generate output token ids
         $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
