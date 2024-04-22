@@ -21,7 +21,7 @@ function memoryPeak(): string
 }
 
 
-function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true): string
+function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true, bool $returnString = true): string|float
 {
     static $lastCallTime = 0;
 
@@ -35,7 +35,8 @@ function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true): stri
 
     $timeDiff = $milliseconds ? $timeDiff * 1000 : $timeDiff;
 
-    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
+//    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
+    return $returnString ? @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
 }
 
 function array_some(array $array, callable $callback): bool

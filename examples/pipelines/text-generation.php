@@ -18,13 +18,13 @@ $streamer = StdOutStreamer::make();
 
 $messages = [
     ['role' => 'system', 'content' => 'You are a helpful assistant.'],
-    ['role' => 'user', 'content' => 'What is the product of 5 and 4'],
+    ['role' => 'user', 'content' => 'What is diffusion?'],
 ];
 
 $input = $generator->tokenizer->applyChatTemplate($messages, addGenerationPrompt: true, tokenize: false);
 
 $output = $generator($input,
-    streamer: $streamer,
+//    streamer: $streamer,
     maxNewTokens: 128,
     doSample: true,
     returnFullText: false,

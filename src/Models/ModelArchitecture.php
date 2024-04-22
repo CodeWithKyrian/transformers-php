@@ -119,8 +119,6 @@ enum ModelArchitecture: string
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
 
-
-        // 2. Run
         $output = $model->forward($modelInputs);
 
         // 3. Update
@@ -372,7 +370,6 @@ enum ModelArchitecture: string
         $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
 
         $decoderResults = $model->runSession($model->decoderMergedSession, $decoderFeeds);
-
         $logits = $decoderResults['logits'];
         $pastKeyValues = $model->getPastKeyValues($decoderResults, $pastKeyValues);
 
