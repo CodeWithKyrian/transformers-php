@@ -33,7 +33,6 @@ use Error;
 use Exception;
 use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -282,10 +281,7 @@ class PretrainedModel
 
             $outputNames = array_column($session->outputs(), 'name');
 
-            timeUsage();
-            $out = $session->run($outputNames, $inputs);
-            dump(timeUsage(true));
-            return $out;
+            return $session->run($outputNames, $inputs);
         } catch (MissingModelInputException $e) {
             throw $e;
         } catch (Exception $e) {

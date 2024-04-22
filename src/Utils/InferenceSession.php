@@ -130,6 +130,7 @@ class InferenceSession
 
     public function run($outputNames, $inputFeed, $logSeverityLevel = null, $logVerbosityLevel = null, $logid = null, $terminate = null): array
     {
+
         // pointer references
         $refs = [];
 
@@ -167,7 +168,6 @@ class InferenceSession
         $output = [];
 
         foreach ($outputTensor as $i => $t) {
-//            $output[] = $this->createFromOnnxValue($t);
             $output[$outputNames[$i]] = $this->createFromOnnxValue($t);
         }
 
@@ -514,13 +514,13 @@ class InferenceSession
             return null;
         }
 
-        $data = [];
+        $buffer = Tensor::newBuffer($bufferSize);
 
         for ($j = 0; $j < $bufferSize; $j++) {
-            $data[] = $ptr[$j];
+            $buffer[$j] = $ptr[$j];
         }
 
-        return new Tensor($data, shape: $shape);
+        return new Tensor($buffer, shape: $shape, offset: 0);
     }
 
     private function createStringsFromOnnxValue($outPtr, $outputTensorSize)

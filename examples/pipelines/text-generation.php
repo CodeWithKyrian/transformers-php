@@ -13,7 +13,7 @@ ini_set('memory_limit', -1);
 //
 //$generator = pipeline('text-generation', 'Xenova/gpt2');
 $generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
-
+//
 $streamer = StdOutStreamer::make();
 
 $messages = [
@@ -24,7 +24,7 @@ $messages = [
 $input = $generator->tokenizer->applyChatTemplate($messages, addGenerationPrompt: true, tokenize: false);
 
 $output = $generator($input,
-//    streamer: $streamer,
+    streamer: $streamer,
     maxNewTokens: 128,
     doSample: true,
     returnFullText: false,

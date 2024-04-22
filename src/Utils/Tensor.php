@@ -42,7 +42,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         if (is_array($array) || $array instanceof ArrayObject) {
             $size = $this->countRecursive($array);
-            $this->buffer = $this->newBuffer($size, $dtype);
+            $this->buffer = self::newBuffer($size, $dtype);
             $this->flattenArray($array, $this->buffer);
             $this->offset = 0;
             $shape ??= $this->generateShape($array);
@@ -50,7 +50,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             if (is_bool($array) && $dtype != NDArray::bool) {
                 throw new InvalidArgumentException("Unmatched dtype with bool value");
             }
-            $this->buffer = $this->newBuffer(1, $dtype);
+            $this->buffer = self::newBuffer(1, $dtype);
             $this->buffer[0] = $array;
             $this->offset = 0;
             $shape = $shape ?? [];
@@ -61,7 +61,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         } elseif ($array === null && $shape !== null) {
             $this->assertShape($shape);
             $size = (int)array_product($shape);
-            $this->buffer = $this->newBuffer($size, $dtype);
+            $this->buffer = self::newBuffer($size, $dtype);
             $this->offset = 0;
         } elseif ($this->isBuffer($array)) {
             if (!is_int($offset))
@@ -107,7 +107,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * @param int $dtype The data type of the buffer.
      * @return SplFixedArray|OpenBlasBuffer
      */
-    protected function newBuffer(int $size, int $dtype): SplFixedArray|OpenBlasBuffer
+    public static function newBuffer(int $size, ?int $dtype = null): SplFixedArray|OpenBlasBuffer
     {
         if (extension_loaded('rindow_openblas')) {
             return new OpenBlasBuffer($size, $dtype);
@@ -389,7 +389,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         // Create a new array to store the accumulated values
         $resultSize = array_product($resultShape);
 
-        $result = $tensors[0]->newBuffer($resultSize, $resultType);
+        $result = self::newBuffer($resultSize, $resultType);
 
         // Create output tensor of same type as first
 
@@ -921,7 +921,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         $newBufferSize = array_reduce($newShape, fn($a, $b) => $a * $b, 1);
 
-        $buffer = $this->newBuffer($newBufferSize, $this->dtype());
+        $buffer = self::newBuffer($newBufferSize, $this->dtype());
         $stride = $this->stride();
 
         for ($i = 0; $i < $newBufferSize; ++$i) {
