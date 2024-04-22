@@ -2,6 +2,17 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.3.1 - 2024-04-22
+
+### What's Changed
+
+* Add Qwen2 model support by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/20
+* Add chat input detection for text generation, and refactor streamer API. by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/21
+* bugfix: Fix error that occurs when streamer is not used by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/22
+* bugfix: Decoder sequence not calling the right method by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/23
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.3.0...0.3.1
+
 ## v0.3.0 - 2024-04-13
 
 ### What's Changed
@@ -83,11 +94,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -104,6 +117,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
