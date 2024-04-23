@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\Models\Pretrained;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use OnnxRuntime\InferenceSession;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 
 /**
  * T5Model is a class representing a T5 model for conditional generation.

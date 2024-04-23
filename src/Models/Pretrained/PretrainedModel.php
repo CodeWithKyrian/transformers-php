@@ -27,10 +27,10 @@ use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use Error;
 use Exception;
-use OnnxRuntime\InferenceSession;
 use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
 
@@ -281,9 +281,7 @@ class PretrainedModel
 
             $outputNames = array_column($session->outputs(), 'name');
 
-            $outputs = $session->run($outputNames, $inputs);
-
-            return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
+            return $session->run($outputNames, $inputs);
         } catch (MissingModelInputException $e) {
             throw $e;
         } catch (Exception $e) {
@@ -331,7 +329,8 @@ class PretrainedModel
             The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
         }
 
-        return array_map(fn($i) => $i->toArray(), $inputs);
+//        return array_map(fn($i) => $i->toArray(), $inputs);
+        return $inputs;
     }
 
     /**
@@ -468,50 +467,50 @@ class PretrainedModel
             $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
         } else {
             // TODO support batches (i.e., batch_size > 1)
-            $batch_size = 1;
+            $batchSize = 1;
 
             if ($this->config->isEncoderDecoder && ($this->addEncoderPkv ?? true)) {
-                $encoderShape = [$batch_size, $this->numEncoderHeads, 1, $this->encoderDimKv];
-                $decoderShape = [$batch_size, $this->numDecoderHeads, 1, $this->decoderDimKv];
+                $encoderShape = [$batchSize, $this->numEncoderHeads, 0, $this->encoderDimKv];
+                $decoderShape = [$batchSize, $this->numDecoderHeads, 0, $this->decoderDimKv];
 
 
                 for ($i = 0; $i < $this->numDecoderLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.encoder.key"]
                         = $decoderFeeds["past_key_values.$i.encoder.value"]
-                        = new Tensor(null, shape: $encoderShape);
+                        = new Tensor([], shape: $encoderShape);
                     $decoderFeeds["past_key_values.$i.decoder.key"]
                         = $decoderFeeds["past_key_values.$i.decoder.value"]
-                        = new Tensor(null, shape: $decoderShape);
+                        = new Tensor([], shape: $decoderShape);
                 }
             } else if ($this->config->modelType === 'falcon') {
                 // NOTE: Custom implementation for Falcon
-                $shape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['multi_query'] ?? null) { // e.g., for `gpt_bigcode`
-                $shape = [$batch_size * $this->numHeads, 1, 2 * $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, 2 * $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['model_type'] === 'bloom') {
                 // NOTE: Custom implementation for Bloom
-                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 1];
-                $valueShape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $keyShape = [$batchSize * $this->numHeads, $this->dimKv, 0];
+                $valueShape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $keyShape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $valueShape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $keyShape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $valueShape);
                 }
             } else { // Decoder-only
-                $shape = [$batch_size, $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize, $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             }
         }
@@ -521,8 +520,10 @@ class PretrainedModel
      * @param Tensor $inputs The input token ids.
      * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
      * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
-     * @param array|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Tensor|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Streamer|null $streamer
      * @return array An array of generated output sequences, where each sequence is an array of token IDs.
+     * @throws Exception
      */
     public function generate(
         Tensor               $inputs,
@@ -609,6 +610,7 @@ class PretrainedModel
 
                 $output = $this->runBeam($beam);
 
+
                 // add attentions/scores to beam only if user requested
                 if ($generationConfig->output_attentions) {
                     $this->addAttentionsToBeam($beam, $output);
@@ -625,6 +627,7 @@ class PretrainedModel
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
                 $logits = $output['logits']->slice(null, -1, null);
 //                $logits = $output['logits'];
+
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);
@@ -649,7 +652,6 @@ class PretrainedModel
 
             }
 
-
             ++$numOutputTokens;
 
             // Group and select best beams
@@ -665,14 +667,12 @@ class PretrainedModel
                 $this->groupBeams($newestBeams)
             ));
 
-
             // Flatten beams
             $beams = $newestBeams;
 
             // Stream the beams if a streamer is provided
             $streamer?->put($beams);
         }
-
 
         // TODO: Ensure that we can return non-batched outputs
 

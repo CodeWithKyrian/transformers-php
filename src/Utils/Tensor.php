@@ -42,26 +42,26 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         if (is_array($array) || $array instanceof ArrayObject) {
             $size = $this->countRecursive($array);
-            $this->buffer = $this->newBuffer($size, $dtype);
-            $index = 0;
-            $this->flattenArray($array, $this->buffer, $index);
+            $this->buffer = self::newBuffer($size, $dtype);
+            $this->flattenArray($array, $this->buffer);
             $this->offset = 0;
-            $shape = $shape ?? $this->generateShape($array);
+            $shape ??= $this->generateShape($array);
         } elseif (is_numeric($array) || is_bool($array)) {
             if (is_bool($array) && $dtype != NDArray::bool) {
                 throw new InvalidArgumentException("Unmatched dtype with bool value");
             }
-            $this->buffer = $this->newBuffer(1, $dtype);
+            $this->buffer = self::newBuffer(1, $dtype);
             $this->buffer[0] = $array;
             $this->offset = 0;
             $shape = $shape ?? [];
             $this->assertShape($shape);
-            if (array_product($shape) != 1)
+            $size = (int)array_product($shape);
+            if ($size != 1)
                 throw new InvalidArgumentException("Invalid dimension size");
         } elseif ($array === null && $shape !== null) {
             $this->assertShape($shape);
             $size = (int)array_product($shape);
-            $this->buffer = $this->newBuffer($size, $dtype);
+            $this->buffer = self::newBuffer($size, $dtype);
             $this->offset = 0;
         } elseif ($this->isBuffer($array)) {
             if (!is_int($offset))
@@ -70,18 +70,20 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 throw new InvalidArgumentException("Invalid dimension size");
             $this->buffer = $array;
             $this->offset = $offset;
+            $size = (int)array_product($shape);
         } else {
             throw new InvalidArgumentException("Invalid type of array");
         }
+
         $this->assertShape($shape);
         $this->shape = $shape;
 
-        $size = (int)array_product($shape);
         if (count($this->buffer) - $this->offset < $size)
             throw new InvalidArgumentException("Invalid dimension size");
 
         $this->dtype = $dtype;
     }
+
 
     function countRecursive($array): int
     {
@@ -105,7 +107,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * @param int $dtype The data type of the buffer.
      * @return SplFixedArray|OpenBlasBuffer
      */
-    protected function newBuffer(int $size, int $dtype): SplFixedArray|OpenBlasBuffer
+    public static function newBuffer(int $size, ?int $dtype = null): SplFixedArray|OpenBlasBuffer
     {
         if (extension_loaded('rindow_openblas')) {
             return new OpenBlasBuffer($size, $dtype);
@@ -117,35 +119,61 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Flatten the given nested array into a flat array.
      */
-    protected function flattenArray(array|ArrayObject $nestedArray, $flatArray, int &$currentIndex): int
+    protected function flattenArray(array|ArrayObject $nestedArray, $flatArray, int &$currentIndex = 0): int
     {
-        $num = null;
-        $cursor = 0;
-        $nestedArrayLength = count($nestedArray);
+//        $num = null;
+//        $cursor = 0;
+//        $nestedArrayLength = count($nestedArray);
+//
+//        while ($cursor < $nestedArrayLength) {
+//            $value = $nestedArray[$cursor];
+//            if (is_array($value) || $value instanceof ArrayObject) {
+//                if ($value instanceof ArrayObject) {
+//                    $value = $value->getArrayCopy();
+//                }
+//                $num2 = $this->flattenArray($value, $flatArray, $currentIndex);
+//                if ($num === null) {
+//                    $num = $num2;
+//                } elseif ($num !== $num2) {
+//                    throw new InvalidArgumentException("The shape of the dimension is broken");
+//                }
+//            } else {
+//                if ($num !== null) {
+//                    throw new InvalidArgumentException("The shape of the dimension is broken");
+//                }
+//
+//                $flatArray[$currentIndex] = $value;
+//                $currentIndex++;
+//            }
+//            $cursor++;
+//        }
+//        return $nestedArrayLength;
 
-        while ($cursor < $nestedArrayLength) {
-            $value = $nestedArray[$cursor];
+
+        $numElements = 0;
+
+        if ($nestedArray instanceof ArrayObject) {
+            $nestedArray = $nestedArray->getArrayCopy();
+        }
+
+        // Iterate through the nested array
+        foreach ($nestedArray as $value) {
+            // If the value is an array or ArrayObject, flatten it recursively
             if (is_array($value) || $value instanceof ArrayObject) {
-                if ($value instanceof ArrayObject) {
-                    $value = $value->getArrayCopy();
-                }
-                $num2 = $this->flattenArray($value, $flatArray, $currentIndex);
-                if ($num === null) {
-                    $num = $num2;
-                } elseif ($num !== $num2) {
+                $numInNested = $this->flattenArray($value, $flatArray, $currentIndex);
+                if ($numElements === 0) {
+                    $numElements = $numInNested;
+                } elseif ($numElements !== $numInNested) {
                     throw new InvalidArgumentException("The shape of the dimension is broken");
                 }
             } else {
-                if ($num !== null) {
-                    throw new InvalidArgumentException("The shape of the dimension is broken");
-                }
-
-                $flatArray[$currentIndex] = $value;
-                $currentIndex++;
+                // If the value is not an array, append it to the flat array
+                $flatArray[$currentIndex++] = $value;
+                $numElements++;
             }
-            $cursor++;
         }
-        return $nestedArrayLength;
+
+        return $numElements;
     }
 
     /**
@@ -155,9 +183,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $shape = [];
 
-        while (is_array($array) || $array instanceof ArrayObject) {
+        while (is_array($array)) {
             $shape[] = count($array);
-            $array = $array[0];
+            $array = current($array);
         }
 
         return $shape;
@@ -173,7 +201,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 throw new InvalidArgumentException(
                     "Invalid shape numbers. It gives " . gettype($num));
             }
-            if ($num <= 0) {
+            if ($num < 0) {
                 throw new InvalidArgumentException(
                     "Invalid shape numbers. It gives " . $num);
             }
@@ -361,7 +389,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         // Create a new array to store the accumulated values
         $resultSize = array_product($resultShape);
 
-        $result = $tensors[0]->newBuffer($resultSize, $resultType);
+        $result = self::newBuffer($resultSize, $resultType);
 
         // Create output tensor of same type as first
 
@@ -893,7 +921,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         $newBufferSize = array_reduce($newShape, fn($a, $b) => $a * $b, 1);
 
-        $buffer = $this->newBuffer($newBufferSize, $this->dtype());
+        $buffer = self::newBuffer($newBufferSize, $this->dtype());
         $stride = $this->stride();
 
         for ($i = 0; $i < $newBufferSize; ++$i) {

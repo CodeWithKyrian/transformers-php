@@ -11,7 +11,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use OnnxRuntime\InferenceSession;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 
 /**
  * Vision Encoder-Decoder model based on OpenAI's GPT architecture for image captioning and other vision tasks

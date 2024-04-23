@@ -13,12 +13,12 @@ ini_set('memory_limit', -1);
 //
 //$generator = pipeline('text-generation', 'Xenova/gpt2');
 $generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
-
+//
 $streamer = StdOutStreamer::make();
 
 $messages = [
     ['role' => 'system', 'content' => 'You are a helpful assistant.'],
-    ['role' => 'user', 'content' => 'What is the product of 5 and 4'],
+    ['role' => 'user', 'content' => 'What is diffusion?'],
 ];
 
 $input = $generator->tokenizer->applyChatTemplate($messages, addGenerationPrompt: true, tokenize: false);
