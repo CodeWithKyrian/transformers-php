@@ -18,6 +18,6 @@ class FuseDecoder extends Decoder
 
     protected function decodeChain(array $tokens): array
     {
-       return [implode('', $tokens)];
+        return [implode('', $tokens)];
     }
 }
