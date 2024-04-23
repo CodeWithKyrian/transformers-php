@@ -372,7 +372,11 @@ class InferenceSession
                 if (isset($inputTypes[$inp['type']])) {
                     $typeEnum = $inputTypes[$inp['type']];
                     $castType = $this->castTypes()[$typeEnum];
-                    $inputTensorValues = $this->ffi->new("{$castType}[$size]");
+                    if ($size == 0) {
+                        $inputTensorValues = $this->ffi->new("void *");
+                    } else {
+                        $inputTensorValues = $this->ffi->new("{$castType}[$size]");
+                    }
                 } else {
                     $this->unsupportedType('input', $inp['type']);
                 }
@@ -494,7 +498,7 @@ class InferenceSession
                     $values = $this->createFromOnnxValue($mapValues);
                     return array_combine($keys, $values);
                 } else {
-                    $this->unsupported_type('element', $elemType);
+                    $this->unsupportedType('element', $elemType);
                 }
             } else {
                 $this->unsupportedType('ONNX', $outType->cdata);

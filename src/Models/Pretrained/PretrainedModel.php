@@ -467,50 +467,50 @@ class PretrainedModel
             $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
         } else {
             // TODO support batches (i.e., batch_size > 1)
-            $batch_size = 1;
+            $batchSize = 1;
 
             if ($this->config->isEncoderDecoder && ($this->addEncoderPkv ?? true)) {
-                $encoderShape = [$batch_size, $this->numEncoderHeads, 1, $this->encoderDimKv];
-                $decoderShape = [$batch_size, $this->numDecoderHeads, 1, $this->decoderDimKv];
+                $encoderShape = [$batchSize, $this->numEncoderHeads, 0, $this->encoderDimKv];
+                $decoderShape = [$batchSize, $this->numDecoderHeads, 0, $this->decoderDimKv];
 
 
                 for ($i = 0; $i < $this->numDecoderLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.encoder.key"]
                         = $decoderFeeds["past_key_values.$i.encoder.value"]
-                        = new Tensor(null, shape: $encoderShape);
+                        = new Tensor([], shape: $encoderShape);
                     $decoderFeeds["past_key_values.$i.decoder.key"]
                         = $decoderFeeds["past_key_values.$i.decoder.value"]
-                        = new Tensor(null, shape: $decoderShape);
+                        = new Tensor([], shape: $decoderShape);
                 }
             } else if ($this->config->modelType === 'falcon') {
                 // NOTE: Custom implementation for Falcon
-                $shape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['multi_query'] ?? null) { // e.g., for `gpt_bigcode`
-                $shape = [$batch_size * $this->numHeads, 1, 2 * $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, 2 * $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['model_type'] === 'bloom') {
                 // NOTE: Custom implementation for Bloom
-                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 1];
-                $valueShape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $keyShape = [$batchSize * $this->numHeads, $this->dimKv, 0];
+                $valueShape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $keyShape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $valueShape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $keyShape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $valueShape);
                 }
             } else { // Decoder-only
-                $shape = [$batch_size, $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize, $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             }
         }

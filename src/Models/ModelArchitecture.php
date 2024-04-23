@@ -220,14 +220,6 @@ enum ModelArchitecture: string
         $model->preparePositionIds($inputNames, $decoderFeeds, $useCacheBranch);
         $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
 
-        // The initial past key values should have a shape of 0 in one of the dimensions, which
-        // is the sequence length. However, I haven't found a way to pass a tensor with a shape of 0
-        // to the model, so I'm using a sequence length of 1 instead for the first step, and then
-        // offsetting the sequence length by 1 for the subsequent steps. This is a workaround for now.
-        $prevSequenceLength = $decoderFeeds['past_key_values.0.key']->shape()[2];
-        $attnMaskLength = $prevSequenceLength == 1 ? 1 : $prevSequenceLength + 1;
-        $decoderFeeds['attention_mask'] = Tensor::ones([1, $attnMaskLength], dtype: NDArray::int64);
-
         $decoderResults = $model->runSession($model->session, $decoderFeeds);
 
         $logits = $decoderResults['logits'];

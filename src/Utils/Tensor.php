@@ -201,7 +201,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 throw new InvalidArgumentException(
                     "Invalid shape numbers. It gives " . gettype($num));
             }
-            if ($num <= 0) {
+            if ($num < 0) {
                 throw new InvalidArgumentException(
                     "Invalid shape numbers. It gives " . $num);
             }
