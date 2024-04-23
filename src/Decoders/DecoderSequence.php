@@ -29,7 +29,7 @@ class DecoderSequence extends Decoder
     {
         return array_reduce(
             $this->decoders,
-            fn(array $tokens, Decoder $decoder) => $decoder->decode($tokens),
+            fn(array $tokens, Decoder $decoder) => $decoder->decodeChain($tokens),
             $tokens
         );
     }
