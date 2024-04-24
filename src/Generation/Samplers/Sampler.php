@@ -47,7 +47,7 @@ abstract class Sampler
     public function getLogits(Tensor $logits, int $index): array
     {
         $vocabSize = $logits->shape()[count($logits->shape()) - 1];
-        $logs = $logits->buffer()->toArray();
+        $logs = $logits->toBufferArray();
 
         if ($index === -1) {
             $logs = array_slice($logs, -$vocabSize);
@@ -76,7 +76,6 @@ abstract class Sampler
 
         // Generate a random number between 0 and the sum of probabilities
         $r = mt_rand() / mt_getrandmax() * $sumProbabilities;
-
         foreach ($probabilities as $i => $probability) {
             $r -= $probability;
 

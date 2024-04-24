@@ -89,7 +89,6 @@ use InvalidArgumentException;
 class TextStreamer extends Streamer
 {
     protected PretrainedTokenizer $tokenizer;
-    protected array $inputTokens = [];
     protected bool $excludeInput = true;
     protected string $printedText = '';
     protected mixed $onStreamCallback = null;
@@ -111,14 +110,14 @@ class TextStreamer extends Streamer
     public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void
     {
         $this->tokenizer = $tokenizer;
-        $this->inputTokens = $inputTokens;
         $this->excludeInput = $excludeInput;
 
         if ($this->excludeInput) {
-            $this->printedText = $this->tokenizer->decode($this->inputTokens, skipSpecialTokens: true);
+            $this->printedText = $this->tokenizer->decode($inputTokens, skipSpecialTokens: true);
             $this->printedLength = mb_strlen($this->printedText);
 
-            $this->lastDecodedCheckpointForToken = count($this->inputTokens);
+
+            $this->lastDecodedCheckpointForToken = count($inputTokens) - 1;
             $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
         }
     }
@@ -153,7 +152,6 @@ class TextStreamer extends Streamer
 
         // Check for punctuation marks indicating the end of a word or sentence
         $punctuationMarks = ['.', ',', '!', '?', ';', ':'];
-
 
         $this->printedText = mb_substr($this->printedText, 0, $this->lastDecodedCheckpointForText)
             . ($this->lastDecodedCheckpointForToken == 0 ? '' : ' ')

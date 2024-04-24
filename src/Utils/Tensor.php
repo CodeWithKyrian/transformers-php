@@ -974,7 +974,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     public function softmax(): array|static
     {
         return match ($this->ndim()) {
-            1 => Math::softmax($this->toArray()),
+            1 => $this->unsqueeze(0)->softmax2D(),
             2 => $this->softmax2D(),
             default => throw new InvalidArgumentException("Softmax is only supported for 1D and 2D tensors.")
         };
