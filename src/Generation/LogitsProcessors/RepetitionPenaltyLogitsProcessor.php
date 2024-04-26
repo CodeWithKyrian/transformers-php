@@ -20,7 +20,7 @@ class RepetitionPenaltyLogitsProcessor extends LogitsProcessor
     /**
      * Apply the repetition penalty to the logits.
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         // Modify the logits corresponding to each element in `input_ids`.
         // As a consequence, the logits corresponding to tokens that appear

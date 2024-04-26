@@ -25,7 +25,7 @@ class SuppressTokensAtBeginLogitsProcessor extends LogitsProcessor
     /**
      * @inheritDoc
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         if (count($inputIds) == $this->beginIndex) {
             foreach ($this->beginSuppressTokens as $token) {

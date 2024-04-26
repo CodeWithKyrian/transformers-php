@@ -23,12 +23,10 @@ class ForcedBOSTokenLogitsProcessor extends LogitsProcessor
     /**
      * @inheritDoc
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         if (count($inputIds) === 1) {
-            foreach ($logits->buffer() as $i => $value) {
-                $logits->buffer()[$i] = -INF;
-            }
+            Tensor::mo()->la()->fill(-INF, $logits);
             $logits->buffer()[$this->bosTokenId] = 0;
         }
         return $logits;

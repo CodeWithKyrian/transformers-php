@@ -20,12 +20,10 @@ class ForcedEOSTokenLogitsProcessor extends LogitsProcessor
     {
     }
 
-    public function __invoke(array $inputIds, NDArrayPhp|Tensor &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         if (count($inputIds) >= $this->maxLength) {
-            foreach ($logits->buffer() as $i => $value) {
-                $logits->buffer()[$i] = -INF;
-            }
+            Tensor::mo()->la()->fill(-INF, $logits);
             $logits->buffer()[$this->forcedEosTokenId] = 0;
         }
         return $logits;

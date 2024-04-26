@@ -500,7 +500,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         }
 
         // Convert to channel dimension format (hwc -> chw)
-        $pixelValues = (new Tensor($pixelData, shape: $imgShape))->permute(2, 0, 1);
+        $pixelValues = Tensor::fromArray($pixelData, Tensor::float32, $imgShape)->permute(2, 0, 1);
 
         return [
             'original_size' => [$srcHeight, $srcWidth],

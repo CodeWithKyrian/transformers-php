@@ -35,6 +35,7 @@ class MultinomialSampler extends Sampler
         // Compute softmax over logits
         $probabilities = Math::softmax(array_column($topLogits, 1));
 
+
         $sampledResults = [];
         for ($i = 0; $i < $this->generationConfig->num_beams; $i++) {
             $sampledIndex = $this->randomSelect($probabilities);

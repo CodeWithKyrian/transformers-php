@@ -249,22 +249,14 @@ class PretrainedTokenizer
                 }
 
                 $encodedTokens = array_map(
-                    function ($t, $i) use ($textPair, $addSpecialTokens) {
-                        return $this->encodePlus(
-                            $t,
-                            $textPair[$i],
-                            addSpecialTokens: $addSpecialTokens
-                        );
-                    },
+                    fn($t, $i) => $this->encodePlus($t, $textPair[$i], addSpecialTokens: $addSpecialTokens),
                     $text,
                     array_keys($text)
                 );
 
             } else {
                 $encodedTokens = array_map(
-                    function ($x) use ($addSpecialTokens) {
-                        return $this->encodePlus($x, addSpecialTokens: $addSpecialTokens);
-                    },
+                    fn($x) => $this->encodePlus($x, addSpecialTokens: $addSpecialTokens),
                     $text
                 );
 
@@ -291,9 +283,7 @@ class PretrainedTokenizer
                 $maxLength = $this->modelMaxLength;
             } else {
                 // Calculate max length from sequences
-                $maxLength = max(array_map(function ($x) {
-                    return count($x['input_ids']);
-                }, $encodedTokens));
+                $maxLength = max(array_map(fn($x) => count($x['input_ids']), $encodedTokens));
             }
         } else {
             if (!$truncation) {
@@ -322,9 +312,7 @@ class PretrainedTokenizer
                         $this->padHelper(
                             $token,
                             $maxLength,
-                            function ($key) {
-                                return $key === 'input_ids' ? $this->padTokenId : 0;
-                            },
+                            fn($key) => $key === 'input_ids' ? $this->padTokenId : 0,
                             $this->paddingSide
                         );
                     }
@@ -353,7 +341,7 @@ class PretrainedTokenizer
         // Now we actually convert to Tensor
         // NOTE: In the same way as the python library, we return a batched tensor, regardless of whether
         // we have a single input or multiple inputs.
-        $dims = [count($encodedTokens), count($encodedTokens[0]['input_ids'])];
+        $shape = [count($encodedTokens), count($encodedTokens[0]['input_ids'])];
         $result = [];
 
 
@@ -362,11 +350,9 @@ class PretrainedTokenizer
                 continue;
             }
 
-            $array = array_map(function ($x) use ($key) {
-                return $x[$key];
-            }, $encodedTokens);
+            $array = array_map(fn($x) => $x[$key], $encodedTokens);
 
-            $result[$key] = new Tensor($array, shape: $dims);
+            $result[$key] = new Tensor($array, Tensor::int64, $shape);
         }
 
         return $result;

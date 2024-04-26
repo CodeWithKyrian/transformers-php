@@ -47,13 +47,22 @@ abstract class Sampler
     public function getLogits(Tensor $logits, int $index): array
     {
         $vocabSize = $logits->shape()[count($logits->shape()) - 1];
-        $logs = $logits->toBufferArray();
+//        $logs = $logits->buffer()->toArray();
+//
+//        if ($index === -1) {
+//            $logs = array_slice($logs, -$vocabSize);
+//        } else {
+//            $startIndex = $index * $vocabSize;
+//            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
+//        }
 
-        if ($index === -1) {
-            $logs = array_slice($logs, -$vocabSize);
-        } else {
-            $startIndex = $index * $vocabSize;
-            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
+        $start = $index === -1 ? $logits->buffer()->count() - $vocabSize : $index * $vocabSize;
+        $end = $start + $vocabSize;
+
+        $logs = [];
+
+        for ($i = $start; $i < $end; $i++) {
+            $logs[] = $logits->buffer()[$i];
         }
 
         // add temperature

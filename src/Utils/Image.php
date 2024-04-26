@@ -279,7 +279,7 @@ class Image
 
         $pixels = $this->pixelData();
 
-        $tensor = new Tensor($pixels, shape: [$width, $height, $this->channels]);
+        $tensor = new Tensor($pixels, Tensor::int64,  [$width, $height, $this->channels]);
 
         if ($channelFormat === 'HWC') {
             // Do nothing

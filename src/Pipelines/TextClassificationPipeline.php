@@ -62,18 +62,16 @@ class TextClassificationPipeline extends Pipeline
     {
         $topK = $args["topK"] ?? 1;
 
-
-        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->tokenize($inputs, padding: true, truncation: true);
 
         /** @var SequenceClassifierOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);
 
-        // Define function to apply based on problem type
         $problemType = $this->model->config['problem_type'] ?? 'single_label_classification';
 
         $activationFunction = $problemType == 'multi_label_classification' ?
             fn(Tensor $batch) => $batch->sigmoid()->toArray() :
-            fn(Tensor $batch) => $batch->softmax();
+            fn(Tensor $batch) => $batch->softmax()->toArray();
 
         $id2label = $this->model->config['id2label'];
         $toReturn = [];
@@ -82,12 +80,10 @@ class TextClassificationPipeline extends Pipeline
             $output = $activationFunction($batch);
             $scores = Math::getTopItems($output, $topK);
 
-            $values = array_map(function ($score) use ($id2label) {
-                return [
-                    'label' => $id2label[$score[0]],
-                    'score' => $score[1],
-                ];
-            }, $scores);
+            $values = array_map(
+                fn($score) => ['label' => $id2label[$score[0]], 'score' => $score[1],],
+                $scores
+            );
 
             if ($topK === 1) {
                 $toReturn = $values;

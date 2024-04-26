@@ -17,5 +17,5 @@ abstract class LogitsProcessor
      * @param Tensor $logits The logits to process.
      * @return Tensor The processed logits.
      */
-    abstract public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp;
+    abstract public function __invoke(array $inputIds, Tensor $logits): Tensor;
 }

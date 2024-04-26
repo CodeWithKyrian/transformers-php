@@ -25,18 +25,16 @@ class ForceTokensLogitsProcessor extends LogitsProcessor
      * @param Tensor $logits The logits to process.
      * @return Tensor The processed logits.
      */
-    public function __invoke(array $inputIds, Tensor &$logits): Tensor
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         $map = $this->forceTokenMap[count($inputIds) ?? 0]; // Access length from inputIds
 
         if ($map) {
-            foreach ($logits->buffer() as $i => $value) {
-                $logits->buffer()[$i] = -INF;
-            }
+            Tensor::mo()->la()->fill(-INF, $logits);
 
             $logits->buffer()[$map] = 0;
         }
-        return $logits;
 
+        return $logits;
     }
 }

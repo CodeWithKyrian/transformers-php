@@ -14,7 +14,7 @@ $captioner = pipeline('image-to-text', 'Xenova/trocr-small-handwritten');
 
 //$streamer = StdOutStreamer::make($captioner->tokenizer);
 
-$url = __DIR__ . '/../images/beach.png';
+//$url = __DIR__ . '/../images/beach.png';
 //$url = __DIR__. '/../images/handwriting.jpg';
 //$url = __DIR__. '/../images/handwriting3.png';
 $url = __DIR__ . '/../images/handwriting4.jpeg';

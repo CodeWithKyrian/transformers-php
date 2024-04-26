@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Utils\Image;
+use function Codewithkyrian\Transformers\Utils\memoryUsage;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 require_once './bootstrap.php';
 
@@ -16,16 +17,16 @@ $img = __DIR__ . '/../images/cats.jpg';
 
 $output = $detector($img, threshold: 0.9);
 
-//dd($output, timeUsage(), memoryUsage());
+dd($output, timeUsage(), memoryUsage());
 
-$image = Image::read($img);
-
-foreach ($output as $item) {
-    $box = $item['box'];
-    $image->drawRectangle($box['xmin'], $box['ymin'], $box['xmax'], $box['ymax'], '0099FF', thickness: 2);
-    $image->drawText($item['label'], $box['xmin'], max($box['ymin'] - 5, 0), '/Users/Kyrian/Library/Fonts/JosefinSans-Bold.ttf', 14, '0099FF');
-}
-
-$image->save(__DIR__ . '/../images/cats-detection.jpg');
+//$image = Image::read($img);
+//
+//foreach ($output as $item) {
+//    $box = $item['box'];
+//    $image->drawRectangle($box['xmin'], $box['ymin'], $box['xmax'], $box['ymax'], '0099FF', thickness: 2);
+//    $image->drawText($item['label'], $box['xmin'], max($box['ymin'] - 5, 0), '/Users/Kyrian/Library/Fonts/JosefinSans-Bold.ttf', 14, '0099FF');
+//}
+//
+//$image->save(__DIR__ . '/../images/cats-detection.jpg');
 
 

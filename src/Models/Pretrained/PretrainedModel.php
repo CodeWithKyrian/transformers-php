@@ -102,7 +102,8 @@ class PretrainedModel
                     fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    output: $output,
+//                    providers: ['CoreMLExecutionProvider']
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -127,7 +128,7 @@ class PretrainedModel
                     fileName: "encoder_model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    output: $output,
                 );
 
                 $decoderSession = self::constructSession(
@@ -135,7 +136,7 @@ class PretrainedModel
                     fileName: "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    output: $output,
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -354,7 +355,7 @@ class PretrainedModel
         $isPadTokenNotEqualToEosTokenId = ($eosTokenId === null) || !in_array($padTokenId, $eosTokenId);
 
         if ($isPadTokenInInputs && $isPadTokenNotEqualToEosTokenId) {
-            $mo = Tensor::getMo();
+            $mo = Tensor::mo();
 
             $data = $mo->f(fn($x) => $x != $padTokenId, $tokens);
 
@@ -394,7 +395,7 @@ class PretrainedModel
                 }
             }
         }
-        $feeds['position_ids'] = new Tensor($data, shape: $feeds['attention_mask']->shape());
+        $feeds['position_ids'] = new Tensor($data, Tensor::int64, $feeds['attention_mask']->shape());
 
         if ($useCacheBranch) {
             // TODO: Fix this
@@ -592,7 +593,6 @@ class PretrainedModel
 
         $beams = $this->getStartBeams($inputs, $generationConfig, $numOutputTokens, $inputsAttentionMask);
 
-
         while (array_some($beams, fn($beam) => !$beam['done']) && $numOutputTokens < $maxOutputTokens) {
             $newestBeams = [];
             foreach ($beams as $beam) {
@@ -626,8 +626,6 @@ class PretrainedModel
                 // So, we select the last token's logits:
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
                 $logits = $output['logits']->slice(null, -1, null);
-//                $logits = $output['logits'];
-
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);

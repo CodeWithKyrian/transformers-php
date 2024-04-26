@@ -77,12 +77,12 @@ class NoRepeatNGramLogitsProcessor extends LogitsProcessor
      * @param Tensor|NDArrayPhp $logits The logits to process.
      * @return Tensor|NDArrayPhp The processed logits.
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         $bannedTokens = $this->calcBannedNgramTokens($inputIds);
 
         foreach ($bannedTokens as $token) {
-            $logits->buffer()[$token] = -INF; // PHP uses INF for infinity
+            $logits->buffer()[$token] = -INF;
         }
 
         return $logits;

@@ -14,7 +14,7 @@
   "require": {
     "php": "^8.1",
     "symfony/console": "^7.0",
-    "codewithkyrian/transformers": "dev-main"
+    "codewithkyrian/transformers": "dev-bump-math-matrix"
   },
   "minimum-stability": "dev",
   "require-dev": {
