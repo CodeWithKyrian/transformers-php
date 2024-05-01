@@ -459,9 +459,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      */
     public static function stack(array $tensors, int $axis = 0): Tensor
     {
-        // TODO: Perform validation of shapes
-        // NOTE: stack expects each tensor to be equal size
-        return self::cat(array_map(fn($t) => $t->unsqueeze($axis), $tensors), $axis);
+        $mo = self::mo();
+
+        $stacked = $mo->la()->stack($tensors, $axis);
+
+        return new Tensor($stacked->buffer(), $stacked->dtype(), $stacked->shape(), $stacked->offset());
     }
 
     /**
@@ -473,58 +475,13 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * @return Tensor The concatenated tensor.
      * @throws Exception
      */
-    public static function cat(array $tensors, int $axis = 0): Tensor
+    public static function concat(array $tensors, int $axis = 0): Tensor
     {
-        $axis = self::safeIndex($axis, $tensors[0]->ndim());
+        $mo = self::mo();
 
-        // TODO: Perform validation of shapes
+        $ndArray = $mo->la()->concat($tensors, $axis);
 
-        $resultShape = $tensors[0]->shape();
-        $resultOffset = $tensors[0]->offset();
-        $resultType = $tensors[0]->dtype();
-        $resultShape[$axis] = array_reduce($tensors, fn($carry, $tensor) => $carry + $tensor->shape()[$axis], 0);
-
-        // Create a new array to store the accumulated values
-        $resultSize = array_product($resultShape);
-
-        $result = self::newBuffer($resultSize, $resultType);
-
-        // Create output tensor of same type as first
-
-        if ($axis === 0) {
-            // Handle special case for performance reasons
-
-            $offset = 0;
-            foreach ($tensors as $t) {
-                for ($i = 0; $i < $t->buffer->count(); $i++) {
-                    $result[$offset++] = $t->buffer()[$i];
-                }
-            }
-        } else {
-            $currentShape = 0;
-
-            foreach ($tensors as $tensor) {
-                for ($i = 0; $i < $tensor->buffer->count(); $i++) {
-                    $resultIndex = 0;
-
-                    for ($j = $tensor->ndim() - 1, $num = $i, $resultMultiplier = 1; $j >= 0; --$j) {
-                        $size = $tensor->shape()[$j];
-                        $index = $num % $size;
-                        if ($j === $axis) {
-                            $index += $currentShape;
-                        }
-                        $resultIndex += $index * $resultMultiplier;
-                        $resultMultiplier *= $resultShape[$j];
-                        $num = (int)floor($num / $size);
-                    }
-                    $result[$resultIndex] = $tensor->buffer()[$i];
-                }
-
-                $currentShape += $tensor->shape()[$axis];
-            }
-        }
-
-        return new Tensor($result, $resultType, $resultShape, $resultOffset);
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
     /**
@@ -577,30 +534,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      */
     public function unsqueeze(?int $axis = null): static
     {
-        return new Tensor(
-            $this->buffer(),
-            $this->dtype,
-            $this->calcUnsqueezeShape($this->shape(), $axis),
-            $this->offset
-        );
-    }
+        $shape = $this->shape();
 
-    /**
-     * Helper function to calculate new shape when performing an unsqueeze operation.
-     * @param array $shape The shape of the tensor.
-     * @param int $axis The axis to unsqueeze.
-     * @return array The new shape.
-     */
-    protected function calcUnsqueezeShape(array $shape, int $axis): array
-    {
-        // Dimension out of range (e.g., "expected to be in range of [-4, 3], but got 4")
-        // + 1 since we allow inserting at the end (i.e. $axis = -1)
         $axis = self::safeIndex($axis, count($shape) + 1);
 
         array_splice($shape, $axis, 0, 1);
 
-        return $shape;
+        return new Tensor($this->buffer(), $this->dtype, $shape, $this->offset);
     }
+
 
     /**
      * Add a tensor or scalar to this tensor. If it's a tensor, it must be the same shape, and it performs

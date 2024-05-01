@@ -201,9 +201,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         int       $constantValues = 0
     ): array
     {
-        $imageHeight = $imgShape[0];
-        $imageWidth = $imgShape[1];
-        $imageChannels = $imgShape[2];
+        [$imageHeight, $imageWidth, $imageChannels] = $imgShape;
 
         if (is_array($padSize)) {
             $paddedImageWidth = $padSize['width'];
@@ -459,7 +457,6 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         $imgShape = [$image->height(), $image->width(), $image->channels];
 
-
         if ($this->doRescale) {
             $this->rescale($pixelData);
         }
@@ -529,21 +526,12 @@ class ImageFeatureExtractor extends FeatureExtractor
             $imageData[] = $this->preprocess($image);
         }
 
-        // Stack pixel values
-        $pixelValues = [];
-        foreach ($imageData as $data) {
-            $pixelValues[] = $data['pixel_values'];
-        }
+        $pixelValues = array_column($imageData, 'pixel_values');
+        $originalSizes = array_column($imageData, 'original_size');
+        $reshapedInputSizes = array_column($imageData, 'reshaped_input_size');
 
         $stackedPixelValues = Tensor::stack($pixelValues, 0);
 
-        // Prepare metadata
-        $originalSizes = [];
-        $reshapedInputSizes = [];
-        foreach ($imageData as $data) {
-            $originalSizes[] = $data['original_size'];
-            $reshapedInputSizes[] = $data['reshaped_input_size'];
-        }
         return [
             'pixel_values' => $stackedPixelValues,
             'original_sizes' => $originalSizes,

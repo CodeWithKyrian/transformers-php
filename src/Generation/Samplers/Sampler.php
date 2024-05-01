@@ -57,14 +57,11 @@ abstract class Sampler
 //            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
 //        }
 
-        $start = array_fill(0, $logits->ndim() - 2, 0);
-        $size = array_fill(0, $logits->ndim() - 2, 1);
+        $start = array_fill(0, $logits->ndim(), 0);
+        $size = array_fill(0, $logits->ndim(), 1);
 
-        $start[] = $index;
-        $size[] = 1;
-
-        $start[] = -$vocabSize;
-        $size[] = $vocabSize;
+        array_splice($start, -2, replacement: [$index, 0]);
+        array_splice($size, -2, replacement: [1, $vocabSize]);
 
         $logs = $logits->newSlice($start, $size);
 

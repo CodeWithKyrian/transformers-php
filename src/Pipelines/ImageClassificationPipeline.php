@@ -62,7 +62,6 @@ class ImageClassificationPipeline extends Pipeline
 
         ['pixel_values' => $pixelValues] = ($this->processor)($preparedImages);
 
-
         /** @var SequenceClassifierOutput $output */
         $output = $this->model->__invoke(['pixel_values' => $pixelValues]);
 
@@ -86,6 +85,7 @@ class ImageClassificationPipeline extends Pipeline
                 $toReturn[] = $values;
             }
         }
+
         if ($isBatched || $topK === 1) {
             return $toReturn;
         } else {

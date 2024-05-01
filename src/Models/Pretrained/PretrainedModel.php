@@ -625,7 +625,7 @@ class PretrainedModel
                 // In most cases, this will be [batch_size, 1, vocab_size]
                 // So, we select the last token's logits:
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
-                $logits = $output['logits']-lice(null, -1, null);
+                $logits = $output['logits']->slice(null, -1, null);
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);
