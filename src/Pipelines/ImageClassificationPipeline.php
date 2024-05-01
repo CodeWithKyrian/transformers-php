@@ -8,6 +8,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Utils\Math;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Image classification pipeline using any `AutoModelForImageClassification`.
@@ -61,6 +62,7 @@ class ImageClassificationPipeline extends Pipeline
 
         ['pixel_values' => $pixelValues] = ($this->processor)($preparedImages);
 
+
         /** @var SequenceClassifierOutput $output */
         $output = $this->model->__invoke(['pixel_values' => $pixelValues]);
 
@@ -69,15 +71,13 @@ class ImageClassificationPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($output->logits as $batch) {
-            $scores = Math::getTopItems($batch->softmax()->toArray(), $topK);
+            [$scores, $indices] = $batch->softmax()->topk($topK);
 
-            $values = array_map(
-                fn($score) => [
-                    'label' => $id2label[$score[0]],
-                    'score' => $score[1]
-                ],
-                $scores
-            );
+            $values = [];
+
+            foreach ($indices as $i => $index) {
+                $values[] = ['label' => $id2label[$index], 'score' => $scores[$i]];
+            }
 
 
             if ($topK === 1) {

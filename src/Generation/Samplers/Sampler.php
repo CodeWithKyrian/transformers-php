@@ -44,9 +44,10 @@ abstract class Sampler
      * @param int $index
      * @return array
      */
-    public function getLogits(Tensor $logits, int $index): array
+    public function getLogits(Tensor $logits, int $index): Tensor
     {
-        $vocabSize = $logits->shape()[count($logits->shape()) - 1];
+        $vocabSize = $logits->shape()[$logits->ndim() - 1];
+
 //        $logs = $logits->buffer()->toArray();
 //
 //        if ($index === -1) {
@@ -56,21 +57,23 @@ abstract class Sampler
 //            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
 //        }
 
-        $start = $index === -1 ? $logits->buffer()->count() - $vocabSize : $index * $vocabSize;
-        $end = $start + $vocabSize;
+        $start = array_fill(0, $logits->ndim() - 2, 0);
+        $size = array_fill(0, $logits->ndim() - 2, 1);
 
-        $logs = [];
+        $start[] = $index;
+        $size[] = 1;
 
-        for ($i = $start; $i < $end; $i++) {
-            $logs[] = $logits->buffer()[$i];
-        }
+        $start[] = -$vocabSize;
+        $size[] = $vocabSize;
 
-        // add temperature
+        $logs = $logits->newSlice($start, $size);
+
         if ($this->generationConfig->temperature > 0) {
-            $logs = array_map(fn($x) => $x / $this->generationConfig->temperature, $logs);
+            $logs = $logs->divide($this->generationConfig->temperature);
         }
 
-        return $logs;
+        // Remove all dimensions of 1, leaving a flat 1D array of vocab_size
+        return $logs->squeeze();
     }
 
     /**
@@ -85,6 +88,7 @@ abstract class Sampler
 
         // Generate a random number between 0 and the sum of probabilities
         $r = mt_rand() / mt_getrandmax() * $sumProbabilities;
+
         foreach ($probabilities as $i => $probability) {
             $r -= $probability;
 

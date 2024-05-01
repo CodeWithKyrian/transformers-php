@@ -12,8 +12,8 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 ini_set('memory_limit', -1);
 //
 //$generator = pipeline('text-generation', 'Xenova/gpt2');
-$generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
-//$generator = pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0');
+//$generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
+$generator = pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0');
 
 $streamer = StdOutStreamer::make();
 

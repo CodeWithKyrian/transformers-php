@@ -453,7 +453,6 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         $reshapedInputSize = [$image->height(), $image->width()];
 
-
         // All pixel-level manipulation occurs with data in the hwc format (height, width, channels),
         // to emulate the behavior of the original Python code (w/ numpy).
         $pixelData = $image->pixelData();
@@ -545,7 +544,6 @@ class ImageFeatureExtractor extends FeatureExtractor
             $originalSizes[] = $data['original_size'];
             $reshapedInputSizes[] = $data['reshaped_input_size'];
         }
-
         return [
             'pixel_values' => $stackedPixelValues,
             'original_sizes' => $originalSizes,

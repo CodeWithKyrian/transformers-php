@@ -648,6 +648,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
+    public function divide(float|int $scalar): self
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->scal(1 / $scalar, $this);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
     /**
      * Calculate the dot product of this tensor and another tensor.
      */
@@ -903,6 +912,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedAxis]);
     }
 
+    public function newSlice(array $start, array $size) : Tensor
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->slice($this, $start, $size);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
     public function slice(...$slices): Tensor
     {
         $newTensorShape = [];
@@ -998,6 +1016,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         };
     }
 
+
     protected function softmax2D(): static
     {
         $mo = self::mo();
@@ -1006,6 +1025,98 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
+
+
+    /**
+     * @return Tensor[]
+     */
+    public function topk(int $k = null, bool $sorted = true) : array
+    {
+        if ($k === null) {
+            $k = $this->shape[0];
+        }
+
+        $ndim = $this->ndim();
+
+        if ($ndim > 2) {
+            throw new InvalidArgumentException("TopK is only supported for 1D and 2D tensors.");
+        }
+
+        // TODO: Switch to using the MatrixOperator after the PR is merged
+
+        $m = $ndim == 1 ? 1 : $this->shape[0];
+        $n = $ndim == 1 ? $this->shape[0] : $this->shape[1];
+
+        $topValues = Tensor::zeros([$m, $k], dtype: $this->dtype());
+        $topIndices = Tensor::zeros([$m, $k], dtype: NDArray::int32);
+
+        $meanHeapify = function (array &$heap, int $i, int $k) {
+            $smallest = $i;
+            $left = 2 * $i + 1;
+            $right = 2 * $i + 2;
+
+            while ($left < $k) {
+                if ($right < $k && $heap[$right]['value'] < $heap[$left]['value']) {
+                    $smallest = $right;
+                } else {
+                    $smallest = $left;
+                }
+
+                if ($heap[$smallest]['value'] >= $heap[$i]['value']) {
+                    break;
+                }
+
+                // Swap heap[i] and heap[smallest]
+                $temp = $heap[$i];
+                $heap[$i] = $heap[$smallest];
+                $heap[$smallest] = $temp;
+
+                $i = $smallest;
+                $left = 2 * $i + 1;
+                $right = 2 * $i + 2;
+            }
+        };
+
+
+        for ($i = 0; $i < $m; $i++) {
+            $idA = $this->offset + $i * $n;
+
+            // Create an array to represent the heap and initialize with the first k elements
+            $heap = [];
+            for ($j = 0; $j < $k; $j++) {
+                $heap[] = ['value' => $this->buffer[$idA + $j], 'index' => $j];
+            }
+
+            // Build a min-heap with the first k elements
+            $k = count($heap);
+            for ($j = intdiv($k, 2) - 1; $j >= 0; $j--) {
+                $meanHeapify($heap, $j, $k);
+            }
+
+            // Iterate through the remaining elements in the row
+            for ($j = $k; $j < $n; $j++) {
+                $currentValue = $this->buffer[$idA + $j];
+                if ($currentValue > $heap[0]['value']) {
+                    $heap[0] = ['value' => $currentValue, 'index' => $j];
+                    $meanHeapify($heap, 0, $k);
+                }
+            }
+
+            if ($sorted) {
+                // Sort the heap to get the top k elements in descending order
+                usort($heap, fn($a, $b) => $b['value'] <=> $a['value']);
+            }
+
+            // Extract top K values and indices from the heap
+            for ($j = 0; $j < $k; $j++) {
+                $topValues->buffer[$this->offset + ($i * $k) + $j] = $heap[$j]['value'];
+                $topIndices->buffer[$this->offset + ($i * $k )+ $j] = $heap[$j]['index'];
+            }
+        }
+
+        return $ndim == 1 ? [$topValues->squeeze(0), $topIndices->squeeze(0)] : [$topValues, $topIndices];
+    }
+
 
     public function max(?int $axis = null): static|int|float
     {

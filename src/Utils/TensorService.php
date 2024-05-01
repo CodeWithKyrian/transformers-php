@@ -5,15 +5,13 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Transformers;
 use Rindow\Math\Matrix\Drivers\AbstractMatlibService;
 use Rindow\Matlib\FFI\MatlibFactory;
 use Rindow\OpenBLAS\FFI\OpenBLASFactory;
 
 class TensorService extends AbstractMatlibService
 {
-    protected string $openBlasHeader = __DIR__ . '/../../libs/openblas.h';
-    protected string $openBlasLib = __DIR__ . '/../../libs/libopenblas.dylib';
-    protected string $rindowMatlibLib = __DIR__ . '/../../libs/librindowmatlib.dylib';
 
     public function __construct(
         object $bufferFactory = null,
@@ -27,16 +25,30 @@ class TensorService extends AbstractMatlibService
     )
     {
         $openblasFactory = new OpenBLASFactory(
-            headerFile: $this->openBlasHeader,
-            libFiles: [$this->openBlasLib],
-            lapackeLibs: [$this->openBlasLib],
+            headerFile: Transformers::getLib('openblas.include'),
+            libFiles: [Transformers::getLib('openblas.openmp')],
+            lapackeLibs: [Transformers::getLib('lapacke.openmp')],
         );
 
         $mathFactory = new MatlibFactory(
-            libFiles: [$this->rindowMatlibLib]
+            libFiles: [Transformers::getLib('rindowmatlib.openmp')]
         );
 
         $bufferFactory = new TensorBufferFactory();
+
+        if (!$openblasFactory->isAvailable()
+            || !$mathFactory->isAvailable()
+        ) {
+            $openblasFactory = new OpenBLASFactory(
+                headerFile: Transformers::getLib('openblas.include'),
+                libFiles: [Transformers::getLib('openblas.serial')],
+                lapackeLibs: [Transformers::getLib('lapacke.serial')],
+            );
+
+            $mathFactory = new MatlibFactory(
+                libFiles: [Transformers::getLib('rindowmatlib.serial')]
+            );
+        }
 
         parent::__construct(
             bufferFactory: $bufferFactory,
@@ -49,4 +61,6 @@ class TensorService extends AbstractMatlibService
             bufferCLFactory: $bufferCLFactory,
         );
     }
+
+
 }

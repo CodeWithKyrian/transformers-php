@@ -70,20 +70,22 @@ class TextClassificationPipeline extends Pipeline
         $problemType = $this->model->config['problem_type'] ?? 'single_label_classification';
 
         $activationFunction = $problemType == 'multi_label_classification' ?
-            fn(Tensor $batch) => $batch->sigmoid()->toArray() :
-            fn(Tensor $batch) => $batch->softmax()->toArray();
+            fn(Tensor $batch) => $batch->sigmoid() :
+            fn(Tensor $batch) => $batch->softmax();
 
         $id2label = $this->model->config['id2label'];
         $toReturn = [];
 
         foreach ($outputs->logits as $batch) {
             $output = $activationFunction($batch);
-            $scores = Math::getTopItems($output, $topK);
 
-            $values = array_map(
-                fn($score) => ['label' => $id2label[$score[0]], 'score' => $score[1],],
-                $scores
-            );
+            [$scores, $indices] = $output->topk($topK);
+
+            $values = [];
+
+            foreach ($indices as $i => $index) {
+                $values[] = ['label' => $id2label[$index], 'score' => $scores[$i]];
+            }
 
             if ($topK === 1) {
                 $toReturn = $values;
