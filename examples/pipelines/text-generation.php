@@ -35,13 +35,14 @@ $output = $generator($input,
 );
 
 //$generator = pipeline('text-generation', 'Xenova/codegen-350M-mono');
-//$streamer = StdOutStreamer::make($generator->tokenizer);
+//$streamer = StdOutStreamer::make();
 //
 //$output = $generator(
 //    'def fib(n):',
 //    streamer: $streamer,
 //    maxNewTokens: 100,
-//    doSample: true
+//    doSample: true,
+//    returnFullText: false,
 //);
-
+//
 dd($output[0]['generated_text'], timeUsage(), memoryUsage());

@@ -35,54 +35,6 @@ class Image
         return new self($image);
     }
 
-    public static function fromTensor(Tensor $tensor, string $channelFormat = 'CHW'): static
-    {
-        $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
-
-        [$width, $height, $channels] = $tensor->shape();
-
-        $image = self::$imagine->create(new Box($width, $height));
-
-        if ($image instanceof \Imagine\Vips\Image) {
-            $data = pack('C*', ...$tensor->buffer()->toArray());
-
-            $vipImage = $image->getVips()::newFromMemory($data, $width, $height, $channels, 'uchar');
-
-            $image->setVips($vipImage, true);
-
-            return new self($image, $channels);
-        }
-
-        if ($image instanceof \Imagine\Imagick\Image) {
-            $map = match ($channels) {
-                1 => 'I',
-                2 => 'RG',
-                3 => 'RGB',
-                4 => 'RGBA',
-                default => throw new Exception("Unsupported number of channels: $channels"),
-            };
-
-            $image->getImagick()->importImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR, $tensor->buffer()->toArray());
-
-            return new self($image, $channels);
-        }
-
-        $pixels = $tensor->reshape([$width * $height, $channels])->toArray();
-
-        for ($y = 0; $y < $height; $y++) {
-            for ($x = 0; $x < $width; $x++) {
-                $index = $y * $width + $x;
-
-                $color = $channels === 1 ? $pixels[$index][0] : $pixels[$index];
-
-                $color = $image->palette()->color([$color[0], $color[1], $color[2]], $color[3] ?? null);
-
-                $image->draw()->dot(new Point($x, $y), $color);
-            }
-        }
-
-        return new self($image, $channels);
-    }
 
     public function height(): int
     {
@@ -126,32 +78,30 @@ class Image
         return $this;
     }
 
-    public function pad(int $left, int $right, int $top, int $bottom): static
+    /**
+     * Resize the image to make a thumbnail.
+     */
+    public function thumbnail(int $width, int $height, int|Resample $resample = 2): static
     {
-        if ($left === 0 && $right === 0 && $top === 0 && $bottom === 0) {
+        $inputHeight = $this->height();
+        $inputWidth = $this->width();
+
+
+        // We always resize to the smallest of either the input or output size.
+        $height = min($inputHeight, $height);
+        $width = min($inputWidth, $width);
+
+        if ($height === $inputHeight && $width === $inputWidth) {
             return $this;
         }
 
-        $originalWidth = $this->image->getSize()->getWidth();
-        $originalHeight = $this->image->getSize()->getHeight();
-
-        $newWidth = $originalWidth + $left + $right;
-        $newHeight = $originalHeight + $top + $bottom;
-
-        $canvas = self::$imagine->create(new Box($newWidth, $newHeight));
-
-        $canvas->paste($this->image, new Point($left, $top));
-
-        $this->image = $canvas;
-
-        // Convert to the same format as the original image
-        if ($this->channels === 1) {
-            $this->grayscale(true);
-        } elseif ($this->channels === 3) {
-            $this->rgb(true);
-        } elseif ($this->channels === 4) {
-            $this->rgba(true);
+        if ($inputHeight > $inputWidth) {
+            $width = floor($inputWidth * $height / $inputHeight);
+        } elseif ($inputWidth > $inputHeight) {
+            $height = floor($inputHeight * $width / $inputWidth);
         }
+
+        $this->resize($width, $height, $resample);
 
         return $this;
     }
@@ -272,6 +222,85 @@ class Image
         return $this;
     }
 
+    public function pad(int $left, int $right, int $top, int $bottom): static
+    {
+        if ($left === 0 && $right === 0 && $top === 0 && $bottom === 0) {
+            return $this;
+        }
+
+        $originalWidth = $this->image->getSize()->getWidth();
+        $originalHeight = $this->image->getSize()->getHeight();
+
+        $newWidth = $originalWidth + $left + $right;
+        $newHeight = $originalHeight + $top + $bottom;
+
+        $canvas = self::$imagine->create(new Box($newWidth, $newHeight));
+
+        $canvas->paste($this->image, new Point($left, $top));
+
+        $this->image = $canvas;
+
+        // Convert to the same format as the original image
+        if ($this->channels === 1) {
+            $this->grayscale(true);
+        } elseif ($this->channels === 3) {
+            $this->rgb(true);
+        } elseif ($this->channels === 4) {
+            $this->rgba(true);
+        }
+
+        return $this;
+    }
+
+    public static function fromTensor(Tensor $tensor, string $channelFormat = 'CHW'): static
+    {
+        $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
+
+        [$width, $height, $channels] = $tensor->shape();
+
+        $image = self::$imagine->create(new Box($width, $height));
+
+        if ($image instanceof \Imagine\Vips\Image) {
+            $data = pack('C*', ...$tensor->buffer()->toArray());
+
+            $vipImage = $image->getVips()::newFromMemory($data, $width, $height, $channels, 'uchar');
+
+            $image->setVips($vipImage, true);
+
+            return new self($image, $channels);
+        }
+
+        if ($image instanceof \Imagine\Imagick\Image) {
+            $map = match ($channels) {
+                1 => 'I',
+                2 => 'RG',
+                3 => 'RGB',
+                4 => 'RGBA',
+                default => throw new Exception("Unsupported number of channels: $channels"),
+            };
+
+            $image->getImagick()->importImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR, $tensor->buffer()->toArray());
+
+            return new self($image, $channels);
+        }
+
+        $pixels = $tensor->reshape([$width * $height, $channels])->toArray();
+
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                $index = $y * $width + $x;
+
+                $color = $channels === 1 ? $pixels[$index][0] : $pixels[$index];
+
+                $color = $image->palette()->color([$color[0], $color[1], $color[2]], $color[3] ?? null);
+
+                $image->draw()->dot(new Point($x, $y), $color);
+            }
+        }
+
+        return new self($image, $channels);
+    }
+
     public function toTensor(string $channelFormat = 'CHW'): Tensor
     {
         $width = $this->image->getSize()->getWidth();
@@ -279,7 +308,7 @@ class Image
 
         $pixels = $this->pixelData();
 
-        $tensor = new Tensor($pixels, Tensor::int64,  [$width, $height, $this->channels]);
+        $tensor = new Tensor($pixels, Tensor::float32,  [$width, $height, $this->channels]);
 
         if ($channelFormat === 'HWC') {
             // Do nothing
