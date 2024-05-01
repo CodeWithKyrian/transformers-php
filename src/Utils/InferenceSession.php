@@ -391,23 +391,35 @@ class InferenceSession
                 $this->checkStatus(($this->api->CreateTensorAsOrtValue)($this->allocator, $inputNodeShape, $ndim, $typeEnum, \FFI::addr($inputTensor[$idx])));
                 $this->checkStatus(($this->api->FillStringTensor)($inputTensor[$idx], $inputTensorValues, count($inputTensorValues)));
 
-                $refs[] = $inputTensorValues;
             } else {
 
                 $inputTypes = array_flip(array_map(fn($v) => "tensor($v)", $this->elementDataTypes()));
 
                 if (isset($inputTypes[$inp['type']])) {
                     $typeEnum = $inputTypes[$inp['type']];
+                    $castType = $this->castTypes()[$typeEnum];
                     $phpTensorType = self::ONNX_TENSOR_TYPE_TO_PHP_TENSOR_MAP[$typeEnum];
                     $input = $input->to($phpTensorType);
                 } else {
                     $this->unsupportedType('input', $inp['type']);
                 }
 
-                $this->checkStatus(($this->api->CreateTensorWithDataAsOrtValue)($allocatorInfo, $input->buffer()->data(), $input->buffer()->byteSize(), $inputNodeShape, $ndim, $typeEnum, \FFI::addr($inputTensor[$idx])));
+
+                if ($size === 0) {
+                    $inputTensorValues = $this->ffi->new("void *");
+                } else {
+                    $inputTensorValues = $this->ffi->new("{$castType}[$size]");
+                }
+
+                $inputDump = $input->buffer()->dump();
+
+                \FFI::memcpy($inputTensorValues, $inputDump, strlen($inputDump));
+
+                $this->checkStatus(($this->api->CreateTensorWithDataAsOrtValue)($allocatorInfo, $inputTensorValues, \FFI::sizeof($inputTensorValues), $inputNodeShape, $ndim, $typeEnum, \FFI::addr($inputTensor[$idx])));
             }
 
             $refs[] = $inputNodeShape;
+            $refs[] = $inputTensorValues;
 
             $idx++;
         }
@@ -484,7 +496,7 @@ class InferenceSession
 
                 $buffer = Tensor::newBuffer($outputTensorSize, $phpTensorType);
 
-                $stringPtr = \FFI::string($arr, $buffer->byteSize());
+                $stringPtr = \FFI::string($arr, \FFI::sizeof($arr));
 
                 $buffer->load($stringPtr);
 

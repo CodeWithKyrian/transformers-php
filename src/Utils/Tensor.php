@@ -387,6 +387,27 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         throw new Exception('toBufferArray is not implemented yet');
     }
 
+    public static function fill(array $shape, float|int $value, ?int $dtype = null): static
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->full($shape, $value, $dtype);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    public static function repeat(Tensor|array $tensor, int $repeats, ?int $axis = null): static
+    {
+        $mo = self::mo();
+
+        if (is_array($tensor)) {
+            $tensor = $mo->array($tensor);
+        }
+
+        $ndArray = $mo->la()->repeat($tensor, $repeats, $axis);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
 
     /**
      * Return a one matrix with the given shape.
@@ -555,7 +576,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $mo = self::mo();
 
-        $ndArray = is_scalar($other) ? $mo->op($this, '+', $other) : $mo->add($this, $other);
+        if ($other instanceof Tensor) {
+            $ndArray = $mo->la()->add($this, $other);
+        } else {
+            $ndArray = $mo->la()->increment($this, $other);
+        }
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
@@ -581,20 +606,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @return self
      */
-    public function multiply(float|int $scalar): self
+    public function multiply(Tensor|float|int $scalar): self
     {
         $mo = self::mo();
 
-        $ndArray = $mo->la()->scal($scalar, $this);
-
-        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
-    }
-
-    public function divide(float|int $scalar): self
-    {
-        $mo = self::mo();
-
-        $ndArray = $mo->la()->scal(1 / $scalar, $this);
+        if ($scalar instanceof Tensor) {
+            $ndArray = $mo->la()->multiply($this, $scalar);
+        } else {
+            $ndArray = $mo->la()->scal($scalar, $this);
+        }
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
@@ -854,7 +874,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedAxis]);
     }
 
-    public function newSlice(array $start, array $size) : Tensor
+    public function newSlice(array $start, array $size): Tensor
     {
         $mo = self::mo();
 
@@ -972,7 +992,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * @return Tensor[]
      */
-    public function topk(int $k = null, bool $sorted = true) : array
+    public function topk(int $k = null, bool $sorted = true): array
     {
         if ($k === null) {
             $k = $this->shape[0];
@@ -1052,7 +1072,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             // Extract top K values and indices from the heap
             for ($j = 0; $j < $k; $j++) {
                 $topValues->buffer[$this->offset + ($i * $k) + $j] = $heap[$j]['value'];
-                $topIndices->buffer[$this->offset + ($i * $k )+ $j] = $heap[$j]['index'];
+                $topIndices->buffer[$this->offset + ($i * $k) + $j] = $heap[$j]['index'];
             }
         }
 

@@ -66,7 +66,7 @@ abstract class Sampler
         $logs = $logits->newSlice($start, $size);
 
         if ($this->generationConfig->temperature > 0) {
-            $logs = $logs->divide($this->generationConfig->temperature);
+            $logs = $logs->multiply(1 / $this->generationConfig->temperature);
         }
 
         // Remove all dimensions of 1, leaving a flat 1D array of vocab_size

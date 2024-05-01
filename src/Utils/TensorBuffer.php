@@ -124,16 +124,6 @@ class TensorBuffer implements LinearBuffer
         return self::$valueSize[$this->dtype];
     }
 
-    public function byteSize(): int
-    {
-        return $this->valueSize() * $this->size;
-    }
-
-    public function data()
-    {
-        return $this->data;
-    }
-
     public function addr(int $offset): FFI\CData
     {
         return FFI::addr($this->data[$offset]);
@@ -190,14 +180,14 @@ class TensorBuffer implements LinearBuffer
 
     public function offsetUnset(mixed $offset): void
     {
-        //$this->assertOffsetIsInt('offsetUnset',$offset);
         throw new LogicException("Illegal Operation");
     }
 
     public function dump(): string
     {
         $byte = self::$valueSize[$this->dtype] * $this->size;
-        $buf = self::$ffi->new("char[$byte]");
+        if ($byte === 0) return '';
+        $buf = FFI::new("char[$byte]");
         FFI::memcpy($buf, $this->data, $byte);
         return FFI::string($buf, $byte);
     }

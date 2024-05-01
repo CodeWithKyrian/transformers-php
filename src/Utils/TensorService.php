@@ -34,7 +34,6 @@ class TensorService extends AbstractMatlibService
             libFiles: [Transformers::getLib('rindowmatlib.openmp')]
         );
 
-        $bufferFactory = new TensorBufferFactory();
 
         if (!$openblasFactory->isAvailable()
             || !$mathFactory->isAvailable()
@@ -49,6 +48,8 @@ class TensorService extends AbstractMatlibService
                 libFiles: [Transformers::getLib('rindowmatlib.serial')]
             );
         }
+
+        $bufferFactory = new TensorBufferFactory();
 
         parent::__construct(
             bufferFactory: $bufferFactory,
