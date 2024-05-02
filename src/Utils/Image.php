@@ -260,10 +260,11 @@ class Image
 
         $image = self::$imagine->create(new Box($width, $height));
 
-        if ($image instanceof \Imagine\Vips\Image) {
-            $data = pack('C*', ...$tensor->buffer()->toArray());
+        // Make sure the tensor is the right data type
+        $tensor = $tensor->to(Tensor::uint8);
 
-            $vipImage = $image->getVips()::newFromMemory($data, $width, $height, $channels, 'uchar');
+        if ($image instanceof \Imagine\Vips\Image) {
+            $vipImage = $image->getVips()::newFromMemory($tensor->buffer()->dump(), $width, $height, $channels, 'uchar');
 
             $image->setVips($vipImage, true);
 
@@ -279,10 +280,7 @@ class Image
                 default => throw new Exception("Unsupported number of channels: $channels"),
             };
 
-            $bufferArray = [];
-            for ($i = 0; $i < $tensor->size(); $i++) {
-                $bufferArray[] = $tensor->buffer()[$i];
-            }
+            $bufferArray = $tensor->toBufferArray();
 
             $image->getImagick()->importImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR, $bufferArray);
 
@@ -311,9 +309,10 @@ class Image
         $width = $this->image->getSize()->getWidth();
         $height = $this->image->getSize()->getHeight();
 
-        $pixels = $this->pixelData();
+        $pixelData = $this->getPixelData();
 
-        $tensor = new Tensor($pixels, Tensor::float32,  [$height, $width, $this->channels]);
+        $tensor = Tensor::fromString($pixelData, Tensor::uint8, [$height, $width, $this->channels])
+            ->to(Tensor::float32);
 
         if ($channelFormat === 'HWC') {
             // Do nothing
@@ -326,20 +325,17 @@ class Image
         return $tensor;
     }
 
-    /**
-     * @return array
-     */
-    public function pixelData(): array
+    public function getPixelData(): string
     {
-        $width = $this->image->getSize()->getWidth();
-        $height = $this->image->getSize()->getHeight();
+        $width = $this->width();
+        $height = $this->height();
 
-        // If it's a Vips image, we can extract the pixel data directly
+        /** For Vips images, we can export the pixel data directly */
         if ($this->image instanceof \Imagine\Vips\Image) {
-            return $this->image->getVips()->writeToArray();
+            return $this->image->getVips()->writeToMemory();
         }
 
-        // If it's an Imagick image, we can export the pixel data directly
+        /** For Imagick images, we can export the pixel data directly */
         if ($this->image instanceof \Imagine\Imagick\Image) {
             $map = match ($this->channels) {
                 1 => 'I',
@@ -349,12 +345,17 @@ class Image
                 default => throw new Exception("Unsupported number of channels: $this->channels"),
             };
 
-            return $this->image->getImagick()->exportImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR);
+            $pixels = $this->image->getImagick()->exportImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR);
+
+            return pack('C*', ...$pixels);
         }
 
-        // I didn't find an in-built method to extract pixel data from a GD image, so I'm using this ugly
-        // brute-force method, suggested by @DewiMorgan on StackOverflow: https://stackoverflow.com/a/30136602/11209184.
-        // It's faster than other methods I tried, and rivals the speed of the Imagick method so I'll keep it for now.
+        /** For GD images, we need to extract the pixel data manually
+         *
+         * I didn't find an in-built method to extract pixel data from a GD image, so I'm using this ugly
+         * brute-force method, suggested by @DewiMorgan on StackOverflow: https://stackoverflow.com/a/30136602/11209184.
+         * It's tons faster than other methods I tried, and rivals the speed of the Imagick method, so I'll keep it for now.
+         */
         $alphaLookup = [
             0x00000000 => "\xff", 0x01000000 => "\xfd", 0x02000000 => "\xfb", 0x03000000 => "\xf9",
             0x04000000 => "\xf7", 0x05000000 => "\xf5", 0x06000000 => "\xf3", 0x07000000 => "\xf1",
@@ -440,9 +441,7 @@ class Image
             }
         }
 
-        $data = unpack('C*', $imageData);
-
-        return array_values($data);
+        return $imageData;
     }
 
     public function save(string $path): void

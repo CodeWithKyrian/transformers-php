@@ -44,6 +44,24 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     protected int $dtype;
     protected Buffer $buffer;
 
+    protected static $pack = [
+        NDArray::bool    => 'C',
+        NDArray::int8    => 'c',
+        NDArray::int16   => 's',
+        NDArray::int32   => 'l',
+        NDArray::int64   => 'q',
+        NDArray::uint8   => 'C',
+        NDArray::uint16  => 'S',
+        NDArray::uint32  => 'L',
+        NDArray::uint64  => 'Q',
+        //NDArray::float8  => 'N/A',
+        //NDArray::float16 => 'N/A',
+        NDArray::float32 => 'g',
+        NDArray::float64 => 'e',
+        NDArray::complex64 => 'g',
+        NDArray::complex128 => 'e',
+    ];
+
     protected bool $portableSerializeMode = false;
 
     public function __construct(
@@ -365,6 +383,14 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($array, $dtype, $shape);
     }
 
+
+    public static function fromString(string $string, int $dtype, array $shape): static
+    {
+        $buffer = Tensor::newBuffer(array_product($shape), $dtype);
+        $buffer->load($string);
+        return new static($buffer, $dtype, $shape, 0);
+    }
+
     /**
      * Convert the tensor into an array.
      */
@@ -382,9 +408,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Convert the tensor into a flat array of the buffer contents.
      */
-    public function toBufferArray()
+    public function toBufferArray(): array
     {
-        throw new Exception('toBufferArray is not implemented yet');
+        $fmt = self::$pack[$this->dtype].'*';
+
+        return array_values(unpack($fmt, $this->buffer->dump()));
     }
 
     public static function fill(array $shape, float|int $value, ?int $dtype = null): static
