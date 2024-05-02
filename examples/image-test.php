@@ -54,3 +54,6 @@ dump("------------ fromTensor ------------");
 $image = fromTensorTest(ImageDriver::IMAGICK, $tensor);
 $image = fromTensorTest(ImageDriver::GD, $tensor);
 //$image = fromTensorTest(ImageDriver::VIPS, $tensor);
+
+// Save the image
+$image->save('images/butterfly-converted.jpg');

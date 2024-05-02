@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Image To Text pipeline using a `AutoModelForVision2Seq`. This pipeline predicts a caption for a given image.
@@ -58,7 +59,7 @@ class ImageToTextPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($pixelValues as $batch) {
-            $batch = Tensor::fromArray($batch, shape: [1, ...$batch->shape()]);
+            $batch = $batch->reshape([1, ...$batch->shape()]);
 
             $output = $this->model->generate($batch, generationConfig: $generationConfig, streamer: $streamer);
 

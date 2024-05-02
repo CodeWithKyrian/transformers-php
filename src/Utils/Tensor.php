@@ -1028,6 +1028,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         $ndim = $this->ndim();
 
+
         if ($ndim > 2) {
             throw new InvalidArgumentException("TopK is only supported for 1D and 2D tensors.");
         }
@@ -1039,6 +1040,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         $topValues = Tensor::zeros([$m, $k], dtype: $this->dtype());
         $topIndices = Tensor::zeros([$m, $k], dtype: NDArray::int32);
+
+        $offsetTV = $topValues->offset();
+        $offsetTI = $topIndices->offset();
 
         $meanHeapify = function (array &$heap, int $i, int $k) {
             $smallest = $i;
@@ -1099,8 +1103,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
             // Extract top K values and indices from the heap
             for ($j = 0; $j < $k; $j++) {
-                $topValues->buffer[$this->offset + ($i * $k) + $j] = $heap[$j]['value'];
-                $topIndices->buffer[$this->offset + ($i * $k) + $j] = $heap[$j]['index'];
+                $topValues->buffer[$offsetTV + ($i * $k) + $j] = $heap[$j]['value'];
+                $topIndices->buffer[$offsetTI + ($i * $k) + $j] = $heap[$j]['index'];
             }
         }
 
