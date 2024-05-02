@@ -69,11 +69,7 @@ class Transformers
 
     public function apply(): void
     {
-        Image::$imagine = match (self::$imageDriver) {
-            ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
-            ImageDriver::GD => new \Imagine\GD\Imagine(),
-            ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
-        };
+        Image::setDriver(self::$imageDriver);
     }
 
     /**

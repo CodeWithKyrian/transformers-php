@@ -69,9 +69,7 @@ class ZeroShotObjectDetectionPipeline extends Pipeline
         $toReturn = [];
         foreach ($preparedImages as $i => $image) {
             $imageSize = $percentage ? null : [[$image->height(), $image->width()]];
-            $pixelValues = $modelInputs['pixel_values'][$i];
-
-            $pixelValues = Tensor::fromArray($pixelValues)->unsqueeze(0);
+            $pixelValues = $modelInputs['pixel_values'][$i]->unsqueeze(0);
 
             // Run model with both text and pixel inputs
             /** @var ObjectDetectionOutput $output */
