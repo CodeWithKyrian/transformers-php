@@ -114,10 +114,12 @@ class Processor
     {
         [$centerX, $centerY, $width, $height] = $arr;
 
-        $topLeftX = Math::clamp($centerX - $width / 2, 0.0, 1.0);
-        $topLeftY = Math::clamp($centerY - $height / 2, 0.0, 1.0);
-        $bottomRightX = Math::clamp($centerX + $width / 2, 0.0, 1.0);
-        $bottomRightY = Math::clamp($centerY + $height / 2, 0.0, 1.0);
+        $clampFn = fn(float $value, float $min, float $max) => max($min, min($max, $value));
+
+        $topLeftX = $clampFn($centerX - $width / 2, 0.0, 1.0);
+        $topLeftY = $clampFn($centerY - $height / 2, 0.0, 1.0);
+        $bottomRightX = $clampFn($centerX + $width / 2, 0.0, 1.0);
+        $bottomRightY = $clampFn($centerY + $height / 2, 0.0, 1.0);
 
         return [$topLeftX, $topLeftY, $bottomRightX, $bottomRightY];
     }

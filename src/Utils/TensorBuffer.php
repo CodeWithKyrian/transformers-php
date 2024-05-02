@@ -72,13 +72,16 @@ class TensorBuffer implements LinearBuffer
             $code = file_get_contents(__DIR__ . '/../../libs/buffer.h');
             self::$ffi = FFI::cdef($code);
         }
+
         if (!isset(self::$typeString[$dtype])) {
             throw new InvalidArgumentException("Invalid data type");
         }
+
         $limitsize = intdiv(self::MAX_BYTES, self::$valueSize[$dtype]);
         if ($size >= $limitsize) {
             throw new InvalidArgumentException("Data size is too large.");
         }
+
         $this->size = $size;
         $this->dtype = $dtype;
         $declaration = self::$typeString[$dtype];
@@ -185,20 +188,25 @@ class TensorBuffer implements LinearBuffer
 
     public function dump(): string
     {
-        $byte = self::$valueSize[$this->dtype] * $this->size;
-        if ($byte === 0) return '';
-        $buf = FFI::new("char[$byte]");
-        FFI::memcpy($buf, $this->data, $byte);
-        return FFI::string($buf, $byte);
+        $byteSize = self::$valueSize[$this->dtype] * $this->size;
+
+        if ($byteSize === 0) return '';
+
+        $buf = FFI::new("char[$byteSize]");
+        FFI::memcpy($buf, $this->data, $byteSize);
+
+        return FFI::string($buf, $byteSize);
     }
 
     public function load(string $string): void
     {
-        $byte = self::$valueSize[$this->dtype] * $this->size;
+        $byteSize = self::$valueSize[$this->dtype] * $this->size;
+
         $strlen = strlen($string);
-        if ($strlen != $byte) {
-            throw new InvalidArgumentException("Unmatched data size. buffer size is $byte. $strlen byte given.");
+        if ($strlen != $byteSize) {
+            throw new InvalidArgumentException("Unmatched data size. buffer size is $byteSize. $strlen byte given.");
         }
+
         FFI::memcpy($this->data, $string, $strlen);
     }
 }

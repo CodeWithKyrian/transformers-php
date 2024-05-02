@@ -279,7 +279,12 @@ class Image
                 default => throw new Exception("Unsupported number of channels: $channels"),
             };
 
-            $image->getImagick()->importImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR, $tensor->buffer()->toArray());
+            $bufferArray = [];
+            for ($i = 0; $i < $tensor->size(); $i++) {
+                $bufferArray[] = $tensor->buffer()[$i];
+            }
+
+            $image->getImagick()->importImagePixels(0, 0, $width, $height, $map, Imagick::PIXEL_CHAR, $bufferArray);
 
             return new self($image, $channels);
         }

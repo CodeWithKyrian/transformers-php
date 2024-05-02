@@ -24,7 +24,7 @@ function toTensorTest(ImageDriver $imageDriver): Tensor
 
     $tensor =  $image->toTensor();
 
-    dump("$imageDriver->name (toTensor) : ". timeUsage());
+    dump("$imageDriver->name (toTensor) : ". timeUsage(true));
 
     return $tensor;
 }
@@ -37,7 +37,7 @@ function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor) : Image
 
     $image =  Image::fromTensor($tensor);
 
-    dump("$imageDriver->name (fromTensor) : ". timeUsage());
+    dump("$imageDriver->name (fromTensor) : ". timeUsage(true));
 
     return $image;
 }
@@ -47,10 +47,10 @@ function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor) : Image
 dump("------------ toTensor ------------");
 $tensor = toTensorTest(ImageDriver::IMAGICK);
 $tensor = toTensorTest(ImageDriver::GD);
-$tensor = toTensorTest(ImageDriver::VIPS);
+//$tensor = toTensorTest(ImageDriver::VIPS);
 
 
 dump("------------ fromTensor ------------");
 $image = fromTensorTest(ImageDriver::IMAGICK, $tensor);
 $image = fromTensorTest(ImageDriver::GD, $tensor);
-$image = fromTensorTest(ImageDriver::VIPS, $tensor);
+//$image = fromTensorTest(ImageDriver::VIPS, $tensor);
