@@ -12,44 +12,6 @@ use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 class Transformers
 {
-    public const VERSION = '0.4.0';
-    public const  LIBS_DIR = __DIR__ . '/../libs/';
-
-    protected const LIBRARIES = [
-        'x86_64-darwin' => [
-            'archive' => 'libraries-osx-x86_64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
-            'rindowmatlib.serial' => 'rindow-matlib-Darwin-1.0.0/lib/librindowmatlib_serial.dylib',
-            'rindowmatlib.openmp' => 'rindow-matlib-Darwin-1.0.0/lib/librindowmatlib_openmp.dylib',
-            'openblas.serial' => 'openblas-osx-x86_64-0.3.27/lib/libopenblas_serial.dylib',
-            'openblas.openmp' => 'openblas-osx-x86_64-0.3.27/lib/libopenblas_openmp.dylib',
-            'openblas.include' => 'openblas-osx-x86_64-0.3.27/include/openblas.h',
-            'lapacke.serial' => 'openblas-osx-x86_64-0.3.27/lib/libopenblas_serial.dylib',
-            'lapacke.openmp' => 'openblas-osx-x86_64-0.3.27/lib/libopenblas_openmp.dylib'
-        ],
-        'arm64-darwin' => [
-            'archive' => 'libraries-osx-arm64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
-            'rindowmatlib.serial' => 'rindow-matlib-Darwin-1.0.0/lib/librindowmatlib_serial.dylib',
-            'rindowmatlib.openmp' => 'rindow-matlib-Darwin-1.0.0/lib/librindowmatlib_openmp.dylib',
-            'openblas.serial' => 'openblas-osx-arm64-0.3.27/lib/libopenblas_serial.dylib',
-            'openblas.openmp' => 'openblas-osx-arm64-0.3.27/lib/libopenblas_openmp.dylib',
-            'openblas.include' => 'openblas-osx-arm64-0.3.27/include/openblas.h',
-            'lapacke.serial' => 'openblas-osx-arm64-0.3.27/lib/libopenblas_serial.dylib',
-            'lapacke.openmp' => 'openblas-osx-arm64-0.3.27/lib/libopenblas_openmp.dylib'
-        ],
-        'x86_64-linux' => [
-
-        ],
-        'aarch64-linux' => [
-
-        ],
-        'x64-windows' => [
-
-        ]
-    ];
-
-
     public static string $cacheDir = '.transformers-cache';
 
     public static string $remoteHost = 'https://huggingface.co';
@@ -141,18 +103,5 @@ class Transformers
         self::$imageDriver = $imageDriver;
 
         return $this;
-    }
-
-    public static function getLib(string $key): string
-    {
-        $platformKey = match (PHP_OS_FAMILY) {
-            'Windows' => 'x64-windows',
-            'Darwin' => php_uname('m') == 'x86_64' ? 'x86_64-darwin' : 'arm64-darwin',
-            default => php_uname('m') == 'x86_64' ? 'x86_64-linux' : 'aarch64-linux',
-        };
-
-        $filename = self::LIBRARIES[$platformKey][$key];
-
-        return joinPaths(Transformers::LIBS_DIR, $filename);
     }
 }

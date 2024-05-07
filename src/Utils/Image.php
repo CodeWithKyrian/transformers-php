@@ -86,7 +86,7 @@ class Image
     {
         self::$imagine = match ($imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
-            ImageDriver::GD => new \Imagine\GD\Imagine(),
+            ImageDriver::GD => new \Imagine\Gd\Imagine(),
             ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
         };
     }

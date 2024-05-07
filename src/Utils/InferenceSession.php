@@ -385,7 +385,7 @@ class InferenceSession
 
             if ($inp['type'] == 'tensor(string)') {
                 $inputTensorValues = $this->ffi->new("char*[$size]");
-                $this->fillStringTensorValues($input, $inputTensorValues, $shape, $refs);
+                $this->fillStringTensorValues($input, $inputTensorValues, $refs);
 
                 $typeEnum = $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING;
                 $this->checkStatus(($this->api->CreateTensorAsOrtValue)($this->allocator, $inputNodeShape, $ndim, $typeEnum, \FFI::addr($inputTensor[$idx])));
@@ -404,7 +404,6 @@ class InferenceSession
                     $this->unsupportedType('input', $inp['type']);
                 }
 
-
                 if ($size === 0) {
                     $inputTensorValues = $this->ffi->new("void *");
                 } else {
@@ -412,7 +411,6 @@ class InferenceSession
                 }
 
                 $inputDump = $input->buffer()->dump();
-
                 \FFI::memcpy($inputTensorValues, $inputDump, strlen($inputDump));
 
                 $this->checkStatus(($this->api->CreateTensorWithDataAsOrtValue)($allocatorInfo, $inputTensorValues, \FFI::sizeof($inputTensorValues), $inputNodeShape, $ndim, $typeEnum, \FFI::addr($inputTensor[$idx])));
