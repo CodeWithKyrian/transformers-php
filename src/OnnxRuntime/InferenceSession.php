@@ -15,25 +15,6 @@ class InferenceSession
     private array $inputs;
     private array $outputs;
 
-    private const ONNX_TENSOR_TYPE_TO_PHP_TENSOR_MAP = [
-        1 => Tensor::float32,
-        2 => Tensor::uint8,
-        3 => Tensor::int8,
-        4 => Tensor::uint16,
-        5 => Tensor::int16,
-        6 => Tensor::int32,
-        7 => Tensor::int64,
-        8 => 19, // string, but it has no mapping in tensor
-        9 => Tensor::bool,
-        10 => Tensor::float16,
-        11 => Tensor::float64,
-        12 => Tensor::uint32,
-        13 => Tensor::uint64,
-        14 => Tensor::complex64,
-        15 => Tensor::complex128,
-        16 => Tensor::float16 // bfloat16 though
-    ];
-
     public function __construct(
         $path,
         $enableCpuMemArena = true,
@@ -201,17 +182,17 @@ class InferenceSession
         return $output;
     }
 
-    public function inputs()
+    public function inputs(): array
     {
         return $this->inputs;
     }
 
-    public function outputs()
+    public function outputs(): array
     {
         return $this->outputs;
     }
 
-    public function modelmeta()
+    public function modelmeta(): array
     {
         $keys = $this->ffi->new('char**');
         $numKeys = $this->ffi->new('int64_t');
@@ -268,7 +249,7 @@ class InferenceSession
     }
 
     // return value has double underscore like Python
-    public function endProfiling()
+    public function endProfiling(): string
     {
         $out = $this->ffi->new('char*');
         $this->checkStatus(($this->api->SessionEndProfiling)($this->session, $this->allocator, \FFI::addr($out)));
@@ -277,7 +258,7 @@ class InferenceSession
 
     // no way to set providers with C API yet
     // so we can return all available providers
-    public function providers()
+    public function providers(): array
     {
         $outPtr = $this->ffi->new('char**');
         $lengthPtr = $this->ffi->new('int');
@@ -291,7 +272,7 @@ class InferenceSession
         return $providers;
     }
 
-    private function loadSession($path, $sessionOptions)
+    private function loadSession($path, $sessionOptions): ?CData
     {
         $session = $this->ffi->new('OrtSession*');
         if (is_resource($path) && get_resource_type($path) == 'stream') {
@@ -303,14 +284,14 @@ class InferenceSession
         return $session;
     }
 
-    private function loadAllocator()
+    private function loadAllocator(): ?CData
     {
         $allocator = $this->ffi->new('OrtAllocator*');
         $this->checkStatus(($this->api->GetAllocatorWithDefaultOptions)(\FFI::addr($allocator)));
         return $allocator;
     }
 
-    private function loadInputs()
+    private function loadInputs(): array
     {
         $inputs = [];
         $numInputNodes = $this->ffi->new('size_t');
@@ -327,7 +308,7 @@ class InferenceSession
         return $inputs;
     }
 
-    private function loadOutputs()
+    private function loadOutputs(): array
     {
         $outputs = [];
         $numOutputNodes = $this->ffi->new('size_t');
@@ -346,7 +327,7 @@ class InferenceSession
         return $outputs;
     }
 
-    private function convertInputTensorToOnnxTensor($inputFeed, &$refs)
+    private function convertInputTensorToOnnxTensor($inputFeed, &$refs): ?CData
     {
         $allocatorInfo = $this->ffi->new('OrtMemoryInfo*');
         $this->checkStatus(($this->api->CreateCpuMemoryInfo)(1, 0, \FFI::addr($allocatorInfo)));
@@ -396,7 +377,7 @@ class InferenceSession
                 if (isset($inputTypes[$inp['type']])) {
                     $typeEnum = $inputTypes[$inp['type']];
                     $castType = $this->castTypes()[$typeEnum];
-                    $phpTensorType = self::ONNX_TENSOR_TYPE_TO_PHP_TENSOR_MAP[$typeEnum];
+                    $phpTensorType = $this->phpTensorTypes()[$typeEnum];
                     $input = $input->to($phpTensorType);
                 } else {
                     $this->unsupportedType('input', $inp['type']);
@@ -435,7 +416,7 @@ class InferenceSession
         }
     }
 
-    private function createNodeNames($names, &$refs)
+    private function createNodeNames($names, &$refs): CData
     {
         $namesSize = count($names);
         $ptr = $this->ffi->new("char*[$namesSize]");
@@ -447,7 +428,7 @@ class InferenceSession
         return $ptr;
     }
 
-    private function cstring($str)
+    private function cstring($str): CData
     {
         $bytes = strlen($str) + 1;
         // TODO fix?
@@ -488,7 +469,7 @@ class InferenceSession
                     $this->unsupportedType('element', $type);
                 }
 
-                $phpTensorType = self::ONNX_TENSOR_TYPE_TO_PHP_TENSOR_MAP[$type];
+                $phpTensorType = $this->phpTensorTypes()[$type];
 
                 $buffer = Tensor::newBuffer($outputTensorSize, $phpTensorType);
 
@@ -540,7 +521,7 @@ class InferenceSession
         }
     }
 
-    private function createStringsFromOnnxValue($outPtr, $outputTensorSize)
+    private function createStringsFromOnnxValue($outPtr, $outputTensorSize): array
     {
         $len = $this->ffi->new('size_t');
         $this->checkStatus(($this->api->GetStringTensorDataLength)($outPtr, \FFI::addr($len)));
@@ -560,7 +541,7 @@ class InferenceSession
         return $result;
     }
 
-    private static function checkStatus($status)
+    private static function checkStatus($status): void
     {
         if (!is_null($status)) {
             $message = (self::api()->GetErrorMessage)($status);
@@ -610,7 +591,7 @@ class InferenceSession
         }
     }
 
-    private function castTypes()
+    private function castTypes(): array
     {
         return [
             $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT => 'float',
@@ -627,7 +608,7 @@ class InferenceSession
         ];
     }
 
-    private function elementDataTypes()
+    private function elementDataTypes(): array
     {
         return [
             $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED => 'undefined',
@@ -650,7 +631,25 @@ class InferenceSession
         ];
     }
 
-    private function tensorTypeAndShape($tensorInfo)
+    private function phpTensorTypes(): array
+    {
+        return [
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT => Tensor::float32,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8 => Tensor::uint8,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_INT8 => Tensor::int8,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT16 => Tensor::uint16,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16 => Tensor::int16,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32 => Tensor::int32,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64 => Tensor::int64,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_BOOL => Tensor::bool,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_DOUBLE => Tensor::float64,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT32 => Tensor::uint32,
+            $this->ffi->ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT64 => Tensor::uint64,
+        ];
+    }
+
+
+    private function tensorTypeAndShape($tensorInfo): array
     {
         $type = $this->ffi->new('ONNXTensorElementDataType');
         $this->checkStatus(($this->api->GetTensorElementType)($tensorInfo, \FFI::addr($type)));
