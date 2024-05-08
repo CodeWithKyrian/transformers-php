@@ -24,7 +24,7 @@
     "rokka/imagine-vips": "^0.31.0",
     "rindow/rindow-math-matrix": "^2.0",
     "rindow/rindow-matlib-ffi": "^1.0",
-    "rindow/rindow-openblas-ffi": "^1.0",
+    "rindow/rindow-openblas-ffi": "^1.0"
   },
   "require-dev": {
     "pestphp/pest": "^2.31",
