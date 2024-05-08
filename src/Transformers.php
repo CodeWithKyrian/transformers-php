@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use OnnxRuntime\Vendor;
+use Codewithkyrian\Transformers\Utils\Vendor;
 use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 class Transformers

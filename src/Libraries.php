@@ -22,8 +22,11 @@ enum Libraries
 
     protected const LIBRARIES = [
         'x86_64-darwin' => [
-            'archive' => 'libraries-osx-x86_64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            'archive' => [
+                'name' => 'libraries-osx-x86_64-{{version}}',
+                'format' => 'tar.gz',
+                'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            ],
             'rindowmatlib.serial' => [
                 'folder' => 'rindow-matlib-Darwin-{{version}}',
                 'lib' => 'librindowmatlib_serial.dylib',
@@ -62,8 +65,11 @@ enum Libraries
         ],
 
         'arm64-darwin' => [
-            'archive' => 'libraries-osx-arm64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            'archive' => [
+                'name' => 'libraries-osx-arm64-{{version}}',
+                'format' => 'tar.gz',
+                'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            ],
             'rindowmatlib.serial' => [
                 'folder' => 'rindow-matlib-Darwin-{{version}}',
                 'lib' => 'librindowmatlib_serial.dylib',
@@ -102,8 +108,11 @@ enum Libraries
         ],
 
         'x86_64-linux' => [
-            'archive' => 'libraries-linux-x86_64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            'archive' => [
+                'name' => 'libraries-linux-x86_64-{{version}}',
+                'format' => 'tar.gz',
+                'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            ],
             'rindowmatlib.serial' => [
                 'folder' => 'rindow-matlib-Linux-{{version}}',
                 'lib' => 'librindowmatlib_serial.so',
@@ -142,8 +151,11 @@ enum Libraries
         ],
 
         'aarch64-linux' => [
-            'archive' => 'libraries-linux-arm64-{{version}}.tar.gz',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            'archive' => [
+                'name' => 'libraries-linux-arm64-{{version}}',
+                'format' => 'tar.gz',
+                'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            ],
             'rindowmatlib.serial' => [
                 'folder' => 'rindow-matlib-Linux-{{version}}',
                 'lib' => 'librindowmatlib_serial.so',
@@ -182,8 +194,11 @@ enum Libraries
         ],
 
         'x64-windows' => [
-            'archive' => 'libraries-windows-x64-{{version}}.zip',
-            'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            'archive' => [
+                'name' => 'libraries-windows-x64-{{version}}',
+                'format' => 'zip',
+                'checksum' => 'f72a2bcca40e2650756c6b96c69ef031236aaab1b98673e744da4eef0c4bddbd',
+            ],
             'rindowmatlib.serial' => [
                 'folder' => 'rindow-matlib-Windows-{{version}}',
                 'lib' => 'rindowmatlib_serial.dll',

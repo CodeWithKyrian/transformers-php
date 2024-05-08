@@ -1,19 +1,17 @@
 <?php
 
-declare(strict_types=1);
+namespace Codewithkyrian\Transformers\OnnxRuntime;
 
-
-namespace Codewithkyrian\Transformers\Utils;
-
-use OnnxRuntime\Exception;
-use OnnxRuntime\FFI;
+use Exception;
+use Codewithkyrian\Transformers\Utils\Tensor;
+use FFI\CData;
 
 class InferenceSession
 {
-    private $ffi;
+    private \FFI $ffi;
     private mixed $api;
-    private $session;
-    private $allocator;
+    private ?CData $session;
+    private ?CData $allocator;
     private array $inputs;
     private array $outputs;
 
