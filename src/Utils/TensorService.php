@@ -2,81 +2,54 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\Libraries;
+use Codewithkyrian\Transformers\Transformers;
+use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
 use Rindow\Math\Matrix\Drivers\AbstractMatlibService;
 use Rindow\Matlib\FFI\MatlibFactory;
 use Rindow\OpenBLAS\FFI\OpenBLASFactory;
 
 class TensorService extends AbstractMatlibService
 {
-
-    public function __construct(
-        object $bufferFactory = null,
-        object $mathFactory = null,
-        object $openblasFactory = null,
-        object $openclFactory = null,
-        object $clblastFactory = null,
-        object $blasCLFactory = null,
-        object $mathCLFactory = null,
-        object $bufferCLFactory = null,
-    )
-    {
-        [$openblasFactory, $mathFactory, $bufferFactory] = $this->initializeFactories();
-
-        parent::__construct(
-            bufferFactory: $bufferFactory,
-            openblasFactory: $openblasFactory,
-            mathFactory: $mathFactory,
-            openclFactory: $openclFactory,
-            clblastFactory: $clblastFactory,
-            blasCLFactory: $blasCLFactory,
-            mathCLFactory: $mathCLFactory,
-            bufferCLFactory: $bufferCLFactory,
-        );
-    }
-
-    private function initializeFactories(): array
+    protected function injectDefaultFactories(): void
     {
         $bufferFactory = new TensorBufferFactory();
 
         // Try initializing OpenMP-compatible factories
         $openblasFactory = new OpenBLASFactory(
-            headerFile: Libraries::OpenBlas_OpenMP->headerFile(),
-            libFiles: [Libraries::OpenBlas_OpenMP->libFile()],
-            lapackeLibs: [Libraries::Lapacke_OpenMP->libFile()],
+            headerFile: Libraries::OpenBlas_OpenMP->headerFile(Transformers::$libsDir),
+            libFiles: [Libraries::OpenBlas_OpenMP->libFile(Transformers::$libsDir)],
+            lapackeLibs: [Libraries::Lapacke_OpenMP->libFile(Transformers::$libsDir)],
         );
 
         $mathFactory = new MatlibFactory(
-            libFiles: [Libraries::RindowMatlib_OpenMP->libFile()]
+            libFiles: [Libraries::RindowMatlib_OpenMP->libFile(Transformers::$libsDir)]
         );
 
         // Check if OpenMP-compatible factories are available
         if ($openblasFactory->isAvailable() && $mathFactory->isAvailable()) {
-            return [$openblasFactory, $mathFactory, $bufferFactory];
+            $this->openblasFactory = $openblasFactory;
+            $this->mathFactory = $mathFactory;
+            $this->bufferFactory = $bufferFactory;
         }
 
         // If OpenMP is not available, try initializing serial-compatible factories
         $openblasFactory = new OpenBLASFactory(
-            headerFile: Libraries::OpenBlas_Serial->headerFile(),
-            libFiles: [Libraries::OpenBlas_Serial->libFile()],
-            lapackeLibs: [Libraries::Lapacke_Serial->libFile()],
+            headerFile: Libraries::OpenBlas_Serial->headerFile(Transformers::$libsDir),
+            libFiles: [Libraries::OpenBlas_Serial->libFile(Transformers::$libsDir)],
+            lapackeLibs: [Libraries::Lapacke_Serial->libFile(Transformers::$libsDir)],
         );
 
         $mathFactory = new MatlibFactory(
-            libFiles: [Libraries::RindowMatlib_Serial->libFile()]
+            libFiles: [Libraries::RindowMatlib_Serial->libFile(Transformers::$libsDir)]
         );
 
         // Check if serial-compatible factories are available
         if ($openblasFactory->isAvailable() && $mathFactory->isAvailable()) {
-            return [$openblasFactory, $mathFactory, $bufferFactory];
+            $this->openblasFactory = $openblasFactory;
+            $this->mathFactory = $mathFactory;
+            $this->bufferFactory = $bufferFactory;
         }
-
-        // If neither OpenMP nor serial is available, return null values,
-        return [null, null, null];
     }
-
-
 }

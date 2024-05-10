@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * This file is a heavily modified version of the original file from the onnxruntime-php repository.
+ *
+ * Original source: https://github.com/ankane/onnxruntime-php/blob/master/src/InferenceSession.php
+ * The original file is licensed under the MIT License.
+ */
+
 namespace Codewithkyrian\Transformers\OnnxRuntime;
 
 use Exception;

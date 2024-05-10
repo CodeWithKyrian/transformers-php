@@ -24,11 +24,15 @@
     {
       "type": "path",
       "url": "../"
+    },
+    {
+      "type": "vcs",
+      "url": "https://github.com/CodeWithKyrian/transformers-libraries-downloader"
     }
   ],
   "config": {
     "allow-plugins": {
-      "codewithkyrian/onnxruntime-downloader-plugin": true
+      "codewithkyrian/transformers-libraries-downloader": true
     }
   }
 }

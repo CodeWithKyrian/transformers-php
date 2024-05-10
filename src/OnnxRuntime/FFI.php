@@ -1,8 +1,16 @@
 <?php
 
+/**
+ * This file is a modified version of the original file from the onnxruntime-php repository.
+ *
+ * Original source: https://github.com/ankane/onnxruntime-php/blob/master/src/FFI.php
+ * The original file is licensed under the MIT License.
+ */
+
 namespace Codewithkyrian\Transformers\OnnxRuntime;
 
-use Codewithkyrian\Transformers\Libraries;
+use Codewithkyrian\Transformers\Transformers;
+use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
 
 class FFI
 {
@@ -12,8 +20,8 @@ class FFI
     public static function instance(): \FFI
     {
         if (!isset(self::$instance)) {
-            $headerCode = file_get_contents(Libraries::OnnxRuntime->headerFile());
-            self::$instance = \FFI::cdef($headerCode, Libraries::OnnxRuntime->libFile());
+            $headerCode = file_get_contents(Libraries::OnnxRuntime->headerFile(Transformers::$libsDir));
+            self::$instance = \FFI::cdef($headerCode, Libraries::OnnxRuntime->libFile(Transformers::$libsDir));
         }
 
         return self::$instance;

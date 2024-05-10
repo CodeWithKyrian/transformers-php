@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use Codewithkyrian\Transformers\Utils\Vendor;
-use function Codewithkyrian\Transformers\Utils\joinPaths;
 
 class Transformers
 {
     public static string $cacheDir = '.transformers-cache';
+
+    public static string $libsDir = __DIR__ . '/../libs';
 
     public static string $remoteHost = 'https://huggingface.co';
 
@@ -42,6 +41,18 @@ class Transformers
     public function setCacheDir(?string $cacheDir): static
     {
         if ($cacheDir != null) self::$cacheDir = $cacheDir;
+
+        return $this;
+    }
+
+    /**
+     * Set the default directory for shared libraries
+     * @param string|null $libsDir
+     * @return $this
+     */
+    public function setLibsDir(?string $libsDir): static
+    {
+        if ($libsDir != null) self::$libsDir = $libsDir;
 
         return $this;
     }
