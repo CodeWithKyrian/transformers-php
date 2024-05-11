@@ -6,10 +6,8 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Image To Text pipeline using a `AutoModelForVision2Seq`. This pipeline predicts a caption for a given image.

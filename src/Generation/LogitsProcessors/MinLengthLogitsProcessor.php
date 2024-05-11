@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * A logits processor that enforces a minimum number of tokens.

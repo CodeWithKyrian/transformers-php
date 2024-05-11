@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Output;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * Base class for outputs of token classification models.

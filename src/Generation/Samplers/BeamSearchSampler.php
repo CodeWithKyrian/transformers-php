@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
-use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class BeamSearchSampler extends Sampler
 {

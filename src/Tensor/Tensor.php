@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\Utils;
+namespace Codewithkyrian\Transformers\Tensor;
 
 use ArrayObject;
 use Countable;
@@ -16,7 +16,6 @@ use LogicException;
 use OutOfRangeException;
 use Rindow\Math\Matrix\Complex;
 use Rindow\Math\Matrix\ComplexUtils;
-use Rindow\Math\Matrix\Drivers\MatlibPHP\MatlibPhp;
 use Rindow\Math\Matrix\Drivers\Service;
 use Rindow\Math\Matrix\MatrixOperator;
 use Rindow\Math\Matrix\Range;

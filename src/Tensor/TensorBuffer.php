@@ -1,14 +1,14 @@
 <?php
 
-namespace Codewithkyrian\Transformers\Utils;
+namespace Codewithkyrian\Transformers\Tensor;
 
+use FFI;
 use Interop\Polite\Math\Matrix\LinearBuffer;
 use Interop\Polite\Math\Matrix\NDArray;
-use TypeError;
 use InvalidArgumentException;
-use OutOfRangeException;
 use LogicException;
-use FFI;
+use OutOfRangeException;
+use TypeError;
 
 class complex_t
 {
@@ -172,7 +172,7 @@ class TensorBuffer implements LinearBuffer
                 throw new InvalidArgumentException("Cannot convert to complex number.: " . $type);
             }
 
-            /** @var complex_t $value */
+            /** @var \Codewithkyrian\Transformers\Utils\complex_t $value */
             $value = self::$ffi->new(self::$typeString[$this->dtype]);
             $value->real = $real;
             $value->imag = $imag;

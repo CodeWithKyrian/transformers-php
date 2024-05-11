@@ -18,7 +18,6 @@
     "codewithkyrian/jinja-php": "^1.0",
     "codewithkyrian/transformers-libraries-downloader": "^1.0@dev",
     "imagine/imagine": "^1.3",
-    "guzzlehttp/guzzle": "^7.0",
     "symfony/console": "^6.4|^7.0",
     "rokka/imagine-vips": "^0.31.0",
     "rindow/rindow-math-matrix": "^2.0",
@@ -63,7 +62,9 @@
   ],
   "scripts": {
     "test": "vendor/bin/pest",
-    "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage"
+    "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage",
+    "post-install-cmd": "Codewithkyrian\\Transformers\\Utils\\LibsChecker::check",
+    "post-update-cmd": "Codewithkyrian\\Transformers\\Utils\\LibsChecker::check"
   },
   "archive": {
     "exclude": [

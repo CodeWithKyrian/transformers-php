@@ -7,8 +7,8 @@ namespace Codewithkyrian\Transformers\Models;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Interop\Polite\Math\Matrix\NDArray;
 
 enum ModelArchitecture: string

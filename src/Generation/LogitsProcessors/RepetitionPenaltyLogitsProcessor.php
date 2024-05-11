@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * This processor penalizes the repetition of tokens in the generated text.

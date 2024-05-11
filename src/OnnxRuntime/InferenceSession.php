@@ -9,8 +9,8 @@
 
 namespace Codewithkyrian\Transformers\OnnxRuntime;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Exception;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use FFI\CData;
 
 class InferenceSession

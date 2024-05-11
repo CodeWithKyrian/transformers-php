@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\Utils;
+namespace Codewithkyrian\Transformers\Tensor;
 
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\TransformersLibrariesDownloader\Libraries;

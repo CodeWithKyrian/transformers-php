@@ -25,13 +25,12 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Error;
 use Exception;
-use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
 
 /**
@@ -85,11 +84,11 @@ class PretrainedModel
         string            $revision = 'main',
         ?string           $modelFilename = null,
         ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ?OutputInterface  $output = null
+        ?callable $onProgress = null
     ): self
     {
         if (is_array($config)) {
-            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
+            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
         }
 
         $quantizedSuffix = $quantized ? '_quantized' : '';
@@ -102,8 +101,7 @@ class PretrainedModel
                     fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output,
-//                    providers: ['CoreMLExecutionProvider']
+                    onProgress: $onProgress,
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -112,7 +110,7 @@ class PretrainedModel
                     cacheDir: $cacheDir,
                     revision: $revision,
                     fatal: false,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
@@ -128,7 +126,7 @@ class PretrainedModel
                     fileName: "encoder_model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output,
+                    onProgress: $onProgress,
                 );
 
                 $decoderSession = self::constructSession(
@@ -136,7 +134,7 @@ class PretrainedModel
                     fileName: "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output,
+                    onProgress: $onProgress,
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -145,7 +143,7 @@ class PretrainedModel
                     cacheDir: $cacheDir,
                     revision: $revision,
                     fatal: false,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
@@ -161,7 +159,7 @@ class PretrainedModel
                     fileName: "vision_encoder$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $promptMaskEncoder = self::constructSession(
@@ -169,7 +167,7 @@ class PretrainedModel
                     fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
@@ -182,7 +180,7 @@ class PretrainedModel
                     fileName: "encoder_model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $decoderSession = self::constructSession(
@@ -190,7 +188,7 @@ class PretrainedModel
                     fileName: "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
@@ -208,7 +206,7 @@ class PretrainedModel
                     fileName: $modelFilename ?? "model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
 
@@ -227,7 +225,7 @@ class PretrainedModel
      * @param string $subFolder In case the relevant files are located inside a subfolder of the model repo or
      * directory, indicate it here.
      * @param bool $fatal Whether to raise an error if the file could not be loaded.
-     * @param OutputInterface|null $output
+     * @param callable|null $onProgress
      * @param mixed ...$sessionOptions
      * @return InferenceSession|null
      * @throws HubException
@@ -240,13 +238,13 @@ class PretrainedModel
         string           $revision = 'main',
         string           $subFolder = '',
         bool             $fatal = true,
-        ?OutputInterface $output = null,
+        ?callable $onProgress = null,
                          ...$sessionOptions
     ): ?InferenceSession
     {
         $modelFileName = sprintf('onnx/%s.onnx', $fileName);
 
-        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
+        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
 
         if ($file === null) return null;
 

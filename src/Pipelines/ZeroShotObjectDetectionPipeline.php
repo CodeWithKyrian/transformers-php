@@ -6,7 +6,6 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\getBoundingBox;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 

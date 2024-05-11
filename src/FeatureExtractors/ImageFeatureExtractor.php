@@ -5,11 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FeatureExtractors;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Imagine\Image\Point;
-use Interop\Polite\Math\Matrix\NDArray;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class ImageFeatureExtractor extends FeatureExtractor
 {
@@ -165,12 +163,17 @@ class ImageFeatureExtractor extends FeatureExtractor
     public function padImage(
         Tensor    $imageTensor,
         int|array $padSize,
+        string $tensorFormat = 'CHW', // 'HWC' or 'CHW
         string    $mode = 'constant',
         bool      $center = false,
         int       $constantValues = 0
     ): Tensor
     {
-        [$imageHeight, $imageWidth, $imageChannels] = $imageTensor->shape();
+        if ($tensorFormat === 'CHW') {
+            [$imageChannels, $imageHeight, $imageWidth] = $imageTensor->shape();
+        } else {
+            [$imageHeight, $imageWidth, $imageChannels] = $imageTensor->shape();
+        }
 
         if (is_array($padSize)) {
             $paddedImageWidth = $padSize['width'];

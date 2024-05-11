@@ -5,9 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
-use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class MultinomialSampler extends Sampler
 {

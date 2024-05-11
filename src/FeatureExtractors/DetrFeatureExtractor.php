@@ -6,10 +6,9 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\FeatureExtractors;
 
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
-use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Processors\Processor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Interop\Polite\Math\Matrix\NDArray;
 
 class DetrFeatureExtractor extends ImageFeatureExtractor

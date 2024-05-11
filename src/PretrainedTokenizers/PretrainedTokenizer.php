@@ -12,9 +12,9 @@ use Codewithkyrian\Transformers\Normalizers\Normalizer;
 use Codewithkyrian\Transformers\PostProcessors\PostProcessedOutput;
 use Codewithkyrian\Transformers\PostProcessors\PostProcessor;
 use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
 use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Error;
 use Exception;
 

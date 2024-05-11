@@ -8,9 +8,8 @@ use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 use Codewithkyrian\Transformers\Processors\Processor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class Pipeline
 {
@@ -64,7 +63,7 @@ function pipeline(
     ?string          $cacheDir = null,
     string           $revision = 'main',
     ?string          $modelFilename = null,
-    ?OutputInterface $output = null
+    ?callable $onProgress = null
 ): Pipeline
 {
     if (is_string($task)) {
@@ -78,11 +77,11 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->autoModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $output);
+    $model = $task->autoModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
 
-    $tokenizer = $task->autoTokenizer($modelName, $cacheDir, $revision, $output);
+    $tokenizer = $task->autoTokenizer($modelName, $cacheDir, $revision, $onProgress);
 
-    $processor = $task->autoProcessor($modelName, $config, $cacheDir, $revision, $output);
+    $processor = $task->autoProcessor($modelName, $config, $cacheDir, $revision, $onProgress);
 
     return $task->pipeline($model, $tokenizer, $processor);
 }

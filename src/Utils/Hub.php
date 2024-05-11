@@ -6,11 +6,8 @@ namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Transformers;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Psr7\Utils;
+use Exception;
 use Symfony\Component\Console\Helper\ProgressBar;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Utility class to download files from the Hugging Face Hub
@@ -50,14 +47,13 @@ class Hub
      */
 
     public static function getFile(
-        string           $pathOrRepoID,
-        string           $fileName,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        string           $subFolder = '',
-        bool             $fatal = true,
-        Client           $client = null,
-        ?OutputInterface $output = null
+        string    $pathOrRepoID,
+        string    $fileName,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        string    $subFolder = '',
+        bool      $fatal = true,
+        ?callable $onProgress = null
     ): ?string
     {
         # Local cache and file paths
@@ -89,42 +85,38 @@ class Hub
             }
         }
 
-
         # Create directory structure if needed
         ensureDirectory($filePath);
 
-        $headers = [
-            'User-Agent' => Transformers::$userAgent
+        $options = [
+            'http' => [
+                'header' => [
+                    'Range: bytes=' . $downloadedBytes . '-',
+                ],
+                'User-Agent' => Transformers::$userAgent,
+            ],
         ];
 
         if (Transformers::$authToken) {
-            $headers['Authorization'] = 'Bearer ' . Transformers::$authToken;
-        }
-
-        $client ??= new Client(['headers' => $headers]);
-
-        $options = [
-            'headers' => ['Range' => 'bytes=' . $downloadedBytes . '-'],
-            'sink' => Utils::tryFopen($partPath, 'w'),
-        ];
-
-        if ($output != null) {
-            ProgressBar::setFormatDefinition('hub', '%filename% : [%bar%] %percent:3s%%');
-
-            $progressBar = new ProgressBar($output, 100);
-            $progressBar->setFormat('hub');
-            $progressBar->setBarCharacter('<fg=green>•</>');
-            $progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
-            $progressBar->setProgressCharacter('<fg=green>➤</>');
-            $progressBar->setMessage("✔ Downloading $fileName", 'filename');
-
-            $options['progress'] = self::onProgress($progressBar);
+            $options['http']['header'][] = 'Authorization: Bearer ' . Transformers::$authToken;
         }
 
         try {
-            $client->get($remoteURL, $options);
+            if ($onProgress) {
+                $onProgress('begin_download', $fileName, 0, 0, 0, 0);
+            }
 
-            if($output != null) echo "\n"; // New line to since Symphony ProgressBar doesn't add a new line.
+            $progressCallback = function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($onProgress, $fileName) {
+                if ($onProgress) {
+                    $onProgress('advance_download', $fileName, $downloadSize, $downloaded, $uploadSize, $uploaded);
+                }
+            };
+
+            Downloader::download($remoteURL, $partPath, $options, $progressCallback);
+
+            if ($onProgress) {
+                $onProgress('complete_download', $fileName, 0, 0, 0, 0);
+            }
 
             # Combine part files if necessary
             if ($partCounter > 1) {
@@ -134,7 +126,7 @@ class Hub
             }
 
             return $filePath;
-        } catch (GuzzleException $e) {
+        } catch (Exception $e) {
             self::handleException($e->getCode(), $remoteURL, $fatal);
         }
 
@@ -145,16 +137,16 @@ class Hub
      * @throws HubException
      */
     public static function getJson(
-        string           $pathOrRepoID,
-        string           $fileName,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        string           $subFolder = '',
-        bool             $fatal = true,
-        ?OutputInterface $output = null
+        string    $pathOrRepoID,
+        string    $fileName,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        string    $subFolder = '',
+        bool      $fatal = true,
+        ?callable $onProgress = null
     ): ?array
     {
-        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
+        $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
 
         if ($file === null) {
             return null;

@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 require_once './bootstrap.php';
+
+ini_set('memory_limit', '2048M');
 
 function toTensorTest(ImageDriver $imageDriver): Tensor
 {
@@ -18,7 +20,7 @@ function toTensorTest(ImageDriver $imageDriver): Tensor
         ->setImageDriver($imageDriver)
         ->apply();
 
-    $image = Image::read('images/butterfly.jpg');
+    $image = Image::read('images/kyrian-cartoon.jpeg');
 
     $image->rgb();
 
@@ -47,13 +49,13 @@ function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor) : Image
 dump("------------ toTensor ------------");
 $tensor = toTensorTest(ImageDriver::IMAGICK);
 $tensor = toTensorTest(ImageDriver::GD);
-//$tensor = toTensorTest(ImageDriver::VIPS);
+$tensor = toTensorTest(ImageDriver::VIPS);
 
 
 dump("------------ fromTensor ------------");
 $image = fromTensorTest(ImageDriver::IMAGICK, $tensor);
 $image = fromTensorTest(ImageDriver::GD, $tensor);
-//$image = fromTensorTest(ImageDriver::VIPS, $tensor);
+$image = fromTensorTest(ImageDriver::VIPS, $tensor);
 
 // Save the image
-$image->save('images/butterfly-converted.jpg');
+//$image->save('images/images/kyrian-cartoon-converted.jpeg');

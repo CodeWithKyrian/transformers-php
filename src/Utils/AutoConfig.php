@@ -6,7 +6,6 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Utils;
 
 use ArrayAccess;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class AutoConfig implements ArrayAccess
 {
@@ -38,7 +37,7 @@ class AutoConfig implements ArrayAccess
         ?array  $config = null,
         ?string $cacheDir = null,
         string  $revision = 'main',
-        ?OutputInterface $output = null
+        ?callable $onProgress = null
     ): self
     {
         $data = $config ?? Hub::getJson(
@@ -47,7 +46,7 @@ class AutoConfig implements ArrayAccess
             cacheDir: $cacheDir,
             revision: $revision,
             fatal: false,
-            output: $output
+            onProgress: $onProgress
         );
 
         return new self($data);

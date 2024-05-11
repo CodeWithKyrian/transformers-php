@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 
 class MBartTokenizer extends PretrainedTokenizer
 {

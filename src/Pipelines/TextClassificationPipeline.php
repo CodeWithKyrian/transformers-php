@@ -6,8 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
-use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * Text classification pipeline

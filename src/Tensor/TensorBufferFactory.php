@@ -1,6 +1,6 @@
 <?php
 
-namespace Codewithkyrian\Transformers\Utils;
+namespace Codewithkyrian\Transformers\Tensor;
 
 use FFI;
 

@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * A LogitsProcessor that forces a BOS token at the beginning of the generated sequence.

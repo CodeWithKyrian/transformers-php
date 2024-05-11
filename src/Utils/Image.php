@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Exception;
 use Imagick;
 use Imagine\Image\AbstractImagine;

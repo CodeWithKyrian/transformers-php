@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 
 /**
  * Sampler is a base class for all sampling methods used for text generation.
