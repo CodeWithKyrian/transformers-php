@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * A logits processor that enforces a minimum number of tokens.
@@ -31,7 +30,7 @@ class MinLengthLogitsProcessor extends LogitsProcessor
     /**
      * @inheritDoc
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         if (count($inputIds) < $this->minLength) {
             foreach ($this->eosTokenId as $id) {

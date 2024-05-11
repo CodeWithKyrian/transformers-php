@@ -6,7 +6,6 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\getBoundingBox;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
@@ -69,9 +68,7 @@ class ZeroShotObjectDetectionPipeline extends Pipeline
         $toReturn = [];
         foreach ($preparedImages as $i => $image) {
             $imageSize = $percentage ? null : [[$image->height(), $image->width()]];
-            $pixelValues = $modelInputs['pixel_values'][$i];
-
-            $pixelValues = Tensor::fromArray($pixelValues)->unsqueeze(0);
+            $pixelValues = $modelInputs['pixel_values'][$i]->unsqueeze(0);
 
             // Run model with both text and pixel inputs
             /** @var ObjectDetectionOutput $output */

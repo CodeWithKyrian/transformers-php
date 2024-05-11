@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use OnnxRuntime\Vendor;
 
 class Transformers
 {
     public static string $cacheDir = '.transformers-cache';
+
+    public static string $libsDir = __DIR__ . '/../libs';
 
     public static string $remoteHost = 'https://huggingface.co';
 
@@ -30,11 +30,7 @@ class Transformers
 
     public function apply(): void
     {
-        Image::$imagine = match (self::$imageDriver) {
-            ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
-            ImageDriver::GD => new \Imagine\GD\Imagine(),
-            ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
-        };
+        Image::setDriver(self::$imageDriver);
     }
 
     /**
@@ -45,6 +41,18 @@ class Transformers
     public function setCacheDir(?string $cacheDir): static
     {
         if ($cacheDir != null) self::$cacheDir = $cacheDir;
+
+        return $this;
+    }
+
+    /**
+     * Set the default directory for shared libraries
+     * @param string|null $libsDir
+     * @return $this
+     */
+    public function setLibsDir(?string $libsDir): static
+    {
+        if ($libsDir != null) self::$libsDir = $libsDir;
 
         return $this;
     }
@@ -106,15 +114,5 @@ class Transformers
         self::$imageDriver = $imageDriver;
 
         return $this;
-    }
-
-    public static function platform($key): string
-    {
-        $platformKey = match (PHP_OS_FAMILY) {
-            'Windows' => 'x64-windows',
-            'Darwin' => php_uname('m') == 'x86_64' ? 'x86_64-darwin' : 'arm64-darwin',
-            default => php_uname('m') == 'x86_64' ? 'x86_64-linux' : 'aarch64-linux',
-        };
-        return Vendor::PLATFORMS[$platformKey][$key];
     }
 }

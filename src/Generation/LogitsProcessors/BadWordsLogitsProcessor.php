@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class BadWordsLogitsProcessor extends LogitsProcessor
 {
@@ -23,7 +22,7 @@ class BadWordsLogitsProcessor extends LogitsProcessor
     /**
      * @inheritDoc
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         foreach ($this->badWordsIds as $badWordIds) {
             // Whether to modify the logits of the last token in the bad word id sequence
@@ -40,7 +39,7 @@ class BadWordsLogitsProcessor extends LogitsProcessor
             }
             if ($mark) {
                 $lastBadWordIdIndex = array_pop($badWordIds);
-                $logits['data'][$lastBadWordIdIndex] = -INF;
+                $logits->buffer()[$lastBadWordIdIndex] = -INF;
             }
         }
 

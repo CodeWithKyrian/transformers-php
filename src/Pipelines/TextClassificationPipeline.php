@@ -6,8 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
-use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 /**
  * Text classification pipeline
@@ -62,17 +61,15 @@ class TextClassificationPipeline extends Pipeline
     {
         $topK = $args["topK"] ?? 1;
 
-
-        $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
+        $modelInputs = $this->tokenizer->tokenize($inputs, padding: true, truncation: true);
 
         /** @var SequenceClassifierOutput $outputs */
         $outputs = $this->model->__invoke($modelInputs);
 
-        // Define function to apply based on problem type
         $problemType = $this->model->config['problem_type'] ?? 'single_label_classification';
 
         $activationFunction = $problemType == 'multi_label_classification' ?
-            fn(Tensor $batch) => $batch->sigmoid()->toArray() :
+            fn(Tensor $batch) => $batch->sigmoid() :
             fn(Tensor $batch) => $batch->softmax();
 
         $id2label = $this->model->config['id2label'];
@@ -80,14 +77,14 @@ class TextClassificationPipeline extends Pipeline
 
         foreach ($outputs->logits as $batch) {
             $output = $activationFunction($batch);
-            $scores = Math::getTopItems($output, $topK);
 
-            $values = array_map(function ($score) use ($id2label) {
-                return [
-                    'label' => $id2label[$score[0]],
-                    'score' => $score[1],
-                ];
-            }, $scores);
+            [$scores, $indices] = $output->topk($topK);
+
+            $values = [];
+
+            foreach ($indices as $i => $index) {
+                $values[] = ['label' => $id2label[$index], 'score' => $scores[$i]];
+            }
 
             if ($topK === 1) {
                 $toReturn = $values;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 
 /**
  * Sampler is a base class for all sampling methods used for text generation.
@@ -44,24 +44,33 @@ abstract class Sampler
      * @param int $index
      * @return array
      */
-    public function getLogits(Tensor $logits, int $index): array
+    public function getLogits(Tensor $logits, int $index): Tensor
     {
-        $vocabSize = $logits->shape()[count($logits->shape()) - 1];
-        $logs = $logits->toBufferArray();
+        $vocabSize = $logits->shape()[$logits->ndim() - 1];
 
-        if ($index === -1) {
-            $logs = array_slice($logs, -$vocabSize);
-        } else {
-            $startIndex = $index * $vocabSize;
-            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
-        }
+//        $logs = $logits->buffer()->toArray();
+//
+//        if ($index === -1) {
+//            $logs = array_slice($logs, -$vocabSize);
+//        } else {
+//            $startIndex = $index * $vocabSize;
+//            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
+//        }
 
-        // add temperature
+        $start = array_fill(0, $logits->ndim(), 0);
+        $size = array_fill(0, $logits->ndim(), 1);
+
+        array_splice($start, -2, replacement: [$index, 0]);
+        array_splice($size, -2, replacement: [1, $vocabSize]);
+
+        $logs = $logits->newSlice($start, $size);
+
         if ($this->generationConfig->temperature > 0) {
-            $logs = array_map(fn($x) => $x / $this->generationConfig->temperature, $logs);
+            $logs = $logs->multiply(1 / $this->generationConfig->temperature);
         }
 
-        return $logs;
+        // Remove all dimensions of 1, leaving a flat 1D array of vocab_size
+        return $logs->squeeze();
     }
 
     /**
@@ -76,6 +85,7 @@ abstract class Sampler
 
         // Generate a random number between 0 and the sum of probabilities
         $r = mt_rand() / mt_getrandmax() * $sumProbabilities;
+
         foreach ($probabilities as $i => $probability) {
             $r -= $probability;
 

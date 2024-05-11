@@ -47,7 +47,7 @@ class QuestionAnsweringPipeline extends Pipeline
             $s1 = array_filter(
                 array_map(
                     fn($x) => [$x[0], $x[1]],
-                    array_map(null, $startLogits->softmax(), range(0, count($startLogits) - 1))
+                    array_map(null, $startLogits->softmax()->toArray(), range(0, count($startLogits) - 1))
                 ),
                 fn($x) => $x[1] > $sepIndex
             );
@@ -56,7 +56,7 @@ class QuestionAnsweringPipeline extends Pipeline
             $e1 = array_filter(
                 array_map(
                     fn($x) => [$x[0], $x[1]],
-                    array_map(null, $endLogits->softmax(), range(0, count($endLogits) - 1))
+                    array_map(null, $endLogits->softmax()->toArray(), range(0, count($endLogits) - 1))
                 ),
                 fn($x) => $x[1] > $sepIndex
             );
@@ -65,19 +65,13 @@ class QuestionAnsweringPipeline extends Pipeline
             $product = Math::product($s1, $e1);
 
             // Filter options and compute values
-            $options = array_filter($product, function ($x) {
-                return $x[0][1] <= $x[1][1];
-            });
+            $options = array_filter($product, fn($x) => $x[0][1] <= $x[1][1]);
 
             // Map options to desired format and sort
-            $options = array_map(function ($x) {
-                return [$x[0][1], $x[1][1], $x[0][0] * $x[1][0]];
-            }, $options);
+            $options = array_map(fn($x) => [$x[0][1], $x[1][1], $x[0][0] * $x[1][0]], $options);
 
             // Sort by score
-            usort($options, function ($a, $b) {
-                return $b[2] <=> $a[2];
-            });
+            usort($options, fn($a, $b) => $b[2] <=> $a[2]);
 
             $minLength = min(count($options), $topK);
 

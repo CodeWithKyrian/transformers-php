@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class GreedySampler extends Sampler
 {
@@ -21,12 +21,11 @@ class GreedySampler extends Sampler
     {
         // NOTE: no need to do log_softmax here since we only take the maximum
         $logs = $this->getLogits($logits, $index);
-        $argmax = array_search(max($logs), $logs);
 
         // Note: score is meaningless in this context, since we are performing
         // greedy search (p = 1 => log(p) = 0)
         return [
-            [$argmax, 0]
+            [$logs->argMax(), 0]
         ];
     }
 }

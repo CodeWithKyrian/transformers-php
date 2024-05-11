@@ -268,7 +268,6 @@ can leverage this interoperability to perform advanced image processing tasks wi
 
 ```php
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
 
 // Read an image
 $image = Image::read('path/to/image.jpg');

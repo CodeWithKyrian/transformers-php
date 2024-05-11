@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
+
 it('can create a new Tensor', function () {
     $tensor = new Tensor([1, 2, 3, 4]);
 

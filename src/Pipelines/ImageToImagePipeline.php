@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Exception;
 use Interop\Polite\Math\Matrix\NDArray;
 use function Codewithkyrian\Transformers\Utils\prepareImages;

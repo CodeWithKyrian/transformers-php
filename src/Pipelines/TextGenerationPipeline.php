@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Language generation pipeline using any `ModelWithLMHead` or `ModelForCausalLM`.
@@ -113,8 +114,10 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
+
         // Streamer can only handle one input at a time for now, so we only pass the first input
         $streamer?->init($this->tokenizer, $inputIds[0]->toArray(), true);
+
 
         $outputTokenIds = $this->model->generate($inputIds,
             generationConfig: $generationConfig,

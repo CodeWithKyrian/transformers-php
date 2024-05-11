@@ -10,7 +10,7 @@ $modelPath = __DIR__ . '/models/ssd_mobilenet_v1_10.onnx';
 
 $pixels = getPixels($img);
 
-$model = new OnnxRuntime\Model(__DIR__ . '/models/ssd_mobilenet_v1_10.onnx');
+$model = new Codewithkyrian\Transformers\Utils\Model(__DIR__ . '/models/ssd_mobilenet_v1_10.onnx');
 $result = $model->predict(['image_tensor:0' => [$pixels]]);
 
 foreach ($result['num_detections:0'] as $idx => $n) {

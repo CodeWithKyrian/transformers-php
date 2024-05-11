@@ -47,8 +47,7 @@ fromArray method. Below are examples of how to create tensors:
 ### Using the Constructor
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Interop\Polite\Math\Matrix\NDArray;
+use Codewithkyrian\Transformers\Tensor\Tensor;use Interop\Polite\Math\Matrix\NDArray;
 
 $data = [1, 2, 3, 4, 5, 6];
 $shape = [2, 3];
@@ -59,7 +58,7 @@ $tensor = new Tensor($data, $dtype, $shape); // If dtype is not provided, it def
 ### Using the fromArray Method
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
@@ -68,7 +67,7 @@ $tensor = Tensor::fromArray($data);
 ### Using zeros and ones methods
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $shape = [2, 3];
 $tensor = Tensor::zeros($shape); // Creates a tensor of zeros with the specified shape
@@ -78,7 +77,7 @@ $tensor = Tensor::ones($shape); // Creates a tensor of ones with the specified s
 ### Using zerosLike and onesLike methods
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
@@ -114,7 +113,7 @@ and buffer.
   Returns the tensor's flat buffer as a regular PHP array.
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 

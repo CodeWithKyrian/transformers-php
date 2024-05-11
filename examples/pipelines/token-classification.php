@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once './bootstrap.php';
 
-use Codewithkyrian\Transformers\Utils\AggregationStrategy;
+use Codewithkyrian\Transformers\Generation\AggregationStrategy;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 use function Codewithkyrian\Transformers\Utils\memoryUsage;
 use function Codewithkyrian\Transformers\Utils\timeUsage;

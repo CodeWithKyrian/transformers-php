@@ -5,8 +5,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-
 /**
  * Feature extraction pipeline using no model head. This pipeline extracts the hidden
  *  states from the base transformer, which can be used as features in downstream tasks.

@@ -80,11 +80,11 @@ it('combines part files correctly', function () {
 });
 
 it('downloads a file correctly', function () {
-    $mock = new MockHandler([new Response(200, [], 'File content')]);
+//    $mock = new MockHandler([new Response(200, [], 'File content')]);
+//
+//    $client = new Client(['handler' => $mock]);
 
-    $client = new Client(['handler' => $mock]);
-
-    $filePath = Hub::getFile('model_id', 'file.txt', client: $client);
+    $filePath = Hub::getFile('model_id', 'file.txt');
 
     expect($filePath)->toBe('tests/models/model_id/file.txt')
         ->and(file_exists($filePath))->toBeTrue()

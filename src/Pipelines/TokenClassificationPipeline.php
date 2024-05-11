@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Generation\AggregationStrategy;
 use Codewithkyrian\Transformers\Models\Output\TokenClassifierOutput;
-use Codewithkyrian\Transformers\Utils\AggregationStrategy;
 use Exception;
 
 /**
