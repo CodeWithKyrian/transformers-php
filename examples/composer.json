@@ -16,7 +16,6 @@
     "symfony/console": "^7.0",
     "codewithkyrian/transformers": "dev-bump-math-matrix"
   },
-  "minimum-stability": "dev",
   "require-dev": {
     "symfony/var-dumper": "^7.0"
   },
@@ -24,10 +23,6 @@
     {
       "type": "path",
       "url": "../"
-    },
-    {
-      "type": "vcs",
-      "url": "https://github.com/CodeWithKyrian/transformers-libraries-downloader"
     }
   ],
   "config": {
