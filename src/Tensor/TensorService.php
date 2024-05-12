@@ -27,11 +27,14 @@ class TensorService extends AbstractMatlibService
             libFiles: [Libraries::RindowMatlib_OpenMP->libFile(Transformers::$libsDir)]
         );
 
+
         // Check if OpenMP-compatible factories are available
         if ($openblasFactory->isAvailable() && $mathFactory->isAvailable()) {
             $this->openblasFactory = $openblasFactory;
             $this->mathFactory = $mathFactory;
             $this->bufferFactory = $bufferFactory;
+
+            return;
         }
 
         // If OpenMP is not available, try initializing serial-compatible factories
