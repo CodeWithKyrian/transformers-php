@@ -36,6 +36,14 @@ Transformers::setup()
     ->apply();
 ```
 
+If you're using the `Image` class directly, you can set the image driver using the `setImageDriver()` method.
+
+```php
+use Codewithkyrian\Transformers\Utils\Image;
+
+Image::setDriver(ImageDriver::GD);
+```
+
 ## Image Processing Operations
 
 The `Image` utility class provides a range of image processing operations that can be performed on images. These
@@ -101,6 +109,23 @@ operations include:
   ```php
   $resizedImage = $image->resize(300, 200);
   ```
+  
+- ### `thumbnail(int $width, int $height, int|Resample $resample = 2)`
+    Creates a thumbnail of the image with the specified width and height, using the specified resampling method. This
+    operation affects the instance it's called on, but still returns that instance for method chaining.
+    
+    Parameters:
+        - `$width` (int) The target width of the thumbnail.
+        - `$height` (int) The target height of the thumbnail.
+        - `$resample` (int|Resample) The resampling method to use. Default is `Resample::BICUBIC`.
+    
+    Returns:
+        - An image object representing the thumbnail.
+    
+    Example:
+    ```php
+    $thumbnailImage = $image->thumbnail(100, 100);
+    ```
 
 - ### `crop(int $xMin, int $yMin, int $xMax, int $yMax)`
   Crops the image to the specified bounding box defined by the top-left and bottom-right coordinates. This operation

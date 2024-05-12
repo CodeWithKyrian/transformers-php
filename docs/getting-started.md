@@ -22,14 +22,18 @@ You can install the library via Composer. This is the recommended way to install
 composer require codewithkyrian/transformers
 ```
 
-ONNX runtime will be installed automatically as well. For Windows users, it may take more time to install the ONNX
-library compared to Linux or macOS users (no shades 😅).
+All the shared libraries required by TransformersPHP will be installed automatically. If it fails for some reason, you
+can install them manually using the following command:
+
+```bash
+./vendor/bin/transformers install
+```
 
 > [!CAUTION]
-> The ONNX library is platform-specific, so it's important to run the composer require command on the target platform
-> where the code will be executed. In most cases, this will be your development machine or a server where you deploy
-> your
-> application, but if you're using a Docker container, run the `composer require` command inside that container.
+> The ONNX library is platform-specific, so it's important to run the `composer require`, or `transformers install`
+> command on the target platform where the code will be executed. In most cases, this will be your development machine
+> or a server where you deploy your application, but if you're using a Docker container, run the `composer require`
+> command inside that container.
 
 This command sets up everything you need to start using pre-trained ONNX models with TransformersPHP.
 

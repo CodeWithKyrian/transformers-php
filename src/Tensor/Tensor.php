@@ -404,6 +404,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return $this->unflattenArray($this->buffer, $idx, $this->shape);
     }
 
+    public function toString(): string
+    {
+        return $this->buffer->dump();
+    }
+
     /**
      * Convert the tensor into a flat array of the buffer contents.
      */
@@ -629,18 +634,18 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Return a new Tensor with every element multiplied by a constant.
      *
-     * @param float|int $scalar The constant to multiply by.
+     * @param float|int $value The constant to multiply by.
      *
      * @return self
      */
-    public function multiply(Tensor|float|int $scalar): self
+    public function multiply(Tensor|float|int $value): self
     {
         $mo = self::mo();
 
-        if ($scalar instanceof Tensor) {
-            $ndArray = $mo->la()->multiply($this, $scalar);
+        if ($value instanceof Tensor) {
+            $ndArray = $mo->la()->multiply($this, $value);
         } else {
-            $ndArray = $mo->la()->scal($scalar, $this);
+            $ndArray = $mo->la()->scal($value, $this);
         }
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
