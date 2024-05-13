@@ -8,7 +8,6 @@ use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
 use Rindow\Math\Matrix\Drivers\AbstractMatlibService;
 use Rindow\Matlib\FFI\MatlibFactory;
-use Rindow\OpenBLAS\FFI\OpenBLASFactory;
 
 class TensorService extends AbstractMatlibService
 {
@@ -20,13 +19,11 @@ class TensorService extends AbstractMatlibService
         $openblasFactory = new OpenBLASFactory(
             headerFile: Libraries::OpenBlas_OpenMP->headerFile(Transformers::$libsDir),
             libFiles: [Libraries::OpenBlas_OpenMP->libFile(Transformers::$libsDir)],
-            lapackeLibs: [Libraries::Lapacke_OpenMP->libFile(Transformers::$libsDir)],
         );
 
         $mathFactory = new MatlibFactory(
             libFiles: [Libraries::RindowMatlib_OpenMP->libFile(Transformers::$libsDir)]
         );
-
 
         // Check if OpenMP-compatible factories are available
         if ($openblasFactory->isAvailable() && $mathFactory->isAvailable()) {
@@ -41,7 +38,6 @@ class TensorService extends AbstractMatlibService
         $openblasFactory = new OpenBLASFactory(
             headerFile: Libraries::OpenBlas_Serial->headerFile(Transformers::$libsDir),
             libFiles: [Libraries::OpenBlas_Serial->libFile(Transformers::$libsDir)],
-            lapackeLibs: [Libraries::Lapacke_Serial->libFile(Transformers::$libsDir)],
         );
 
         $mathFactory = new MatlibFactory(

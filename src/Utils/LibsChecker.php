@@ -12,7 +12,7 @@ class LibsChecker
 {
     public static function check(): void
     {
-        echo "Checking TransformersPHP libraries...\n";
+        echo self::colorize("Checking TransformersPHP libraries.... ") . "\n";
 
         foreach (Libraries::cases() as $library) {
             if (!$library->exists(Transformers::$libsDir)) {
@@ -22,7 +22,7 @@ class LibsChecker
             }
         }
 
-        echo "All TransformersPHP libraries are installed\n";
+        echo self::colorize("All TransformersPHP libraries are installed") . "\n";
     }
 
     private static function downloadLibrary(string $name): void
@@ -33,11 +33,11 @@ class LibsChecker
         $downloadUrl = Libraries::joinPaths($baseUrl, "$name.$ext");
         $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php') . ".$ext";
 
-        echo "  - Downloading $name\n";
+        echo "  - Downloading " . self::colorize($name) . "\n";
 
         Downloader::download($downloadUrl, $downloadPath);
 
-        echo "  - Installing $name : Extracting archive\n";
+        echo "  - Installing " . self::colorize($name) . " : Extracting archive\n";
 
         $archive = new \PharData($downloadPath);
 
@@ -46,5 +46,16 @@ class LibsChecker
         }
 
         $archive->extractTo(Transformers::$libsDir);
+    }
+
+    private static function colorize(string $text, string $color = 'green'): string
+    {
+        $prefix = match ($color) {
+            'red' => "\033[31m",
+            'green' => "\033[32m",
+            'yellow' => "\033[33m",
+        };
+
+        return "$prefix$text\033[39m";
     }
 }

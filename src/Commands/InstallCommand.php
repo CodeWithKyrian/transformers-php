@@ -48,7 +48,7 @@ class InstallCommand extends Command
         }
 
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('? All done! Would you like to show some love by starring the Transformers repo on GitHub? ', true);
+        $question = new ConfirmationQuestion('? Would you like to show some love by starring the Transformers repo on GitHub? ', true);
 
         if ($helper->ask($input, $output, $question)) {
             if (PHP_OS_FAMILY === 'Darwin') {
