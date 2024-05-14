@@ -75,8 +75,7 @@ class DownloadModelCommand extends Command
                     $progressBar = $this->getProgressBar($filename, $output);
                     $percent = round(($downloaded / $downloadSize) * 100, 2);
                     $progressBar->setProgress((int)$percent);
-                }
-                elseif ($type === 'complete_download') {
+                } elseif ($type === 'complete_download') {
                     $progressBar = $this->getProgressBar($filename, $output);
                     $progressBar->finish();
                     $output->writeln('');
@@ -92,7 +91,8 @@ class DownloadModelCommand extends Command
 
             $output->writeln('✔ Model files downloaded successfully.');
 
-            $this->askToStar($input, $output);
+            $random = random_int(1, 100);
+            if ($random <= 30) $this->askToStar($input, $output);
 
             return Command::SUCCESS;
         } catch (Exception $e) {

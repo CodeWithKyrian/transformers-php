@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once './bootstrap.php';
 
 use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
-use function Codewithkyrian\Transformers\{Pipelines\pipeline};
+use function Codewithkyrian\Transformers\{Pipelines\pipeline, Utils\memoryUsage, Utils\timeUsage};
 
 ini_set('memory_limit', -1);
 
@@ -21,5 +21,5 @@ $query = 'In 5 steps, give me a guide on how to make a simple cake.';
 
 $output = $generator($query, streamer: $streamer, maxNewTokens: 256, doSample: true, repetitionPenalty: 1.1, temperature: 0.7);
 
-dd($output);
-//dd('Done', timeUsage(), memoryUsage());
+//dd($output);
+dd('Done', timeUsage(), memoryUsage());
