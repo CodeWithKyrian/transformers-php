@@ -7,8 +7,8 @@ namespace Codewithkyrian\Transformers\Models;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Interop\Polite\Math\Matrix\NDArray;
 
 enum ModelArchitecture: string
@@ -82,11 +82,13 @@ enum ModelArchitecture: string
     {
         $encoderFeeds = [];
 
-        foreach ($model->session->inputs() as ['name' => $inputName]) {
+        $inputNames = array_column($model->session->inputs(), 'name');
+
+        foreach ($inputNames as $inputName) {
             $encoderFeeds[$inputName] = $modelInputs[$inputName];
         }
 
-        $hasTokenTypeIds = in_array('token_type_ids', array_column($model->session->inputs(), 'name'));
+        $hasTokenTypeIds = in_array('token_type_ids', $inputNames);
 
         if ($hasTokenTypeIds) {
             // Assign default `token_type_ids` (all zeroes) to the `encoderFeeds` if the model expects it,
@@ -115,7 +117,7 @@ enum ModelArchitecture: string
         // 1. Prepare
         $modelInputs = [
             'input_ids' => $beam['model_input_ids'],
-            'attention_mask' => new Tensor($attnMaskData, NDArray::int64, [1, $attnMaskLength]),
+            'attention_mask' => new Tensor($attnMaskData, Tensor::int64, [1, $attnMaskLength]),
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
 
@@ -152,7 +154,7 @@ enum ModelArchitecture: string
             $outputTokenIds = array_map('intval', $tokens->toArray());
 
             // TODO: Improve for parallel execution
-            $tokens = new Tensor($tokens->toArray(), shape: [1, ...$tokens->shape()]);
+            $tokens = $tokens->reshape([1, ...$tokens->shape()]);
 
             $attnMask = null;
             if ($inputsAttentionMask !== null) {
@@ -206,6 +208,7 @@ enum ModelArchitecture: string
         ['input_ids' => $inputIds, 'past_key_values' => $pastKeyValues, 'attention_mask' => $attentionMask]
             = $modelInputs;
 
+
         $decoderFeeds = [
             'input_ids' => $inputIds,
             'attention_mask' => $attentionMask ?? $model->prepareAttentionMask($inputIds),
@@ -216,19 +219,11 @@ enum ModelArchitecture: string
         $inputNames = array_column($model->session->inputs(), 'name');
 
         if (in_array('use_cache_branch', $inputNames)) {
-            $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], shape: [1]);
+            $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], Tensor::bool,  [1]);
         }
 
         $model->preparePositionIds($inputNames, $decoderFeeds, $useCacheBranch);
         $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
-
-        // The initial past key values should have a shape of 0 in one of the dimensions, which
-        // is the sequence length. However, I haven't found a way to pass a tensor with a shape of 0
-        // to the model, so I'm using a sequence length of 1 instead for the first step, and then
-        // offsetting the sequence length by 1 for the subsequent steps. This is a workaround for now.
-        $prevSequenceLength = $decoderFeeds['past_key_values.0.key']->shape()[2];
-        $attnMaskLength = $prevSequenceLength == 1 ? 1 : $prevSequenceLength + 1;
-        $decoderFeeds['attention_mask'] = Tensor::ones([1, $attnMaskLength], dtype: NDArray::int64);
 
         $decoderResults = $model->runSession($model->session, $decoderFeeds);
 
@@ -258,7 +253,7 @@ enum ModelArchitecture: string
         // 1. Prepare
         $modelInputs = [
             $inputName => $beam['inputs'],
-            'decoder_input_ids' => new Tensor($decoderInputIds, shape: [1, count($decoderInputIds)]),
+            'decoder_input_ids' => new Tensor($decoderInputIds, Tensor::int64, [1, count($decoderInputIds)]),
             'encoder_outputs' => $beam['encoder_outputs'],
             'past_key_values' => $beam['prev_model_outputs']['past_key_values'] ?? null,
         ];
@@ -311,7 +306,7 @@ enum ModelArchitecture: string
             // TODO: Improve
             // Currently, just add back batch dimension.
             // In future, allow for true parallel execution
-            $tokens = new Tensor($tokens->toArray(), shape: [1, ...$tokens->shape()]);
+            $tokens = $tokens->reshape([1, ...$tokens->shape()]);
 
             // Create beam
             $start = [
@@ -361,7 +356,7 @@ enum ModelArchitecture: string
 
 
         if (in_array('use_cache_branch', $inputNames)) {
-            $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], shape: [1]);
+            $decoderFeeds['use_cache_branch'] = new Tensor([$useCacheBranch], Tensor::bool, [1]);
         }
 
         if (in_array('encoder_attention_mask', $inputNames)) {
@@ -372,7 +367,6 @@ enum ModelArchitecture: string
         $model->addPastKeyValues($decoderFeeds, $pastKeyValues);
 
         $decoderResults = $model->runSession($model->decoderMergedSession, $decoderFeeds);
-
         $logits = $decoderResults['logits'];
         $pastKeyValues = $model->getPastKeyValues($decoderResults, $pastKeyValues);
 

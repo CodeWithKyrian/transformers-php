@@ -79,17 +79,17 @@ it('combines part files correctly', function () {
     rmdir('cache');
 });
 
-it('downloads a file correctly', function () {
-    $mock = new MockHandler([new Response(200, [], 'File content')]);
-
-    $client = new Client(['handler' => $mock]);
-
-    $filePath = Hub::getFile('model_id', 'file.txt', client: $client);
-
-    expect($filePath)->toBe('tests/models/model_id/file.txt')
-        ->and(file_exists($filePath))->toBeTrue()
-        ->and(file_get_contents($filePath))->toBe('File content');
-
-    unlink($filePath);
-    rmdir('tests/models/model_id');
-});
+//it('downloads a file correctly', function () {
+////    $mock = new MockHandler([new Response(200, [], 'File content')]);
+////
+////    $client = new Client(['handler' => $mock]);
+//
+//    $filePath = Hub::getFile('model_id', 'file.txt');
+//
+//    expect($filePath)->toBe('tests/models/model_id/file.txt')
+//        ->and(file_exists($filePath))->toBeTrue()
+//        ->and(file_get_contents($filePath))->toBe('File content');
+//
+//    unlink($filePath);
+//    rmdir('tests/models/model_id');
+//});

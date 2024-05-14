@@ -24,14 +24,13 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
+use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Error;
 use Exception;
-use OnnxRuntime\InferenceSession;
-use Symfony\Component\Console\Output\OutputInterface;
 use function Codewithkyrian\Transformers\Utils\array_some;
 
 /**
@@ -85,11 +84,11 @@ class PretrainedModel
         string            $revision = 'main',
         ?string           $modelFilename = null,
         ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ?OutputInterface  $output = null
+        ?callable $onProgress = null
     ): self
     {
         if (is_array($config)) {
-            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
+            $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
         }
 
         $quantizedSuffix = $quantized ? '_quantized' : '';
@@ -102,7 +101,7 @@ class PretrainedModel
                     fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress,
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -111,7 +110,7 @@ class PretrainedModel
                     cacheDir: $cacheDir,
                     revision: $revision,
                     fatal: false,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
@@ -127,7 +126,7 @@ class PretrainedModel
                     fileName: "encoder_model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress,
                 );
 
                 $decoderSession = self::constructSession(
@@ -135,7 +134,7 @@ class PretrainedModel
                     fileName: "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress,
                 );
 
                 $generatorConfigArr = Hub::getJson(
@@ -144,7 +143,7 @@ class PretrainedModel
                     cacheDir: $cacheDir,
                     revision: $revision,
                     fatal: false,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
@@ -160,7 +159,7 @@ class PretrainedModel
                     fileName: "vision_encoder$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $promptMaskEncoder = self::constructSession(
@@ -168,7 +167,7 @@ class PretrainedModel
                     fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
@@ -181,7 +180,7 @@ class PretrainedModel
                     fileName: "encoder_model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 $decoderSession = self::constructSession(
@@ -189,7 +188,7 @@ class PretrainedModel
                     fileName: "decoder_model_merged$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
                 return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
@@ -207,7 +206,7 @@ class PretrainedModel
                     fileName: $modelFilename ?? "model$quantizedSuffix",
                     cacheDir: $cacheDir,
                     revision: $revision,
-                    output: $output
+                    onProgress: $onProgress
                 );
 
 
@@ -226,7 +225,7 @@ class PretrainedModel
      * @param string $subFolder In case the relevant files are located inside a subfolder of the model repo or
      * directory, indicate it here.
      * @param bool $fatal Whether to raise an error if the file could not be loaded.
-     * @param OutputInterface|null $output
+     * @param callable|null $onProgress
      * @param mixed ...$sessionOptions
      * @return InferenceSession|null
      * @throws HubException
@@ -239,13 +238,13 @@ class PretrainedModel
         string           $revision = 'main',
         string           $subFolder = '',
         bool             $fatal = true,
-        ?OutputInterface $output = null,
+        ?callable $onProgress = null,
                          ...$sessionOptions
     ): ?InferenceSession
     {
         $modelFileName = sprintf('onnx/%s.onnx', $fileName);
 
-        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, null, $output);
+        $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
 
         if ($file === null) return null;
 
@@ -281,9 +280,7 @@ class PretrainedModel
 
             $outputNames = array_column($session->outputs(), 'name');
 
-            $outputs = $session->run($outputNames, $inputs);
-
-            return array_combine($outputNames, array_map([Tensor::class, 'fromArray'], $outputs));
+            return $session->run($outputNames, $inputs);
         } catch (MissingModelInputException $e) {
             throw $e;
         } catch (Exception $e) {
@@ -331,7 +328,8 @@ class PretrainedModel
             The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
         }
 
-        return array_map(fn($i) => $i->toArray(), $inputs);
+//        return array_map(fn($i) => $i->toArray(), $inputs);
+        return $inputs;
     }
 
     /**
@@ -355,7 +353,7 @@ class PretrainedModel
         $isPadTokenNotEqualToEosTokenId = ($eosTokenId === null) || !in_array($padTokenId, $eosTokenId);
 
         if ($isPadTokenInInputs && $isPadTokenNotEqualToEosTokenId) {
-            $mo = Tensor::getMo();
+            $mo = Tensor::mo();
 
             $data = $mo->f(fn($x) => $x != $padTokenId, $tokens);
 
@@ -395,7 +393,7 @@ class PretrainedModel
                 }
             }
         }
-        $feeds['position_ids'] = new Tensor($data, shape: $feeds['attention_mask']->shape());
+        $feeds['position_ids'] = new Tensor($data, Tensor::int64, $feeds['attention_mask']->shape());
 
         if ($useCacheBranch) {
             // TODO: Fix this
@@ -468,50 +466,50 @@ class PretrainedModel
             $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
         } else {
             // TODO support batches (i.e., batch_size > 1)
-            $batch_size = 1;
+            $batchSize = 1;
 
             if ($this->config->isEncoderDecoder && ($this->addEncoderPkv ?? true)) {
-                $encoderShape = [$batch_size, $this->numEncoderHeads, 1, $this->encoderDimKv];
-                $decoderShape = [$batch_size, $this->numDecoderHeads, 1, $this->decoderDimKv];
+                $encoderShape = [$batchSize, $this->numEncoderHeads, 0, $this->encoderDimKv];
+                $decoderShape = [$batchSize, $this->numDecoderHeads, 0, $this->decoderDimKv];
 
 
                 for ($i = 0; $i < $this->numDecoderLayers; ++$i) {
                     $decoderFeeds["past_key_values.$i.encoder.key"]
                         = $decoderFeeds["past_key_values.$i.encoder.value"]
-                        = new Tensor(null, shape: $encoderShape);
+                        = new Tensor([], shape: $encoderShape);
                     $decoderFeeds["past_key_values.$i.decoder.key"]
                         = $decoderFeeds["past_key_values.$i.decoder.value"]
-                        = new Tensor(null, shape: $decoderShape);
+                        = new Tensor([], shape: $decoderShape);
                 }
             } else if ($this->config->modelType === 'falcon') {
                 // NOTE: Custom implementation for Falcon
-                $shape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['multi_query'] ?? null) { // e.g., for `gpt_bigcode`
-                $shape = [$batch_size * $this->numHeads, 1, 2 * $this->dimKv];
+                $shape = [$batchSize * $this->numHeads, 0, 2 * $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor([], shape: $shape);
                 }
             } else if ($this->config['model_type'] === 'bloom') {
                 // NOTE: Custom implementation for Bloom
-                $keyShape = [$batch_size * $this->numHeads, $this->dimKv, 1];
-                $valueShape = [$batch_size * $this->numHeads, 1, $this->dimKv];
+                $keyShape = [$batchSize * $this->numHeads, $this->dimKv, 0];
+                $valueShape = [$batchSize * $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $keyShape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $valueShape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $keyShape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $valueShape);
                 }
             } else { // Decoder-only
-                $shape = [$batch_size, $this->numHeads, 1, $this->dimKv];
+                $shape = [$batchSize, $this->numHeads, 0, $this->dimKv];
 
                 for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor(null, shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor(null, shape: $shape);
+                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
+                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
                 }
             }
         }
@@ -521,8 +519,10 @@ class PretrainedModel
      * @param Tensor $inputs The input token ids.
      * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
      * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
-     * @param array|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Tensor|null $inputsAttentionMask An optional attention mask for the inputs.
+     * @param Streamer|null $streamer
      * @return array An array of generated output sequences, where each sequence is an array of token IDs.
+     * @throws Exception
      */
     public function generate(
         Tensor               $inputs,
@@ -591,7 +591,6 @@ class PretrainedModel
 
         $beams = $this->getStartBeams($inputs, $generationConfig, $numOutputTokens, $inputsAttentionMask);
 
-
         while (array_some($beams, fn($beam) => !$beam['done']) && $numOutputTokens < $maxOutputTokens) {
             $newestBeams = [];
             foreach ($beams as $beam) {
@@ -609,6 +608,7 @@ class PretrainedModel
 
                 $output = $this->runBeam($beam);
 
+
                 // add attentions/scores to beam only if user requested
                 if ($generationConfig->output_attentions) {
                     $this->addAttentionsToBeam($beam, $output);
@@ -624,7 +624,6 @@ class PretrainedModel
                 // So, we select the last token's logits:
                 // (equivalent to `logits = outputs.logits[:, -1, :]`)
                 $logits = $output['logits']->slice(null, -1, null);
-//                $logits = $output['logits'];
 
                 // Apply logits processor
                 $logitsProcessor($beam['output_token_ids'], $logits);
@@ -649,7 +648,6 @@ class PretrainedModel
 
             }
 
-
             ++$numOutputTokens;
 
             // Group and select best beams
@@ -665,14 +663,12 @@ class PretrainedModel
                 $this->groupBeams($newestBeams)
             ));
 
-
             // Flatten beams
             $beams = $newestBeams;
 
             // Stream the beams if a streamer is provided
             $streamer?->put($beams);
         }
-
 
         // TODO: Ensure that we can return non-batched outputs
 

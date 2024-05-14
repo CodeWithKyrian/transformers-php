@@ -9,7 +9,6 @@ use ArrayObject;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Exception;
-use Symfony\Component\Console\Output\OutputInterface;
 
 abstract class Tokenizer
 {
@@ -78,7 +77,7 @@ abstract class Tokenizer
      * @param string|null $cacheDir
      * @param string $revision
      * @param mixed $legacy
-     * @param OutputInterface|null $output
+     * @param callable|null $onProgress
      * @return array {tokenizerJson: array, tokenizerConfig: array}
      * @throws HubException
      */
@@ -87,7 +86,7 @@ abstract class Tokenizer
         ?string          $cacheDir,
         string           $revision,
         mixed            $legacy,
-        ?OutputInterface $output = null
+        ?callable $onProgress = null
     ): array
     {
         $tokenizerJson = Hub::getJson(
@@ -96,7 +95,7 @@ abstract class Tokenizer
             cacheDir: $cacheDir,
             revision: $revision,
             fatal: false,
-            output: $output
+            onProgress: $onProgress
         );
 
         $tokenizerConfig = Hub::getJson(
@@ -105,7 +104,7 @@ abstract class Tokenizer
             cacheDir: $cacheDir,
             revision: $revision,
             fatal: false,
-            output: $output
+            onProgress: $onProgress
         );
 
         if ($legacy != null) {

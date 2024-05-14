@@ -5,10 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FeatureExtractors;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use Imagine\Image\Point;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class ImageFeatureExtractor extends FeatureExtractor
 {
@@ -98,37 +97,6 @@ class ImageFeatureExtractor extends FeatureExtractor
         }
     }
 
-    /**
-     * Resize the image to make a thumbnail.
-     * @param Image $image The image to be resized.
-     * @param array{height: int, width: int} $size The size ['height' => h, 'width' => w] to resize the image to.
-     * @param int $resample The resampling filter to use.
-     * @return Image The resized image.
-     */
-    public function thumbnail(Image $image, array $size, int $resample = 2): Image
-    {
-        $inputHeight = $image->height();
-        $inputWidth = $image->width();
-
-        $outputHeight = $size['height'];
-        $outputWidth = $size['width'];
-
-        // We always resize to the smallest of either the input or output size.
-        $height = min($inputHeight, $outputHeight);
-        $width = min($inputWidth, $outputWidth);
-
-        if ($height === $inputHeight && $width === $inputWidth) {
-            return $image;
-        }
-
-        if ($inputHeight > $inputWidth) {
-            $width = floor($inputWidth * $height / $inputHeight);
-        } elseif ($inputWidth > $inputHeight) {
-            $height = floor($inputHeight * $width / $inputWidth);
-        }
-
-        return $image->resize($width, $height, $resample);
-    }
 
     /**
      * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
@@ -184,26 +152,28 @@ class ImageFeatureExtractor extends FeatureExtractor
 
     /**
      * Pad the image by a certain amount.
-     * @param array $pixelData The pixel data to pad.
-     * @param int[] $imgShape The dimensions of the image (height, width, channels).
+     * @param Tensor $imageTensor The pixel data to pad.
      * @param int[]|int $padSize The dimensions of the padded image.
      * @param string $mode The type of padding to add.
      * @param bool $center Whether to center the image.
      * @param int $constantValues The constant value to use for padding.
-     * @return array{0: array, 1: int[]} The padded pixel data and image dimensions.
+     * @return Tensor The padded pixel data and image dimensions.
+     * @throws \Exception
      */
     public function padImage(
-        array     $pixelData,
-        array     $imgShape,
+        Tensor    $imageTensor,
         int|array $padSize,
+        string $tensorFormat = 'CHW', // 'HWC' or 'CHW
         string    $mode = 'constant',
         bool      $center = false,
         int       $constantValues = 0
-    ): array
+    ): Tensor
     {
-        $imageHeight = $imgShape[0];
-        $imageWidth = $imgShape[1];
-        $imageChannels = $imgShape[2];
+        if ($tensorFormat === 'CHW') {
+            [$imageChannels, $imageHeight, $imageWidth] = $imageTensor->shape();
+        } else {
+            [$imageHeight, $imageWidth, $imageChannels] = $imageTensor->shape();
+        }
 
         if (is_array($padSize)) {
             $paddedImageWidth = $padSize['width'];
@@ -215,17 +185,18 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         // Only add padding if there is a difference in size
         if ($paddedImageWidth !== $imageWidth || $paddedImageHeight !== $imageHeight) {
-
-            $paddedPixelData = array_fill(0, $paddedImageWidth * $paddedImageHeight * $imageChannels, 0);
+            $paddedShape = [$paddedImageWidth, $paddedImageHeight, $imageChannels];
 
             if (is_array($constantValues)) {
+                $paddedPixelData = Tensor::fill($paddedShape, 0);
+
                 // Fill with constant values, cycling through the array
                 $constantValuesLength = count($constantValues);
-                for ($i = 0; $i < count($paddedPixelData); ++$i) {
-                    $paddedPixelData[$i] = $constantValues[$i % $constantValuesLength];
+                for ($i = 0; $i < $paddedPixelData->size(); ++$i) {
+                    $paddedPixelData->buffer()[$i] = $constantValues[$i % $constantValuesLength];
                 }
-            } else if ($constantValues !== 0) {
-                $paddedPixelData = array_fill(0, $paddedImageWidth * $paddedImageHeight * $imageChannels, $constantValues);
+            } else {
+                $paddedPixelData = Tensor::fill($paddedShape, $constantValues);
             }
 
             [$left, $top] = $center ?
@@ -242,7 +213,7 @@ class ImageFeatureExtractor extends FeatureExtractor
                     $d = ($b + $j) * $imageChannels;
 
                     for ($k = 0; $k < $imageChannels; ++$k) {
-                        $paddedPixelData[$c + $k] = $pixelData[$d + $k];
+                        $paddedPixelData->buffer()[$c + $k] = $imageTensor->buffer()[$d + $k];
                     }
                 }
             }
@@ -266,18 +237,17 @@ class ImageFeatureExtractor extends FeatureExtractor
 
                         // Copy channel-wise
                         for ($k = 0; $k < $imageChannels; ++$k) {
-                            $paddedPixelData[$c + $k] = $pixelData[$d + $k];
+                            $paddedPixelData->buffer()[$c + $k] = $imageTensor->buffer()[$d + $k];
                         }
                     }
                 }
             }
 
             // Update pixel data and image dimensions
-            $pixelData = $paddedPixelData;
-            $imgShape = [$paddedImageHeight, $paddedImageWidth, $imageChannels];
+            $imageTensor = $paddedPixelData;
         }
 
-        return [$pixelData, $imgShape];
+        return $imageTensor;
     }
 
     private function calculateReflectOffset(int $val, int $max): int
@@ -286,17 +256,6 @@ class ImageFeatureExtractor extends FeatureExtractor
         return $mod > $max ? $max - ($mod - $max) : $mod;
     }
 
-    /**
-     * Rescale the image's pixel values by the specified rescale factor.
-     * @param array $pixelData The pixel data to rescale.
-     * @return void
-     */
-    public function rescale(array &$pixelData): void
-    {
-        for ($i = 0; $i < count($pixelData); ++$i) {
-            $pixelData[$i] *= $this->rescaleFactor;
-        }
-    }
 
     /**
      * Find the target (width, height) dimension of the output image after
@@ -381,17 +340,6 @@ class ImageFeatureExtractor extends FeatureExtractor
         }
     }
 
-    /**
-     * Resizes the image.
-     * @param Image $image The image to resize.
-     * @return Image The resized image.
-     */
-    public function resize(Image $image): Image
-    {
-        [$newWidth, $newHeight] = $this->getResizeOutputImageSize($image, $this->size);
-
-        return $image->resize($newWidth, $newHeight, $this->resample);
-    }
 
     /**
      * Preprocesses the given image.
@@ -419,7 +367,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         }
 
 
-        [$srcWidth, $srcHeight] = $image->size(); // original image size
+        $originalInputSize = $image->size(); // original image size
 
         // Convert image to RGB if specified in config.
         if ($doConvertRGB ?? $this->doConvertRGB) {
@@ -428,14 +376,16 @@ class ImageFeatureExtractor extends FeatureExtractor
             $image->grayscale();
         }
 
-        // Resize all images
+        // Resize if specified in config.
         if ($this->doResize) {
-            $this->resize($image);
+            [$newWidth, $newHeight] = $this->getResizeOutputImageSize($image, $this->size);
+
+            $image->resize($newWidth, $newHeight, $this->resample);
         }
 
         // Resize the image using thumbnail method.
         if ($this->doThumbnail) {
-            $this->thumbnail($image, $this->size, $this->resample);
+            $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
         }
 
         if ($this->doCenterCrop) {
@@ -451,61 +401,59 @@ class ImageFeatureExtractor extends FeatureExtractor
             $image->centerCrop($cropWidth, $cropHeight);
         }
 
-        $reshapedInputSize = [$image->height(), $image->width()];
+        $reshapedInputSize = $image->size();
 
-
-        // All pixel-level manipulation occurs with data in the hwc format (height, width, channels),
-        // to emulate the behavior of the original Python code (w/ numpy).
-        $pixelData = $image->pixelData();
-
-        $imgShape = [$image->height(), $image->width(), $image->channels];
-
+        $imageTensor = $image->toTensor();
 
         if ($this->doRescale) {
-            $this->rescale($pixelData);
+            $imageTensor = $imageTensor->multiply($this->rescaleFactor);
         }
 
-
         if ($doNormalize ?? $this->doNormalize) {
-            $imageMean = $this->imageMean;
-            if (!is_array($this->imageMean)) {
-                $imageMean = array_fill(0, $image->channels, $this->imageMean);
+            if (is_array($this->imageMean)) {
+                // Negate the mean values to add instead of subtract
+                $negatedMean = array_map(fn($mean) => -$mean, $this->imageMean);
+                $imageMean = Tensor::repeat($negatedMean, $image->height() * $image->width(), 1);
+            } else {
+                $imageMean = Tensor::fill([$image->channels * $image->height() * $image->width()], -$this->imageMean);
             }
 
-            $imageStd = $this->imageStd;
-            if (!is_array($this->imageStd)) {
-                $imageStd = array_fill(0, $image->channels, $this->imageMean);
+
+            if (is_array($this->imageStd)) {
+                // Inverse the standard deviation values to multiple instead of divide
+                $inversedStd = array_map(fn($std) => 1 / $std, $this->imageStd);
+                $imageStd = Tensor::repeat($inversedStd, $image->height() * $image->width(), 1);
+            } else {
+                $imageStd = Tensor::fill([$image->channels * $image->height() * $image->width()], 1 / $this->imageStd);
             }
+
+
+            // Reshape mean and std to match the image tensor shape
+            $imageMean = $imageMean->reshape($imageTensor->shape());
+            $imageStd = $imageStd->reshape($imageTensor->shape());
 
             if (count($imageMean) !== $image->channels || count($imageStd) !== $image->channels) {
-                throw new \Exception("When set to arrays, the length of `imageMean` (" . count($imageMean) . ") and `imageStd` (" . count($imageStd) . ") must match the number of channels in the image ({$image->channels()}).");
+                throw new \Exception("When set to arrays, the length of `imageMean` (" . count($imageMean) . ") and `imageStd` (" . count($imageStd) . ") must match the number of channels in the image ({$image->channels}).");
             }
 
             // Normalize pixel data
-            for ($i = 0; $i < count($pixelData); $i += $image->channels) {
-                for ($j = 0; $j < $image->channels; ++$j) {
-                    $pixelData[$i + $j] = ($pixelData[$i + $j] - $imageMean[$j]) / $imageStd[$j];
-                }
-            }
+            $imageTensor = $imageTensor->add($imageMean)->multiply($imageStd);
         }
 
         // Perform padding after rescaling/normalizing
         if ($doPad ?? $this->doPad) {
             if ($this->padSize !== null) {
-                [$pixelData, $imgShape] = $this->padImage($pixelData, $imgShape, $this->padSize);
+                $imageTensor = $this->padImage($imageTensor, $this->padSize);
             } elseif ($this->sizeDivisibility !== null) {
-                [$paddedWidth, $paddedHeight] = $this->enforceSizeDivisibility([$imgShape[1], $imgShape[0]], $this->sizeDivisibility);
-                [$pixelData, $imgShape] = $this->padImage($pixelData, $imgShape, ['width' => $paddedWidth, 'height' => $paddedHeight]);
+                [$paddedWidth, $paddedHeight] = $this->enforceSizeDivisibility([$imageTensor->shape()[1], $imageTensor->shape()[0]], $this->sizeDivisibility);
+                $imageTensor = $this->padImage($imageTensor, ['width' => $paddedWidth, 'height' => $paddedHeight]);
             }
         }
 
-        // Convert to channel dimension format (hwc -> chw)
-        $pixelValues = (new Tensor($pixelData, shape: $imgShape))->permute(2, 0, 1);
-
         return [
-            'original_size' => [$srcHeight, $srcWidth],
+            'original_size' => $originalInputSize,
             'reshaped_input_size' => $reshapedInputSize,
-            'pixel_values' => $pixelValues,
+            'pixel_values' => $imageTensor,
         ];
     }
 
@@ -530,21 +478,11 @@ class ImageFeatureExtractor extends FeatureExtractor
             $imageData[] = $this->preprocess($image);
         }
 
-        // Stack pixel values
-        $pixelValues = [];
-        foreach ($imageData as $data) {
-            $pixelValues[] = $data['pixel_values'];
-        }
+        $pixelValues = array_column($imageData, 'pixel_values');
+        $originalSizes = array_column($imageData, 'original_size');
+        $reshapedInputSizes = array_column($imageData, 'reshaped_input_size');
 
         $stackedPixelValues = Tensor::stack($pixelValues, 0);
-
-        // Prepare metadata
-        $originalSizes = [];
-        $reshapedInputSizes = [];
-        foreach ($imageData as $data) {
-            $originalSizes[] = $data['original_size'];
-            $reshapedInputSizes[] = $data['reshaped_input_size'];
-        }
 
         return [
             'pixel_values' => $stackedPixelValues,

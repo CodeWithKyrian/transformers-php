@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
 /**
@@ -51,7 +51,7 @@ class ZeroShotImageClassificationPipeline extends Pipeline
         $output = $this->model->__invoke(array_merge($textInputs, ['pixel_values' => $pixelValues]));
 
         $activationFn = $this->model->config['model_type'] === 'siglip' ?
-            fn(Tensor $batch) => $batch->sigmoid()->toArray() :
+            fn(Tensor $batch) => $batch->sigmoid():
             fn(Tensor $batch) => $batch->softmax();
 
         // Compare each image with each candidate label

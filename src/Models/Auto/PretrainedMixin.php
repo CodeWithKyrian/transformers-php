@@ -9,7 +9,6 @@ use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Base class of all AutoModels. Contains the `from_pretrained` function
@@ -47,10 +46,10 @@ abstract class PretrainedMixin
         ?string          $cacheDir = null,
         string           $revision = 'main',
         ?string          $modelFilename = null,
-        ?OutputInterface $output = null
+        ?callable $onProgress = null
     ): PretrainedModel
     {
-        $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $output);
+        $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
 
         foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {
             $modelClass = $modelClassMapping[$config->modelType] ?? null;
@@ -68,7 +67,7 @@ abstract class PretrainedMixin
                 revision: $revision,
                 modelFilename: $modelFilename,
                 modelArchitecture: $modelArchitecture,
-                output: $output
+                onProgress: $onProgress
             );
         }
 
@@ -82,7 +81,7 @@ abstract class PretrainedMixin
                 cacheDir: $cacheDir,
                 revision: $revision,
                 modelFilename: $modelFilename,
-                output: $output
+                onProgress: $onProgress
             );
         } else {
             throw UnsupportedModelTypeException::make($config->modelType);

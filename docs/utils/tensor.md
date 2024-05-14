@@ -39,6 +39,18 @@ Tensors have the following properties:
   each dimension. Strides are used to efficiently access elements in a tensor without the need for reshaping the
   underlying data.
 
+## Tensors in TransformersPHP
+
+The `Tensor` class in TransformersPHP provides a flexible and efficient way to work with tensors in PHP. By default, it
+uses a C-based buffer to store the tensor's data, which allows for fast element-wise operations and mathematical
+operations using OpenBLAS. The operations can further be accelerated if you installed OpenMP - allowing for parallel
+computation across multiple cores. TransformersPHP selects the best available backend for your system, depending on the
+installed libraries. OpenBLAS is already included in the package, so you don't need to install it separately. However,
+you can install OpenMP to enable parallel computation. Checkout the OpenMP installation guide for your operating system.
+
+There are few edge cases where OpenBLAS might not be installed properly. In such cases, TransformersPHP will fall back
+to using the PHP-based buffer, which is slower but still functional.
+
 ## Creating a Tensor
 
 You can create a tensor using the Tensor class constructor or by converting from a multidimensional array using the
@@ -47,28 +59,37 @@ fromArray method. Below are examples of how to create tensors:
 ### Using the Constructor
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Interop\Polite\Math\Matrix\NDArray;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [1, 2, 3, 4, 5, 6];
 $shape = [2, 3];
-$dtype = NDArray::int16;
+$dtype = Tensor::int16;
 $tensor = new Tensor($data, $dtype, $shape); // If dtype is not provided, it defaults to NDArray::float32
 ```
 
 ### Using the fromArray Method
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
 ```
 
+### Using fill Method
+
+```php
+use Codewithkyrian\Transformers\Tensor\Tensor;
+
+$shape = [2, 3];
+$value = 5;
+$tensor = Tensor::fill($shape, $value); // Creates a tensor filled with the specified value
+```
+
 ### Using zeros and ones methods
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $shape = [2, 3];
 $tensor = Tensor::zeros($shape); // Creates a tensor of zeros with the specified shape
@@ -78,7 +99,7 @@ $tensor = Tensor::ones($shape); // Creates a tensor of ones with the specified s
 ### Using zerosLike and onesLike methods
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
@@ -114,7 +135,7 @@ and buffer.
   Returns the tensor's flat buffer as a regular PHP array.
 
 ```php
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 
@@ -281,6 +302,27 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
   
   $softmax->toArray(); // [[0.09003057317038, 0.2447284710548, 0.66524095577482], [0.09003057317038, 0.2447284710548, 0.66524095577482]]
   ```
+  
+- ### `topk(int $k = null, bool $sorted = true)`
+  Returns the top k elements and their indices along the specified axis.
+
+  Parameters:
+    - `$k`: The number of top elements to return. If not provided, all elements are returned.
+    - `$sorted`: Whether to return the elements in sorted order.
+
+  Returns:
+    - A tuple containing two tensors: the top k elements and their indices.
+
+  Example:
+  ```php
+  $data = [[1, 2, 3], [4, 5, 6]];
+  $tensor = Tensor::fromArray($data);
+  
+  [$values, $indices] = $tensor->topk(2);
+  
+  $values->toArray(); // [[3, 2], [6, 5]]
+  $indices->toArray(); // [[2, 1], [2, 1]]
+  ```
 
 - ### `max(int $axis = null)`
   Returns the maximum values along the specified axis.
@@ -438,7 +480,7 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
     $result = $tensor->add($tensor2); // [[6, 8], [10, 12]]
     ```
 
-- ### `multiply(float|int $value)`
+- ### `multiply(Tensor|float|int $value)`
   Multiplies the tensor by the specified scalar value.
 
   Parameters:

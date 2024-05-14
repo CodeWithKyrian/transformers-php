@@ -18,8 +18,8 @@ class ByteFallback extends Decoder
 
     protected function decodeChain(array $tokens): array
     {
-        $new_tokens = [];
-        $previous_byte_tokens = [];
+        $newTokens = [];
+        $previousByteTokens = [];
 
         foreach ($tokens as $token) {
             $bytes = null;
@@ -30,22 +30,22 @@ class ByteFallback extends Decoder
                 }
             }
             if ($bytes !== null) {
-                $previous_byte_tokens[] = $bytes;
+                $previousByteTokens[] = $bytes;
             } else {
-                if (count($previous_byte_tokens) > 0) {
-                    $string = $this->bytesToString($previous_byte_tokens);
-                    $new_tokens[] = $string;
-                    $previous_byte_tokens = [];
+                if (count($previousByteTokens) > 0) {
+                    $string = $this->bytesToString($previousByteTokens);
+                    $newTokens[] = $string;
+                    $previousByteTokens = [];
                 }
-                $new_tokens[] = $token;
+                $newTokens[] = $token;
             }
         }
-        if (count($previous_byte_tokens) > 0) {
-            $string = $this->bytesToString($previous_byte_tokens);
-            $new_tokens[] = $string;
+        if (count($previousByteTokens) > 0) {
+            $string = $this->bytesToString($previousByteTokens);
+            $newTokens[] = $string;
         }
 
-        return $new_tokens;
+        return $newTokens;
     }
 
     /**
@@ -56,9 +56,7 @@ class ByteFallback extends Decoder
      */
     protected function bytesToString(array $bytes): string
     {
-        $chars = array_map(function ($byte) {
-            return chr($byte);
-        }, $bytes);
-        return implode('', $chars);
+        $binaryString = pack('C*', ...$bytes);
+        return mb_convert_encoding($binaryString, 'ISO-8859-1');
     }
 }

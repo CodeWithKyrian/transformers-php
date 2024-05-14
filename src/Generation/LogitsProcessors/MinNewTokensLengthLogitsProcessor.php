@@ -5,8 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
-use Rindow\Math\Matrix\NDArrayPhp;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class MinNewTokensLengthLogitsProcessor extends LogitsProcessor
 {
@@ -23,7 +22,7 @@ class MinNewTokensLengthLogitsProcessor extends LogitsProcessor
     /**
      * @inheritDoc
      */
-    public function __invoke(array $inputIds, Tensor|NDArrayPhp &$logits): Tensor|NDArrayPhp
+    public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
         $newTokensLength = count($inputIds) - $this->promptLengthToSkip;
 

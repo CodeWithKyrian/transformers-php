@@ -9,3 +9,4 @@ playground/*
 .idea
 .transformers-cache/*
 tests/models/*
+dist

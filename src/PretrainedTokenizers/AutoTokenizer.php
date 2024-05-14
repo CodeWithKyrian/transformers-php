@@ -82,11 +82,11 @@ class AutoTokenizer
         ?string          $cacheDir = null,
         string           $revision = 'main',
         mixed            $legacy = null,
-        ?OutputInterface $output = null
+        ?callable $onProgress = null
     ): ?PretrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy, $output);
+            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy, $onProgress);
 
         if ($tokenizerJson == null) return null;
 

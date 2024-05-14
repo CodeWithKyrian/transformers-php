@@ -6,7 +6,6 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\Tensor;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
@@ -58,7 +57,7 @@ class ImageToTextPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($pixelValues as $batch) {
-            $batch = Tensor::fromArray($batch, shape: [1, ...$batch->shape()]);
+            $batch = $batch->reshape([1, ...$batch->shape()]);
 
             $output = $this->model->generate($batch, generationConfig: $generationConfig, streamer: $streamer);
 

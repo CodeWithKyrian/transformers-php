@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Output;
 
-use Codewithkyrian\Transformers\Utils\Tensor;
+use Codewithkyrian\Transformers\Tensor\Tensor;
 
 class SequenceClassifierOutput implements ModelOutput
 {

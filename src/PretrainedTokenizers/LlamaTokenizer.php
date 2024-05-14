@@ -9,6 +9,8 @@ use Codewithkyrian\Transformers\PreTokenizers\MetaspacePreTokenizer;
 
 class LlamaTokenizer extends PretrainedTokenizer
 {
+    const SPIECE_UNDERLINE = "▁";
+
     protected string $defaultChatTemplate = "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'] %}{% elif USE_DEFAULT_PROMPT == true and not '<<SYS>>' in messages[0]['content'] %}{% set loop_messages = messages %}{% set system_message = 'DEFAULT_SYSTEM_MESSAGE' %}{% else %}{% set loop_messages = messages %}{% set system_message = false %}{% endif %}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if loop.index0 == 0 and system_message != false %}{% set content = '<<SYS>>\n' + system_message + '\n<</SYS>>\n\n' + message['content'] %}{% else %}{% set content = message['content'] %}{% endif %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + content.strip() + ' [/INST]' }}{% elif message['role'] == 'system' %}{{ '<<SYS>>\n' + content.strip() + '\n<</SYS>>\n\n' }}{% elif message['role'] == 'assistant' %}{{ ' '  + content.strip() + ' ' + eos_token }}{% endif %}{% endfor %}";
 
     public const DEFAULT_SYSTEM_PROMPT =
@@ -31,7 +33,7 @@ class LlamaTokenizer extends PretrainedTokenizer
             // See https://github.com/huggingface/transformers/pull/24565 for more information
             $this->normalizer = null;
             $this->preTokenizer = new MetaspacePreTokenizer([
-                'replacement' => '▁',
+                'replacement' => self::SPIECE_UNDERLINE,
                 'add_prefix_space' => true,
                 'prepend_scheme' => 'first',
             ]);
@@ -58,7 +60,7 @@ class LlamaTokenizer extends PretrainedTokenizer
             return parent::encodeText($text, $textPair, $addSpecialTokens);
         }
 
-        $tokens = parent::encodeText('_' . str_replace('_', ' ', $text));
+        $tokens = parent::encodeText(self::SPIECE_UNDERLINE . str_replace(self::SPIECE_UNDERLINE, ' ', $text));
 
         if (count($tokens) > 1 && $tokens[0] === '_' && in_array($tokens[1], $this->specialTokens)) {
             $tokens = array_slice($tokens, 1);

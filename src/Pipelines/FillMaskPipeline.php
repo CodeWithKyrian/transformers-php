@@ -51,22 +51,23 @@ class FillMaskPipeline extends Pipeline
                 throw new \Error("Mask token ({$this->tokenizer->maskToken}) not found in text.");
             }
 
-            $logits = $outputs->logits[$i]->toArray();
-            $itemLogits = $logits[$maskTokenIndex];
+            $logits = $outputs->logits[$i][$maskTokenIndex];
 
-            $scores = Math::getTopItems(Math::softmax($itemLogits), $topK);
+            [$scores, $indices] = $logits->softmax()->topk($topK);
 
-            $toReturn[] = array_map(function ($score) use ($ids, $maskTokenIndex) {
+            $toReturn = [];
+
+            foreach ($indices as $i => $index) {
                 $sequence = $ids;
-                $sequence[$maskTokenIndex] = $score[0];
+                $sequence[$maskTokenIndex] = $index;
 
-                return [
-                    'score' => $score[1],
-                    'token' => $score[0],
-                    'token_str' => $this->tokenizer->decode([$score[0]], skipSpecialTokens: true),
+                $toReturn[] = [
+                    'score' => $scores[$i],
+                    'token' => $index,
+                    'token_str' => $this->tokenizer->decode([$index], skipSpecialTokens: true),
                     'sequence' => $this->tokenizer->decode($sequence, skipSpecialTokens: true),
                 ];
-            }, $scores);
+            }
         }
 
         return is_array($inputs) ? $toReturn : $toReturn[0];

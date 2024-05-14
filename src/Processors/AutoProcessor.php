@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Processors;
 
+use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\FeatureExtractors\ImageFeatureExtractor;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,18 +44,19 @@ class AutoProcessor
      * @param array|null $config
      * @param string|null $cacheDir
      * @param string $revision
-     * @param OutputInterface|null $output
+     * @param callable|null $onProgress
      * @return Processor
+     * @throws HubException
      */
     public static function fromPretrained(
         string           $modelNameOrPath,
         ?array           $config = null,
         ?string          $cacheDir = null,
         string           $revision = 'main',
-        ?OutputInterface $output = null
+        ?callable $onProgress = null
     ): Processor
     {
-        $preprocessorConfig = $config ?? Hub::getJson($modelNameOrPath, 'preprocessor_config.json', $cacheDir, $revision, output: $output);
+        $preprocessorConfig = $config ?? Hub::getJson($modelNameOrPath, 'preprocessor_config.json', $cacheDir, $revision, onProgress: $onProgress);
 
         $featureExtractorKey = $preprocessorConfig['feature_extractor_type'] ?? $preprocessorConfig['image_processor_type'];
 
@@ -65,7 +67,7 @@ class AutoProcessor
         {
             if(isset($preprocessorConfig['size']))
             {
-                $output?->writeln("Feature extractor type `{$featureExtractorKey}` not found, assuming ImageFeatureExtractor due to size parameter in config.");
+//                $output?->writeln("Feature extractor type `{$featureExtractorKey}` not found, assuming ImageFeatureExtractor due to size parameter in config.");
 
                 // Assume ImageFeatureExtractor
                 $featureExtractorClass = ImageFeatureExtractor::class;

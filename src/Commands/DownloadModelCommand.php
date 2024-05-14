@@ -12,6 +12,7 @@ use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -26,6 +27,8 @@ use function Codewithkyrian\Transformers\Pipelines\pipeline;
 )]
 class DownloadModelCommand extends Command
 {
+    protected array $progressBars = [];
+
     protected function configure(): void
     {
         $this->setHelp('This command downloads a pre-trained model from Hugging Face.');
@@ -67,23 +70,52 @@ class DownloadModelCommand extends Command
         try {
             $task = $task ? Task::tryFrom($task) : null;
 
-            if ($task != null) {
-                pipeline($task, $model, quantized: $quantized, output: $output);
-            } else {
-                AutoTokenizer::fromPretrained($model, output: $output);
-                AutoModel::fromPretrained($model, $quantized, output: $output);
-            }
+            $onProgress = function ($type, $filename, $downloadSize, $downloaded) use ($output) {
+                if ($type === 'advance_download') {
+                    $progressBar = $this->getProgressBar($filename, $output);
+                    $percent = round(($downloaded / $downloadSize) * 100, 2);
+                    $progressBar->setProgress((int)$percent);
+                } elseif ($type === 'complete_download') {
+                    $progressBar = $this->getProgressBar($filename, $output);
+                    $progressBar->finish();
+                    $output->writeln('');
+                }
+            };
 
+            if ($task != null) {
+                pipeline($task, $model, quantized: $quantized, onProgress: $onProgress);
+            } else {
+                AutoTokenizer::fromPretrained($model, onProgress: $onProgress);
+                AutoModel::fromPretrained($model, $quantized, onProgress: $onProgress);
+            }
 
             $output->writeln('✔ Model files downloaded successfully.');
 
-            $this->askToStar($input, $output);
+            $random = random_int(1, 100);
+            if ($random <= 30) $this->askToStar($input, $output);
 
             return Command::SUCCESS;
         } catch (Exception $e) {
             $output->writeln('✘ ' . $e->getMessage());
             return Command::FAILURE;
         }
+    }
+
+    protected function getProgressBar(string $filename, OutputInterface $output): ProgressBar
+    {
+        ProgressBar::setFormatDefinition('hub', '%filename% : [%bar%] %percent:3s%%');
+
+        if (!isset($this->progressBars[$filename])) {
+            $progressBar = new ProgressBar($output, 100);
+            $progressBar->setFormat('hub');
+            $progressBar->setBarCharacter('<fg=green>•</>');
+            $progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
+            $progressBar->setProgressCharacter('<fg=green>➤</>');
+            $progressBar->setMessage("✔ Downloading $filename", 'filename');
+            $this->progressBars[$filename] = $progressBar;
+        }
+
+        return $this->progressBars[$filename];
     }
 
     protected function askToStar(InputInterface $input, OutputInterface $output): void

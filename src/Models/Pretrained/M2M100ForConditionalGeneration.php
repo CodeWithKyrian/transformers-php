@@ -6,9 +6,9 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
+use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use OnnxRuntime\InferenceSession;
 
 class M2M100ForConditionalGeneration extends M2M100PretrainedModel
 {

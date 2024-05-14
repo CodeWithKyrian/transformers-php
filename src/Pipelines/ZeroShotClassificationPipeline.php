@@ -98,7 +98,6 @@ class ZeroShotClassificationPipeline extends Pipeline
         // Insert labels into hypothesis template
         $hypotheses = array_map(fn($x) => str_replace('{}', $x, $hypothesisTemplate), $candidateLabels);
 
-
         // Determine whether to perform softmax over each label independently
         $softmaxEach = $multiLabel || count($candidateLabels) === 1;
 
@@ -129,22 +128,15 @@ class ZeroShotClassificationPipeline extends Pipeline
                 : Math::softmax($entailsLogits);
 
             // Sort by scores (desc) and return scores with indices
-            $scoresSorted = array_map(function ($x, $i) {
-                return [$x, $i];
-            }, $scores, array_keys($scores));
-
-
-            usort($scoresSorted, function ($a, $b) {
-                return $b[0] <=> $a[0];
-            });
+            $scores = array_map(fn($x, $i) => [$x, $i], $scores, array_keys($scores));
+            usort($scores, fn($a, $b) => $b[0] <=> $a[0]);
 
             $toReturn[] = [
                 'sequence' => $premise,
-                'labels' => array_map(fn($x) => $candidateLabels[$x[1]], $scoresSorted),
-                'scores' => array_map(fn($x) => array_shift($x), $scoresSorted),
+                'labels' => array_map(fn($x) => $candidateLabels[$x[1]], $scores),
+                'scores' => array_map(fn($x) => array_shift($x), $scores),
             ];
         }
-
 
         return $isBatched ? $toReturn : $toReturn[0];
     }

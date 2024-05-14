@@ -6,8 +6,8 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
+use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
-use OnnxRuntime\InferenceSession;
 
 class GPTJPretrainedModel extends PretrainedModel
 {

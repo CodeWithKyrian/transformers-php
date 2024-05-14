@@ -37,6 +37,11 @@ The cache directory is where TransformersPHP stores the downloaded ONNX models. 
 the `.transformers-cache/models` directory from the root of your project. Please ensure this directory is writable by
 your application.
 
+### `setLibsDir(?string $libsDir)`
+
+The libs directory is where TransformersPHP stores the shared libraries required for running the models. You typically
+don't need to change this setting unless you have a specific requirement to store the libraries in a different location.
+
 ### `setRemoteHost(string $remoteHost)`
 
 The remote host defines where TransformersPHP looks to download model files. The default host
