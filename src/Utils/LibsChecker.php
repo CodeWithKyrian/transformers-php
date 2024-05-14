@@ -30,7 +30,7 @@ class LibsChecker
         $baseUrl = Libraries::baseUrl(Transformers::$libsDir);
         $ext = Libraries::ext();
 
-        $downloadUrl = Libraries::joinPaths($baseUrl, "$name.$ext");
+        $downloadUrl = "$baseUrl/$name.$ext";
         $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php') . ".$ext";
 
         echo "  - Downloading " . self::colorize($name) . "\n";
