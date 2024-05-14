@@ -28,7 +28,7 @@
     "pestphp/pest": "^2.31",
     "symfony/var-dumper": "^7.0"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "autoload": {
     "psr-4": {
       "Codewithkyrian\\Transformers\\": "src/"
