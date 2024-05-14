@@ -28,7 +28,8 @@
   ],
   "config": {
     "allow-plugins": {
-      "codewithkyrian/transformers-libraries-downloader": true
+      "codewithkyrian/transformers-libraries-downloader": true,
+      "codewithkyrian/transformers-libsloader": true
     }
   }
 }
