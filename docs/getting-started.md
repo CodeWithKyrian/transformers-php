@@ -11,8 +11,9 @@ Before installing TransformersPHP, ensure your system meets the following requir
 - PHP 8.1 or above
 - Composer
 - PHP FFI extension
-- JIT compilation (optional)
+- JIT compilation (optional, for performance)
 - Increased memory limit (for advanced tasks like text generation)
+- OpenMP (optional, for multithreaded execution)
 
 ## Installation
 
@@ -30,12 +31,12 @@ can install them manually using the following command:
 ```
 
 > [!CAUTION]
-> The ONNX library is platform-specific, so it's important to run the `composer require`, or `transformers install`
+> The shared libraries is platform-specific, so it's important to run the `composer require`, or `transformers install`
 > command on the target platform where the code will be executed. In most cases, this will be your development machine
 > or a server where you deploy your application, but if you're using a Docker container, run the `composer require`
 > command inside that container.
 
-This command sets up everything you need to start using pre-trained ONNX models with TransformersPHP.
+That's it! You're now ready to use TransformersPHP in your PHP application.
 
 ## Pre-Download Models
 
@@ -179,4 +180,39 @@ opcache.jit = tracing
 
 Here's a deeper guide by [Brent](https://twitter.com/brendt_gd) on how to configure JIT
 compilation: [https://stitcher.io/blog/php-8-jit-setup](https://stitcher.io/blog/php-8-jit-setup)
+
+## Memory Limit
+
+While TransformersPHP is designed to be memory-efficient, not all models are created equal. Some models require more
+memory than others, especially when performing advanced tasks like text generation. To avoid memory-related issues, we
+recommend increasing the memory limit in your `php.ini` file:
+
+```ini
+memory_limit = 512M
+```
+
+You can adjust the memory limit based on your system's capabilities and the models you plan to use.
+
+## OpenMP (Optional)
+
+OpenMP is a set of compiler directives and library routines that enable parallel processing in C, C++, and Fortran
+programs. TransformersPHP uses OpenMP to enable multithreaded operations in the Tensors, which can improve performance
+on multi-core systems. OpenMP is not required, but it can provide a significant performance boost for some operations.
+Checkout the [OpenMP website](https://www.openmp.org/) for more information on how to install and configure OpenMP on
+your system. 
+
+Example: On Ubuntu, you can install OpenMP using the following command:
+
+```bash
+sudo apt-get install libomp-dev
+```
+
+And for MacOS, you can install OpenMP using Homebrew:
+
+```bash
+brew install libomp
+```
+
+If OpenMP is not available on your system, TransformersPHP will fall back to single-threaded execution.
+
 
