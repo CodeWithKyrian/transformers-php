@@ -236,13 +236,13 @@ class PretrainedModel
         string           $fileName,
         ?string          $cacheDir = null,
         string           $revision = 'main',
-        string           $subFolder = '',
+        string           $subFolder = 'onnx',
         bool             $fatal = true,
         ?callable $onProgress = null,
                          ...$sessionOptions
     ): ?InferenceSession
     {
-        $modelFileName = sprintf('onnx/%s.onnx', $fileName);
+        $modelFileName = "$fileName.onnx";
 
         $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
 
