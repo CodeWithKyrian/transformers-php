@@ -1,0 +1,75 @@
+OWL Reasoners still useable in 2023
+Konrad Abicht
+k.abicht@gmail.com
+13.09.2023
+Abstract
+In a systematic literature and software review over 100 OWL reasoners/systems were analyzed to
+see if they would still be usable in 2023. This has never been done in this capacity. OWL reasoners
+still play an important role in knowledge organisation and management, but the last comprehensive
+surveys/studies are more than 8 years old. The result of this work is a comprehensive list of 95
+standalone OWL reasoners and systems using an OWL reasoner. For each item, information on
+project pages, source code repositories and related documentation was gathered. The raw research
+data is provided in a Github repository for anyone to use.
+1 Introduction
+There are many surveys and studies concerning OWL reasoners. Some examine the underlying methods
+and functionality, others compare performance metrics. One might think that the field of OWL reasoners is
+well established and that there is software for each relevant application. But this is not the case. Instead I
+have noticed that well known reasoners have hardly been updated in the last 10 years (e.g. HermiT). Some
+are still usable, mostly as Prot´eg´e plugins, but it raises the question whether new (research or commercial)
+projects should rely on them. How are they maintained? Are bugs detected and dealt with? Do projects
+maintain their software dependencies? People interested in OWL reasoners today face many obstacles. To
+get a neutral view on the software landscape, I conducted a survey between May and July 2023. You hold
+the results of this work in your hands.
+This paper is structured as follows: Section 2 contains short summary of required background knowl-
+edge. Section 3 then summarises related work. Section 4 describes my methodology and the section 5
+presents results of my research. Finally, in section 6, I draw my conclusions and in section 7, I provide
+further starting points for future work.
+1.1 Publicly available research data
+All research data is publicly available via a Github repository. It contains a CSV file with a list of analyzed
+OWL reasoners as well a CSV file with systems using a foreign OWL reasoner. For each entry there is
+metadata about installation, usability and references such as source code repository. All this data is
+available at the following URL:
+https://github.com/k00ni/owl-reasoner-list
+I invite everyone to contribute. The repository is designed in a way to support further research and
+additions, so that others can continue the work in the years to come without having to start from scratch
+each time.
+1
+
+
+Figure 1Figure 2
+2 Reader background
+You should have an extended knowledge of Semantic Web technologies and concepts such as RDF, RDFS,
+OWL 1/2 and OWL reasoning. There are many programming/software environments used to develop OWL
+reasoners, so basic knowledge in compiling and executing programs is recommended. Basic knowledge of
+software development using distributed version control systems, such as Git, is helpful. Below is a brief
+summary of the most widely used systems.
+2.1 Prot´eg´e
+Prot´eg´e[73] is an ontology editor well known to ontologists and Semantic Web developers. It has been
+developed by Stanford University
+1
+. It provides tools for developing and maintaining OWL ontologies.
+There are many plugins available, for instance to use an OWL reasoner. Prot´eg´e is written in Java and
+runs on Windows 10/11 as well as Ubuntu Linux.
+2.2 OWL API
+OWL-API [24] is written in Java and provides an Application Programming Interface for managing OWL
+ontologies. In addition to parsing and manipulating OWL ontologies, it also allows the use of reasoners.
+It also includes validators for different OWL profiles, for instance OWL 2 QL
+2
+, OWL 2 EL
+3
+or OWL 2
+RL
+4
+. Further information and source code can be found on the project page
+5
+.
+3 Related work
+Since the publication of OWL in 2001, there have been many benchmarks and surveys comparing and
+evaluating OWL reasoners. In the following only the most recent and relevant ones are presented.
+The most recent and relevant publication [30] is from 2023. The authors evaluated the performance of
+six prominent OWL 2 DL compliant reasoners (such as Pellet, FaCT++ and Hermit) on various reasoning
+tasks. One of their findings was that many projects are no longer actively maintained. This supports my
+results and observations, even though their metrics differ from the ones used in this paper (they used a
+wider range for activity: last 10 years).
+1
+https://protege.stanford.edu/
