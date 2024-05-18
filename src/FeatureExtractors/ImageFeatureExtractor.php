@@ -69,6 +69,8 @@ class ImageFeatureExtractor extends FeatureExtractor
 
     public function __construct(public array $config)
     {
+        parent::__construct($config);
+
         $this->imageMean = $config['image_mean'] ?? $config['mean'] ?? null;
         $this->imageStd = $config['image_std'] ?? $config['std'] ?? null;
 

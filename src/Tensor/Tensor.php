@@ -1115,6 +1115,24 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return $ndim == 1 ? [$topValues->squeeze(0), $topIndices->squeeze(0)] : [$topValues, $topIndices];
     }
 
+    public function f(callable $callback, mixed ...$args): static
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->f($callback, $this, ...$args);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    public function u(callable $callback, mixed ...$args): static
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->u($this, $callback, ...$args);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
 
     public function max(?int $axis = null): static|int|float
     {
