@@ -94,7 +94,7 @@ class Audio
         return round($this->sfinfo->frames / $this->sfinfo->samplerate, 2);
     }
 
-    public function toTensor(int $channels = 1, int $samplerate = 41000, int $chunkSize = 2048): Tensor
+    public function toTensor(int $samplerate = 41000, int $chunkSize = 2048): Tensor
     {
         $sndfileFFI = self::sndfileFFI();
         $sampleRateFFI = self::sampleRateFFI();
@@ -103,21 +103,21 @@ class Audio
         $totalOutputFrames = 0;
 
         $error = $sampleRateFFI->new('int32_t');
-        $state = $sampleRateFFI->src_new($sampleRateFFI->SRC_SINC_FASTEST, $channels, \FFI::addr($error));
+        $state = $sampleRateFFI->src_new($sampleRateFFI->SRC_SINC_FASTEST, $this->channels(), \FFI::addr($error));
 
         if ($error->cdata !== 0) {
             $error = $sampleRateFFI->src_strerror($error);
             throw new RuntimeException("Failed to create sample rate converter: $error");
         }
 
-        $inputSize = $chunkSize * $channels;
+        $inputSize = $chunkSize * $this->channels();
         $inputData = $sndfileFFI->new("float[$inputSize]");
-        $outputSize = $chunkSize / $channels;
+        $outputSize = $chunkSize / $this->channels();
         $outputData = $sndfileFFI->new("float[$outputSize]");
 
         $srcData = $sampleRateFFI->new('SRC_DATA');
         $srcData->data_in = \FFI::addr($inputData[0]);
-        $srcData->output_frames = $chunkSize / $channels;
+        $srcData->output_frames = $chunkSize / $this->channels();
         $srcData->data_out = \FFI::addr($outputData[0]);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
@@ -127,7 +127,7 @@ class Audio
 
             /* Add to tensor data without resample if the sample rate is the same */
             if ($this->samplerate() === $samplerate) {
-                $strBuffer = \FFI::string($inputData, $srcData->input_frames * $channels * \FFI::sizeof($inputData[0]));
+                $strBuffer = \FFI::string($inputData, $srcData->input_frames * $this->channels() * \FFI::sizeof($inputData[0]));
                 $tensorData .= $strBuffer;
                 $totalOutputFrames += $srcData->input_frames;
                 if ($srcData->input_frames < $chunkSize) {
@@ -154,7 +154,7 @@ class Audio
             }
 
             /* Add the processed data to the tensor data */
-            $outputSize = $srcData->output_frames_gen * $channels * \FFI::sizeof($outputData[0]);
+            $outputSize = $srcData->output_frames_gen * $this->channels() * \FFI::sizeof($outputData[0]);
             $strBuffer = \FFI::string($outputData, $outputSize);
             $tensorData .= $strBuffer;
             $totalOutputFrames += $srcData->output_frames_gen;
@@ -165,7 +165,9 @@ class Audio
 
         $sampleRateFFI->src_delete($state);
 
-        return Tensor::fromString($tensorData, Tensor::float32, [$channels, $totalOutputFrames]);
+        $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
+
+        return $audioTensor->mean(1, true);
     }
 
     public function fromTensor(Tensor $tensor): void
@@ -362,7 +364,7 @@ class Audio
      * Helper function to compute `amplitude_to_db` and `power_to_db`.
      */
     private static function dBConversionHelper(
-        Tensor  $spectrogram,
+        Tensor $spectrogram,
         float  $factor,
         float  $reference,
         float  $minValue,
@@ -412,7 +414,7 @@ class Audio
      * @return SplFixedArray
      */
     public static function amplitudeToDB(
-        Tensor  $spectrogram,
+        Tensor $spectrogram,
         float  $reference = 1.0,
         float  $minValue = 1e-5,
         ?float $dbRange = null
@@ -432,7 +434,7 @@ class Audio
      * @return SplFixedArray
      */
     public static function powerToDB(
-        Tensor  $spectrogram,
+        Tensor $spectrogram,
         float  $reference = 1.0,
         float  $minValue = 1e-5,
         ?float $dbRange = null
@@ -581,7 +583,7 @@ class Audio
 
         $shape = $transpose ? [$d1Max, $numMelFilters] : [$numMelFilters, $d1Max];
 
-        $melSpec = new Tensor(null,  Tensor::float32, [array_product($shape)]);
+        $melSpec = new Tensor(null, Tensor::float32, [array_product($shape)]);
 
         for ($i = 0; $i < $numMelFilters; ++$i) {
             $filter = $melFilters[$i];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForAudioClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageFeatureExtraction;
@@ -49,6 +50,8 @@ enum Task: string
     case ObjectDetection = 'object-detection';
     case ZeroShotObjectDetection = 'zero-shot-object-detection';
 
+    case AudioClassification = 'audio-classification';
+
 
     public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
     {
@@ -89,6 +92,8 @@ enum Task: string
             self::ObjectDetection => new ObjectDetectionPipeline($this, $model, $tokenizer, $processor),
 
             self::ZeroShotObjectDetection => new ZeroShotObjectDetectionPipeline($this, $model, $tokenizer, $processor),
+
+            self::AudioClassification => new AudioClassificationPipeline($this, $model, processor: $processor),
         };
     }
 
@@ -129,16 +134,18 @@ enum Task: string
             self::ObjectDetection => 'Xenova/detr-resnet-50', // Original: 'facebook/detr-resnet-50',
 
             self::ZeroShotObjectDetection => 'Xenova/owlvit-base-patch32', // Original: 'google/owlvit-base-patch32',
+
+            self::AudioClassification => 'Xenova/wav2vec2-base-superb-ks', // Original: 'superb/wav2vec2-base-superb-ks',
         };
     }
 
     public function autoModel(
-        string           $modelNameOrPath,
-        bool             $quantized = true,
-        ?array           $config = null,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        ?string          $modelFilename = null,
+        string    $modelNameOrPath,
+        bool      $quantized = true,
+        ?array    $config = null,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        ?string   $modelFilename = null,
         ?callable $onProgress = null
     ): PretrainedModel
     {
@@ -176,13 +183,15 @@ enum Task: string
             self::ObjectDetection => AutoModelForObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
 
             self::ZeroShotObjectDetection => AutoModelForZeroShotObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+
+            self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
         };
     }
 
     public function autoTokenizer(
-        string           $modelNameOrPath,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
+        string    $modelNameOrPath,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
         ?callable $onProgress = null
     ): ?PretrainedTokenizer
     {
@@ -191,7 +200,8 @@ enum Task: string
             self::ImageClassification,
             self::ImageToImage,
             self::ImageFeatureExtraction,
-            self::ObjectDetection => null,
+            self::ObjectDetection,
+            self::AudioClassification => null,
 
 
             self::SentimentAnalysis,
@@ -214,10 +224,10 @@ enum Task: string
     }
 
     public function autoProcessor(
-        string           $modelNameOrPath,
-        ?array           $config = null,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
+        string    $modelNameOrPath,
+        ?array    $config = null,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
         ?callable $onProgress = null
     ): ?Processor
     {
@@ -229,7 +239,8 @@ enum Task: string
             self::ZeroShotImageClassification,
             self::ImageToImage,
             self::ObjectDetection,
-            self::ZeroShotObjectDetection => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
+            self::ZeroShotObjectDetection,
+            self::AudioClassification => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
 
 
             self::SentimentAnalysis,
