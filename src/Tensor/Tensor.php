@@ -44,15 +44,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     protected Buffer $buffer;
 
     protected static $pack = [
-        NDArray::bool    => 'C',
-        NDArray::int8    => 'c',
-        NDArray::int16   => 's',
-        NDArray::int32   => 'l',
-        NDArray::int64   => 'q',
-        NDArray::uint8   => 'C',
-        NDArray::uint16  => 'S',
-        NDArray::uint32  => 'L',
-        NDArray::uint64  => 'Q',
+        NDArray::bool => 'C',
+        NDArray::int8 => 'c',
+        NDArray::int16 => 's',
+        NDArray::int32 => 'l',
+        NDArray::int64 => 'q',
+        NDArray::uint8 => 'C',
+        NDArray::uint16 => 'S',
+        NDArray::uint32 => 'L',
+        NDArray::uint64 => 'Q',
         //NDArray::float8  => 'N/A',
         //NDArray::float16 => 'N/A',
         NDArray::float32 => 'g',
@@ -414,7 +414,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      */
     public function toBufferArray(): array
     {
-        $fmt = self::$pack[$this->dtype].'*';
+        $fmt = self::$pack[$this->dtype] . '*';
 
         return array_values(unpack($fmt, $this->buffer->dump()));
     }
@@ -848,10 +848,16 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $mo = self::mo();
 
+        if ($axis !== null) {
+            $axis = $this->safeIndex($axis, $this->ndim());
+        }
+
         $mean = $mo->mean($this, $axis);
 
         if ($mean instanceof NDArray) {
-            $shape = $mean->shape();
+            $shape = $this->shape();
+
+            $shape[$axis] = 1;
 
             if (!$keepShape) {
                 array_splice($shape, $axis, 1);
