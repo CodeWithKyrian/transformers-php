@@ -16,7 +16,7 @@ models, and the remote path template. These settings allow you to tailor how and
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
 
- Transformers::setup()
+Transformers::setup()
         ->setCacheDir('/path/to/models')
         ->setImageDriver(ImageDriver::IMAGICK)
         ->setRemoteHost('https://yourmodelshost.com')
