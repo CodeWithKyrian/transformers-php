@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\DataStructures\FFT;
 use Codewithkyrian\Transformers\OnnxRuntime\FFI;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Transformers;
+use FFI\CData;
 use InvalidArgumentException;
 use RuntimeException;
 use SplFixedArray;
@@ -17,6 +18,7 @@ class Audio
 {
     private static \FFI $sndfileFFI;
     private static \FFI $samplerateFFI;
+    private static \FFI $spectrogramFFI;
 
     public function __construct(protected $sndfile, protected $sfinfo)
     {
@@ -43,6 +45,18 @@ class Audio
 
         return self::$samplerateFFI;
     }
+
+    public static function spectrogramFFI(): \FFI
+    {
+        if (!isset(self::$spectrogramFFI)) {
+            $headerFile = Transformers::$libsDir . '/lilbspectrogram-osx-1.0.0/include/spectrogram.h';
+            $libFile = Transformers::$libsDir . '/lilbspectrogram-osx-1.0.0/lib/libspectrogram.dylib';
+            self::$spectrogramFFI = \FFI::cdef(file_get_contents($headerFile), $libFile);
+        }
+
+        return self::$spectrogramFFI;
+    }
+
 
     public static function read(string $filename): static
     {
@@ -112,13 +126,13 @@ class Audio
 
         $inputSize = $chunkSize * $this->channels();
         $inputData = $sndfileFFI->new("float[$inputSize]");
-        $outputSize = $chunkSize / $this->channels();
+        $outputSize = $chunkSize * $this->channels();
         $outputData = $sndfileFFI->new("float[$outputSize]");
 
         $srcData = $sampleRateFFI->new('SRC_DATA');
-        $srcData->data_in = \FFI::addr($inputData[0]);
+        $srcData->data_in = \FFI::cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
-        $srcData->data_out = \FFI::addr($outputData[0]);
+        $srcData->data_out = \FFI::cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
         while (true) {
@@ -160,14 +174,11 @@ class Audio
             $totalOutputFrames += $srcData->output_frames_gen;
         }
 
-//        \FFI::free($srcData->data_in);
-//        \FFI::free($srcData->data_out);
-
         $sampleRateFFI->src_delete($state);
 
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
-        return $audioTensor->mean(1, true);
+        return $audioTensor->mean(1);
     }
 
     public function fromTensor(Tensor $tensor): void
@@ -244,7 +255,7 @@ class Audio
             for ($i = 0; $i < $nMelFilters; ++$i) {
                 $enorm = 2.0 / ($filterFreqs[$i + 2] - $filterFreqs[$i]);
                 for ($j = 0; $j < $nFrequencyBins; ++$j) {
-                    $melFilters[$j][$i] *= $enorm;
+                    $melFilters[$i][$j] *= $enorm;
                 }
             }
         }
@@ -459,38 +470,36 @@ class Audio
      *  typically the next power of two.
      */
     public static function spectrogram(
-        Tensor        $waveform,
-        SplFixedArray $window,
-        int           $frameLength,
-        int           $hopLength,
-        ?int          $fftLength = null,
-        float         $power = 1.0,
-        bool          $center = true,
-        string        $padMode = 'reflect',
-        bool          $onesided = true,
-        float         $preemphasis = null,
-        ?array        $melFilters = null,
-        float         $melFloor = 1e-10,
-        ?string       $logMel = null,
-        float         $reference = 1.0,
-        float         $minValue = 1e-10,
-        ?float        $dbRange = null,
-        ?bool         $removeDcOffset = null,
-        ?int          $maxNumFrames = null,
-        bool          $doPad = true,
-        bool          $transpose = false
+        Tensor  $waveform,
+        Tensor  $window,
+        int     $frameLength,
+        int     $hopLength,
+        ?int    $fftLength = null,
+        float   $power = 1.0,
+        bool    $center = true,
+        string  $padMode = 'reflect',
+        bool    $onesided = true,
+        float   $preemphasis = 0,
+        ?array  $melFilters = null,
+        float   $melFloor = 1e-10,
+        ?string $logMel = null,
+        float   $reference = 1.0,
+        float   $minValue = 1e-10,
+        ?float  $dbRange = null,
+        ?bool   $removeDcOffset = null,
+        ?int    $maxNumFrames = null, // -1 for c
+        bool    $doPad = true,
+        bool    $transpose = false
     ): Tensor
     {
-        $windowLength = count($window);
+        $spectrogramFFI = self::spectrogramFFI();
 
-        if ($fftLength === null) {
-            $fftLength = $frameLength;
-        }
-
+        $fftLength ??= $frameLength;
         if ($frameLength > $fftLength) {
             throw new InvalidArgumentException("frameLength ($frameLength) may not be larger than fftLength ($fftLength)");
         }
 
+        $windowLength = $window->size();
         if ($windowLength !== $frameLength) {
             throw new InvalidArgumentException("Length of the window ($windowLength) must equal frameLength ($frameLength)");
         }
@@ -504,16 +513,26 @@ class Audio
                 throw new InvalidArgumentException("pad_mode=\"{$padMode}\" not implemented yet.");
             }
 
-            $halfWindow = floor(($fftLength - 1) / 2) + 1;
-            $waveform = self::padReflect($waveform, $halfWindow, $halfWindow);
+            $halfWindow = (int)floor(($fftLength - 1) / 2) + 1;
+            $paddedLength = $waveform->size() + (2 * $halfWindow);
+
+            $padded = Tensor::zeros([$paddedLength], $waveform->dtype());
+
+            $spectrogramFFI->pad_reflect(
+                $waveform->buffer()->addr($waveform->offset()),
+                $waveform->size(),
+                $padded->buffer()->addr($padded->offset()),
+                $padded->size()
+            );
+
+            $waveform = $padded;
         }
 
-        $numFrames = 1 + floor(($waveform->buffer()->count() - $frameLength) / $hopLength);
+        $numFrames = 1 + floor(($waveform->size() - $frameLength) / $hopLength);
         $numFrequencyBins = $onesided ? floor($fftLength / 2) + 1 : $fftLength;
 
         $d1 = (int)$numFrames;
         $d1Max = (int)$numFrames;
-
 
         if ($maxNumFrames !== null) {
             if ($maxNumFrames > $numFrames) {
@@ -524,137 +543,68 @@ class Audio
                 $d1Max = $d1 = $maxNumFrames;
             }
         }
-        $fft = new FFT($fftLength);
-        $inputBuffer = new SplFixedArray($fftLength);
-        $outputBuffer = new SplFixedArray($fft->outputBufferSize);
-        $magnitudes = new SplFixedArray($d1);
 
-        for ($i = 0; $i < $d1; ++$i) {
-            $offset = $i * $hopLength;
-
-            for ($j = 0; $j < $frameLength; ++$j) {
-                $inputBuffer[$j] = $waveform->buffer()[$offset + $j];
-            }
-
-            if ($removeDcOffset) {
-                $sum = 0;
-                for ($j = 0; $j < $frameLength; ++$j) {
-                    $sum += $inputBuffer[$j];
-                }
-                $mean = $sum / $frameLength;
-                for ($j = 0; $j < $frameLength; ++$j) {
-                    $inputBuffer[$j] -= $mean;
-                }
-            }
-
-            if ($preemphasis !== null) {
-                for ($j = $frameLength - 1; $j >= 1; --$j) {
-                    $inputBuffer[$j] -= $preemphasis * $inputBuffer[$j - 1];
-                }
-                $inputBuffer[0] *= 1 - $preemphasis;
-            }
-
-            for ($j = 0; $j < $windowLength; ++$j) {
-                $inputBuffer[$j] *= $window[$j];
-            }
-
-            $fft->realTransform($outputBuffer, $inputBuffer);
-
-            $row = [];
-            for ($j = 0; $j < $numFrequencyBins; ++$j) {
-                $j2 = $j << 1;
-                $row[$j] = $outputBuffer[$j2] ** 2 + $outputBuffer[$j2 + 1] ** 2;
-            }
-            $magnitudes[$i] = $row;
-
-        }
+        $melFilters = Tensor::fromArray($melFilters, Tensor::float32);
+        $spectrogram = Tensor::zeros($transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max]);
+        $logMel = match ($logMel) {
+            'log' => $spectrogramFFI->LOG_MEL_LOG,
+            'log10' => $spectrogramFFI->LOG_MEL_LOG10,
+            'dB' => $spectrogramFFI->LOG_MEL_DB,
+            default => $spectrogramFFI->LOG_MEL_NONE,
+        };
 
 
-        if ($power !== null && $power != 2) {
-            $pow = 2 / $power;
-            for ($i = 0; $i < $magnitudes->count(); $i++) {
-                for ($j = 0; $j < count($magnitudes[$i]); $j++) {
-                    $magnitudes[$i][$j] **= $pow;
-                }
-            }
-        }
+        $spectrogramFFI->compute_spectrogram(
+            $waveform->buffer()->addr($waveform->offset()),
+            $waveform->size(),
+            $spectrogram->buffer()->addr($spectrogram->offset()),
+            $spectrogram->size(),
+            $hopLength,
+            $fftLength,
+            $window->buffer()->addr($window->offset()),
+            $windowLength,
+            $d1,
+            $d1Max,
+            $power,
+            $center,
+            $preemphasis,
+            $melFilters->buffer()->addr($melFilters->offset()),
+            $melFilters->count(),
+            $numFrequencyBins,
+            $melFloor,
+            $logMel,
+            $removeDcOffset,
+            $doPad,
+            $transpose,
+        );
 
-        $numMelFilters = count($melFilters);
-
-        $shape = $transpose ? [$d1Max, $numMelFilters] : [$numMelFilters, $d1Max];
-
-        $melSpec = new Tensor(null, Tensor::float32, [array_product($shape)]);
-
-        for ($i = 0; $i < $numMelFilters; ++$i) {
-            $filter = $melFilters[$i];
-            for ($j = 0; $j < $d1; ++$j) {
-                $magnitude = $magnitudes[$j];
-
-                $sum = 0;
-                for ($k = 0; $k < $numFrequencyBins; ++$k) {
-                    $sum += $filter[$k] * $magnitude[$k];
-                }
-
-                $melSpec->buffer()[$transpose ? $j * $numMelFilters + $i : $i * $d1 + $j] = max($melFloor, $sum);
-            }
-
-        }
-
-
-        if ($power !== null && $logMel !== null) {
-            $o = min($melSpec->count(), $d1 * $numMelFilters);
-
-            switch ($logMel) {
-                case 'log':
-                    for ($i = 0; $i < $o; ++$i) {
-                        $melSpec->buffer()[$i] = log($melSpec->buffer()[$i]);
-                    }
-                    break;
-                case 'log10':
-                    for ($i = 0; $i < $o; ++$i) {
-                        $melSpec[$i] = log10($melSpec->buffer()[$i]);
-                    }
-                    break;
-                case 'dB':
-                    if ($power === 1.0) {
-                        self::amplitudeToDB($melSpec, $reference, $minValue, $dbRange);
-                    } elseif ($power === 2.0) {
-                        self::powerToDB($melSpec, $reference, $minValue, $dbRange);
-                    } else {
-                        throw new InvalidArgumentException("Cannot use logMel option '$logMel' with power $power");
-                    }
-                    break;
-                default:
-                    throw new InvalidArgumentException("logMel must be one of null, 'log', 'log10' or 'dB'. Got '$logMel'");
-            }
-        }
-
-        return $melSpec->reshape($shape);
+        return $spectrogram;
     }
 
     /**
      * Generates a Hanning window of length M.
      *
      * @param int $M The length of the Hanning window to generate.
-     * @return SplFixedArray The generated Hanning window.
+     * @return Tensor The generated Hanning window.
      */
-    private static function hanning(int $M): SplFixedArray
+    private static function hanning(int $M): Tensor
     {
         if ($M < 1) {
-            return new SplFixedArray(0);
+            return Tensor::zeros([1]);
         }
         if ($M === 1) {
-            $ret = new SplFixedArray(1);
-            $ret[0] = 1.0;
-            return $ret;
+            return Tensor::ones([1]);
         }
-        $denom = $M - 1;
-        $factor = M_PI / $denom;
-        $cosValues = new SplFixedArray($M);
+
+        $denominator = $M - 1;
+        $factor = M_PI / $denominator;
+
+        $cosValues = Tensor::zeros([$M]);
         for ($i = 0; $i < $M; ++$i) {
-            $n = 2 * $i - $denom;
+            $n = 2 * $i - $denominator;
             $cosValues[$i] = 0.5 + 0.5 * cos($factor * $n);
         }
+
         return $cosValues;
     }
 
@@ -666,41 +616,25 @@ class Audio
      * @param int|null $frameLength The length of the analysis frames in samples.
      * Provide a value for `frame_length` if the window is smaller than the frame length, so that it will be zero-padded.
      * @param bool $center Whether to center the window inside the FFT buffer. Only used when `frameLength` is provided.
-     * @return SplFixedArray The window of shape `(windowLength)` or `(frameLength)`.
+     * @return Tensor The window of shape `(windowLength)` or `(frameLength)`.
      */
     public static function windowFunction(
         int    $windowLength,
         string $name,
         bool   $periodic = true,
-        ?int   $frameLength = null,
+        int    $frameLength = null,
         bool   $center = true
-    ): SplFixedArray
+    ): Tensor
     {
 
         $length = $periodic ? $windowLength + 1 : $windowLength;
-        $window = null;
 
-        switch ($name) {
-            case 'boxcar':
-                $window = new SplFixedArray($length);
-                for ($i = 0; $i < $length; ++$i) {
-                    $window[$i] = 1.0;
-                }
-                break;
-            case 'hann':
-            case 'hann_window':
-                $window = self::hanning($length);
-                break;
-            case 'povey':
-                $hanningWindow = self::hanning($length);
-                $window = new SplFixedArray($length);
-                for ($i = 0; $i < $length; ++$i) {
-                    $window[$i] = pow($hanningWindow[$i], 0.85);
-                }
-                break;
-            default:
-                throw new InvalidArgumentException("Unknown window type $name.");
-        }
+        $window = match ($name) {
+            'boxcar' => Tensor::ones([$length]),
+            'hann', 'hann_window' => self::hanning($length),
+            'povey' => self::hanning($length)->pow(0.85),
+            default => throw new InvalidArgumentException("Unknown window type $name."),
+        };
 
         if ($periodic) {
             // TODO: Get subset of the array from 0 to windowLength

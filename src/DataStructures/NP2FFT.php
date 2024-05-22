@@ -30,7 +30,7 @@ class NP2FFT
         // Helper variables
         $a = 2 * ($fftLength - 1);
         $b = 2 * (2 * $fftLength - 1);
-        $nextP2 = pow(2, ceil(log($b, 2)));
+        $nextP2 = (int) (2 ** ceil(log($b, 2)));
         $this->bufferSize = $nextP2;
         $this->a = $a;
 
@@ -68,6 +68,7 @@ class NP2FFT
             $ichirp[$i2] = $chirp[$i2];
             $ichirp[$i2 + 1] = -$chirp[$i2 + 1];
         }
+
         $this->slicedChirpBuffer = SplFixedArray::fromArray(array_slice($chirp->toArray(), $a, $b - $a));
 
         // create object to perform Fast Fourier Transforms
@@ -115,10 +116,10 @@ class NP2FFT
         $this->f->inverseTransform($ob3, $ib2);
 
         for ($j = 0; $j < count($ob3); $j += 2) {
-            $aReal = $ob3[$j + $a];
-            $a_imag = $ob3[$j + $a + 1];
-            $b_real = $sb[$j];
-            $b_imag = $sb[$j + 1];
+            $aReal = $ob3[$j + $a] ?? 0;
+            $a_imag = $ob3[$j + $a + 1] ?? 0;
+            $b_real = $sb[$j] ?? 0;
+            $b_imag = $sb[$j + 1] ?? 0;
 
             $output[$j] = $aReal * $b_real - $a_imag * $b_imag;
             $output[$j + 1] = $aReal * $b_imag + $a_imag * $b_real;

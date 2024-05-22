@@ -259,7 +259,7 @@ enum ModelArchitecture: string
         ];
 
 
-        if ($beam['attention_mask']) {
+        if (isset($beam['attention_mask'])) {
             $modelInputs['attention_mask'] = $beam['attention_mask'];
         }
 
