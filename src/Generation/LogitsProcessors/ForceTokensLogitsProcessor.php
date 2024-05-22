@@ -15,7 +15,9 @@ class ForceTokensLogitsProcessor extends LogitsProcessor
 
     public function __construct(array $forcedDecoderIds)
     {
-        $this->forceTokenMap = array_fill_keys(array_keys($forcedDecoderIds), 0);
+        foreach ($forcedDecoderIds[0] as $inputLength => $forcedId) {
+            $this->forceTokenMap[$inputLength] = $forcedId;
+        }
     }
 
     /**
@@ -27,7 +29,7 @@ class ForceTokensLogitsProcessor extends LogitsProcessor
      */
     public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
-        $map = $this->forceTokenMap[count($inputIds) ?? 0]; // Access length from inputIds
+        $map = $this->forceTokenMap[count($inputIds)] ?? null; // Access length from inputIds
 
         if ($map) {
             Tensor::mo()->la()->fill(-INF, $logits);

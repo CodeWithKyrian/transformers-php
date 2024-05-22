@@ -32,6 +32,7 @@ use Codewithkyrian\Transformers\Utils\Hub;
 use Error;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\array_some;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
@@ -607,7 +608,6 @@ class PretrainedModel
                 }
 
                 $output = $this->runBeam($beam);
-
 
                 // add attentions/scores to beam only if user requested
                 if ($generationConfig->output_attentions) {

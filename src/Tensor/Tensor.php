@@ -543,12 +543,12 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * @param int $size The size of the dimension.
      * @param int|null $axis The axis (optional).
      * @return int The positive index within bounds.
-     * @throws Exception If the index is out of bounds.
+     * @throws InvalidArgumentException If the index is out of bounds.
      */
     protected static function safeIndex(int $index, int $size, ?int $axis = null): int
     {
         if ($index < -$size || $index >= $size) {
-            throw new Exception("IndexError: index $index is out of bounds for axis"
+            throw new InvalidArgumentException("IndexError: index $index is out of bounds for axis"
                 . ($axis === null ? '' : ' ' . $axis) . " with size $size"
             );
         }
@@ -650,6 +650,37 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
+
+    public function log(): self
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->log($this);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    public function exp(): self
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->exp($this);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Return a new Tensor raised to the power of a scalar or element-wise power of another tensor.
+     */
+    public function pow(float|Tensor $exponent): self
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->pow($this, $exponent);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
 
     /**
      * Calculate the dot product of this tensor and another tensor.

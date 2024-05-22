@@ -8,6 +8,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\array_every;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
@@ -55,18 +56,8 @@ class TextGenerationPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $streamer = null;
-        if (array_key_exists('streamer', $args)) {
-            /** @var Streamer $streamer */
-            $streamer = $args['streamer'];
-            unset($args['streamer']);
-        }
-
-        $returnFullText = true; // By default, return full text
-        if (array_key_exists('returnFullText', $args)) {
-            $returnFullText = $args['returnFullText'];
-            unset($args['returnFullText']);
-        }
+        $streamer = array_pop_key($args, 'streamer');
+        $returnFullText = array_pop_key($args, 'returnFullText', true);
 
         // Convert the rest of the arguments key names from camelCase to snake_case
         $snakeCasedArgs = [];

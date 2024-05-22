@@ -15,6 +15,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForObjectDetection;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSpeechSeq2Seq;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForVision2Seq;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForZeroShotObjectDetection;
@@ -51,6 +52,7 @@ enum Task: string
     case ZeroShotObjectDetection = 'zero-shot-object-detection';
 
     case AudioClassification = 'audio-classification';
+    case AutomaticSpeechRecognition = 'automatic-speech-recognition';
 
 
     public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
@@ -94,6 +96,8 @@ enum Task: string
             self::ZeroShotObjectDetection => new ZeroShotObjectDetectionPipeline($this, $model, $tokenizer, $processor),
 
             self::AudioClassification => new AudioClassificationPipeline($this, $model, processor: $processor),
+
+            self::AutomaticSpeechRecognition => new AutomaticSpeechRecognitionPipeline($this, $model, $tokenizer, $processor),
         };
     }
 
@@ -136,6 +140,8 @@ enum Task: string
             self::ZeroShotObjectDetection => 'Xenova/owlvit-base-patch32', // Original: 'google/owlvit-base-patch32',
 
             self::AudioClassification => 'Xenova/wav2vec2-base-superb-ks', // Original: 'superb/wav2vec2-base-superb-ks',
+
+            self::AutomaticSpeechRecognition => 'Xenova/whisper-tiny.en', // Original: 'openai/whisper-tiny.en',
         };
     }
 
@@ -185,6 +191,8 @@ enum Task: string
             self::ZeroShotObjectDetection => AutoModelForZeroShotObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
 
             self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+
+            self::AutomaticSpeechRecognition => AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
         };
     }
 
@@ -219,7 +227,8 @@ enum Task: string
             self::Ner,
             self::ImageToText,
             self::ZeroShotImageClassification,
-            self::ZeroShotObjectDetection => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
+            self::ZeroShotObjectDetection,
+            self::AutomaticSpeechRecognition => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
         };
     }
 
@@ -240,7 +249,8 @@ enum Task: string
             self::ImageToImage,
             self::ObjectDetection,
             self::ZeroShotObjectDetection,
-            self::AudioClassification => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
+            self::AudioClassification,
+            self::AutomaticSpeechRecognition => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
 
 
             self::SentimentAnalysis,
