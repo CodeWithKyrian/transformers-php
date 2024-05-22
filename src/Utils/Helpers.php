@@ -61,6 +61,16 @@ function array_every(array $array, callable $callback): bool
     return true;
 }
 
+function array_pop_key(array &$array, string|int $key, mixed $default = null)
+{
+    if (isset($array[$key])) {
+        $value = $array[$key];
+        unset($array[$key]);
+        return $value;
+    }
+    return $default;
+}
+
 function camelCaseToSnakeCase(string $input): string
 {
     return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));

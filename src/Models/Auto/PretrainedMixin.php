@@ -102,6 +102,8 @@ abstract class PretrainedMixin
             in_array($modelClass, AutoModelForMaskedLM::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
             in_array($modelClass, AutoModelForVision2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Vision2Seq,
             in_array($modelClass, AutoModelForImageClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForAudioClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForSpeechSeq2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Seq2SeqLM,
 
             default => ModelArchitecture::EncoderOnly,
         };
