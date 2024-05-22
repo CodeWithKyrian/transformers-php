@@ -468,6 +468,10 @@ class PretrainedTokenizer
         // Setting .length to a lower value truncates the array in-place.
         // Note: In PHP, arrays automatically adjust their size, so we don't need to explicitly set the length.
         foreach (array_keys($item) as $key) {
+            if (false == $item[$key]) {
+                continue;
+            }
+
             $item[$key] = array_slice($item[$key], 0, $length);
         }
     }
