@@ -20,9 +20,9 @@ $audioUrl = __DIR__ . '/../sounds/taunt.wav';
 $audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
 $audioUrl = __DIR__ . '/../sounds/kyrian-speaking-30.wav';
 $audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
-$audioUrl = __DIR__ . '/../sounds/dataset1.wav';
+//$audioUrl = __DIR__ . '/../sounds/dataset1.wav';
 
 $streamer = StdOutStreamer::make();
-$output = $transcriber($audioUrl, maxNewTokens: 256, returnTimestamps: 'word');
+$output = $transcriber($audioUrl, maxNewTokens: 256, chunkLengthSecs: 30, strideLengthSecs: 6);
 
 dd($output, timeUsage(), memoryUsage());
