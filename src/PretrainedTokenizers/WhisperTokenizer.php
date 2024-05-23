@@ -157,7 +157,7 @@ class WhisperTokenizer extends PretrainedTokenizer
         bool        $forceFullSequences = true
     ): array
     {
-        // Set force_full_sequences=false if you want streaming
+        // Set forceFullSequences=false if you want streaming
         // TODO add support for `returnLanguage`
 
         // Internal method meant to only be used by ASR pipeline.
@@ -323,6 +323,7 @@ class WhisperTokenizer extends PretrainedTokenizer
                 }
             }
 
+//            dump($this->decode($currentTokens), empty($previousTokens) ? '': $this->decode($previousTokens[0]));
             if (isset($output['stride'])) {
                 [$chunkLen, $strideLeft, $strideRight] = $output['stride'];
                 $timeOffset += $chunkLen - $strideRight;
@@ -418,9 +419,11 @@ class WhisperTokenizer extends PretrainedTokenizer
             $rightSequence = $sequences[$i];
             $max = 0.0;
             $maxIndices = [$leftLength, $leftLength, 0, 0];
+//            dd($this->decode($leftSequence), $this->decode($rightSequence));
 
             $rightLength = count($rightSequence);
             for ($j = 1; $j < $leftLength + $rightLength; ++$j) {
+                // epsilon to favor long perfect matches
                 $eps = $j / 10000.0;
                 $leftStart = max(0, $leftLength - $j);
                 $leftStop = min($leftLength, $leftLength + $rightLength - $j);
@@ -430,10 +433,13 @@ class WhisperTokenizer extends PretrainedTokenizer
                 $right = array_slice($rightSequence, $rightStart, $rightStop - $rightStart);
 
                 if (count($left) !== count($right)) {
-                    throw new Exception("There is a bug within whisper `decode_asr` function, please report it. Dropping to prevent bad inference.");
+                    throw new Exception("There is a bug within whisper `decodeASR` function, please report it. Dropping to prevent bad inference.");
                 }
 
-                $matches = count(array_filter(array_map(fn($elem, $idx) => $elem === $right[$idx], $left, array_keys($left))));
+                $matches = count(array_filter(
+                        array_map(fn($elem, $idx) => $elem === $right[$idx], $left, array_keys($left))
+                    )
+                );
 
                 $matching = $matches / $j + $eps;
                 if ($matches > 1 && $matching > $max) {
@@ -443,8 +449,8 @@ class WhisperTokenizer extends PretrainedTokenizer
             }
 
             [$leftStart, $leftStop, $rightStart, $rightStop] = $maxIndices;
-            $leftMid = intval(($leftStop + $leftStart) / 2);
-            $rightMid = intval(($rightStop + $rightStart) / 2);
+            $leftMid = (int)floor(($leftStop + $leftStart) / 2);
+            $rightMid = (int)floor(($rightStop + $rightStart) / 2);
             $totalSequence = array_merge($totalSequence, array_slice($leftSequence, 0, $leftMid));
             $leftSequence = array_slice($rightSequence, $rightMid);
             $leftLength = count($leftSequence);

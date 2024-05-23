@@ -43,11 +43,6 @@ class LogitsProcessorList implements \IteratorAggregate
      */
     public function __invoke(array $inputIds, Tensor &$batchedLogits): void
     {
-//        foreach ($batchedLogits as &$logits) {
-//            foreach ($this->processors as $processor) {
-//                $processor($inputIds, $logits); // Apply processors in-place
-//            }
-//        }
         for ($i = 0; $i < count($batchedLogits); $i++) {
             foreach ($this->processors as $processor) {
                 $processor($inputIds, $batchedLogits[$i]); // Apply processors in-place
@@ -62,7 +57,6 @@ class LogitsProcessorList implements \IteratorAggregate
      */
     public function getIterator(): Traversable
     {
-//        return new \ArrayIterator($this->processors);
         yield from $this->processors;
     }
 }
