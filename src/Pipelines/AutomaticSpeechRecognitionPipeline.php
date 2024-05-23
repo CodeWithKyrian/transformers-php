@@ -105,7 +105,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
         $strideLengthSecs = $args['strideLengthSecs'] ?? null;
 
         if ($returnTimestamps == 'word') {
-            $args['returnTimestamps'] = true;
+            $args['return_token_timestamps'] = true;
         }
 
         $language = array_pop_key($args, 'language');
@@ -150,7 +150,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
             $chunks = [];
 
-
             if ($chunkLengthSecs > 0) {
 
                 if ($strideLengthSecs === null) {
@@ -164,12 +163,18 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 $jump = $window - 2 * $stride;
                 $offset = 0;
 
+
                 while ($offset < $audioTensor->size()) {
-                    $subAudio = $audioTensor->slice($offset, $offset + $window);
+
+                    if ($offset + $window > $audioTensor->size()) {
+                        $window = $audioTensor->size() - $offset;
+                    }
+
+                    $subAudio = $audioTensor->sliceWithBounds([$offset], [$window]);
                     $feature = ($this->processor)($subAudio);
 
                     $isFirstChunk = $offset === 0;
-                    $isLastChunk = $offset + $window >= $audioTensor->size();
+                    $isLastChunk = $offset + $jump >= $audioTensor->size();
 
                     $chunks[] = [
                         'stride' => [
@@ -194,7 +199,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
             }
 
-
             // Generate for each set of input features
             foreach ($chunks as &$chunk) {
                 $generationConfig['num_frames'] = floor($chunk['stride'][0] / $hopLength);
@@ -203,7 +207,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 $data = $this->model->generate($chunk['input_features'], generationConfig: $generationConfig, streamer: $streamer);
 
                 // TODO: Right now we only get top beam
-                if ($returnTimestamps == 'word') {
+                if ($returnTimestamps === 'word') {
                     $chunk['tokens'] = $data['sequences'][0];
                     $chunk['token_timestamps'] = array_map(fn($x) => round($x, 2), $data['token_timestamps'][0]);
                 } else {

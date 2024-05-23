@@ -42,15 +42,13 @@ class WhisperFeatureExtractor extends FeatureExtractor
                 'If using a pipeline to extract transcript from a long audio clip,' .
                 'remember to specify `chunkLengthSecs` and/or `strideLengthSecs` in the pipeline options.', E_USER_WARNING);
 
-            $waveform = $waveform->slice(0, $this->config['n_samples']);
-        } else {
-            $padding = $this->config['n_samples'] - $waveform->size();
-            // create a new Tensor with the same data type as the input waveform
-            $padding = Tensor::zeros([$padding], dtype: $waveform->dtype());
+            $waveform = $waveform->sliceWithBounds([0], [$this->config['n_samples']]);
+        } else if ($waveform->size() < $this->config['n_samples']) {
+            $padLength = $this->config['n_samples'] - $waveform->size();
+            $padding = Tensor::zeros([$padLength], dtype: $waveform->dtype());
             $waveform = Tensor::concat([$waveform, $padding]);
         }
 
-        timeUsage();
         $features = Audio::spectrogram(
             $waveform,
             $this->window,
@@ -59,13 +57,15 @@ class WhisperFeatureExtractor extends FeatureExtractor
             power: 2.0,
             melFilters: $this->config['mel_filters'],
             logMel: 'log10',
-
             maxNumFrames: $this->config['nb_max_frames'],
         );
 
         $maxValue = $features->max();
 
-        $features->u(fn($x) => (max($x, $maxValue - 8.0) + 4.0) / 4.0);
+        $features = $features
+            ->maximum($maxValue - 8.0)
+            ->add(4.0)
+            ->multiply(1.0 / 4.0);
 
         return [
             'input_features' => $features->unsqueeze(0)

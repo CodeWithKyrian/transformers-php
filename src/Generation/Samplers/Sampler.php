@@ -46,31 +46,24 @@ abstract class Sampler
      */
     public function getLogits(Tensor $logits, int $index): Tensor
     {
-        $vocabSize = $logits->shape()[$logits->ndim() - 1];
+//        $vocabSize = $logits->shape()[$logits->ndim() - 1];
 
-//        $logs = $logits->buffer()->toArray();
+//        $start = array_fill(0, $logits->ndim(), 0);
+//        $size = array_fill(0, $logits->ndim(), 1);
 //
-//        if ($index === -1) {
-//            $logs = array_slice($logs, -$vocabSize);
-//        } else {
-//            $startIndex = $index * $vocabSize;
-//            $logs = array_slice($logs, $startIndex, $startIndex + $vocabSize);
-//        }
+//        array_splice($start, -2, replacement: [$index, 0]);
+//        array_splice($size, -2, replacement: [1, $vocabSize]);
+//
+//        $logs = $logits->sliceWithBounds($start, $size);
 
-        $start = array_fill(0, $logits->ndim(), 0);
-        $size = array_fill(0, $logits->ndim(), 1);
-
-        array_splice($start, -2, replacement: [$index, 0]);
-        array_splice($size, -2, replacement: [1, $vocabSize]);
-
-        $logs = $logits->newSlice($start, $size);
+        $logits = $logits->slice($index);
 
         if ($this->generationConfig->temperature > 0) {
-            $logs = $logs->multiply(1 / $this->generationConfig->temperature);
+            $logits = $logits->multiply(1 / $this->generationConfig->temperature);
         }
 
         // Remove all dimensions of 1, leaving a flat 1D array of vocab_size
-        return $logs->squeeze();
+        return $logits->squeeze();
     }
 
     /**

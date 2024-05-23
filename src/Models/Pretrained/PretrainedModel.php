@@ -770,7 +770,6 @@ class PretrainedModel
             $genConfigArray = array_merge($genConfigArray, $this->generationConfig->toArray());
         }
 
-
         // Finally, use any generation config specified by the user
         // when calling `generate`
         if ($generationConfig !== null) {

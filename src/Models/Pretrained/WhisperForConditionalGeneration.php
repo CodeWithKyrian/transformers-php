@@ -59,15 +59,19 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         // Whisper has additional options for returning timestamps
         $generationConfig['return_timestamps'] ??= false;
 
+
         if ($generationConfig['return_timestamps']) {
-            $logitsProcessor = [new WhisperTimeStampLogitsProcessor($generationConfig)];
+            $logitsProcessor = new LogitsProcessorList();
+            $logitsProcessor->push(new WhisperTimeStampLogitsProcessor($generationConfig));
         }
 
-        if (isset($generationConfig['return_token_timestamps'])) {
-            $generationConfig->output_attentions = true;
-            $generationConfig->return_dict_in_generate = true;
 
-            if ($generationConfig['task'] === 'translate') {
+
+        if (isset($generationConfig['return_token_timestamps'])) {
+            $generationConfig['output_attentions'] = true;
+            $generationConfig['return_dict_in_generate'] = true;
+
+            if ($generationConfig['task'] ?? '' === 'translate') {
                 trigger_error("Token-level timestamps may not be reliable for task 'translate'.", E_USER_WARNING);
             }
 
@@ -79,13 +83,14 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             }
         }
 
+
         $outputs = parent::generate($inputs, $generationConfig, $logitsProcessor, $inputsAttentionMask, $streamer);
 
         if (isset($generationConfig['return_token_timestamps']) && isset($generationConfig['alignment_heads'])) {
             $outputs['token_timestamps'] = $this->extractTokenTimestamps(
                 $outputs,
                 $generationConfig['alignment_heads'],
-                $generationConfig['num_frames']
+                $generationConfig['num_frames'] ?? null,
             );
         }
 
@@ -106,9 +111,10 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
     public function extractTokenTimestamps(
         array $generateOutputs,
         array $alignmentHeads,
-        ?int $numFrames = null,
+        int|float|null $numFrames = null,
         float $timePrecision = 0.02
     ): Tensor {
+        $numFrames = (int) $numFrames;
         if (!isset($generateOutputs['cross_attentions'])) {
             throw new Exception(
                 "Model outputs must contain cross attentions to extract timestamps. " .
@@ -125,18 +131,22 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         $batchedMatrices = array_map(function($batch) use ($numFrames, $alignmentHeads, $medianFilterWidth) {
             // Create a list with `decoder_layers` elements, each a tensor of shape
             // (batch size, attention_heads, output length, input length).
+            /** @var Tensor[] $crossAttentions */
             $crossAttentions = [];
             for ($i = 0; $i < $this->config['decoder_layers']; $i++) {
-                $crossAttentions[] = cat(array_map(fn($x) => $x[$i], $batch), 2);
+                $crossAttentions[] = Tensor::concat(array_map(fn($x) => $x[$i], $batch), 2);
             }
 
-            $weights = stack(array_map(function($alignmentHead) use ($crossAttentions, $numFrames) {
-                list($l, $h) = $alignmentHead;
+            $weights = Tensor::stack(array_map(function($alignmentHead) use ($crossAttentions, $numFrames) {
+                [$l, $h] = $alignmentHead;
                 return $numFrames
                     ? $crossAttentions[$l]->slice(null, $h, null, [0, $numFrames])
                     : $crossAttentions[$l]->slice(null, $h);
             }, $alignmentHeads));
-            $weights = $weights->transpose(1, 0, 2, 3);
+            dd($weights->shape());
+
+            $weights = $weights->permute( 1, 0, 2, 3);
+
 
             list($std, $calculatedMean) = std_mean($weights, -2, 0, true);
 
