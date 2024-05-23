@@ -1122,7 +1122,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $permuted = self::mo()->transpose($this, $axes);
 
-        return Tensor::fromArray($permuted);
+        return new static($permuted->buffer(), $permuted->dtype(), $permuted->shape(), $permuted->offset());
     }
 
     /**

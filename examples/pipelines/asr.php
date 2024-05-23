@@ -23,6 +23,6 @@ $audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
 //$audioUrl = __DIR__ . '/../sounds/dataset1.wav';
 
 $streamer = StdOutStreamer::make();
-$output = $transcriber($audioUrl, maxNewTokens: 256, chunkLengthSecs: 30, strideLengthSecs: 6);
+$output = $transcriber($audioUrl, maxNewTokens: 256, chunkLengthSecs: 30, returnTimestamps: true);
 
 dd($output, timeUsage(), memoryUsage());
