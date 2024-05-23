@@ -189,7 +189,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             // NOTE: Since we run only one batch at a time, we can squeeze to get the same dimensions
             // as the python implementation
             $matrix = $batchedMatrices[$batchIdx]->multiply(-1)->squeeze(0);
-            list($textIndices, $timeIndices) = dynamicTimeWarping($matrix);
+            list($textIndices, $timeIndices) = $this->dynamicTimeWarping($matrix);
 
             $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
             $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
@@ -216,7 +216,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         $outputArray = array_fill(0, count($tensor), 0);
         $buffer = array_fill(0, $windowSize, 0);
 
-        $halfWindowSize = (int) floor($windowSize / 2);
+        $halfWindowSize = (int)floor($windowSize / 2);
 
         for ($i = 0; $i < count($tensor); ++$i) {
             $valuesIndex = 0;
@@ -237,6 +237,77 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         }
 
         return Tensor::fromArray($outputArray, $tensor->dtype());
+    }
+
+    private function dynamicTimeWarping(Tensor $tensor): array
+    {
+        [$rows, $cols] = $tensor->shape();
+
+        $outputShape = [$rows + 1, $cols + 1];
+
+        $cost = Tensor::fill($outputShape, -INF, Tensor::float32);
+        $traceback = Tensor::fill($outputShape, -1, Tensor::int32);
+
+        $cost[0][0] = 0;
+
+        for ($i = 1; $i < $rows + 1; ++$i) {
+            for ($j = 1; $j < $cols + 1; ++$j) {
+                $c0 = $cost[$i - 1][$j - 1];
+                $c1 = $cost[$i - 1][$j];
+                $c2 = $cost[$i][$j - 1];
+
+                if ($c0 <= $c1 && $c0 <= $c2) {
+                    $c = $c0;
+                    $t = 0;
+                } else if ($c1 <= $c0 && $c1 <= $c2) {
+                    $c = $c1;
+                    $t = 1;
+                } else {
+                    $c = $c2;
+                    $t = 2;
+                }
+
+                $cost[$i][$j] = $tensor[$i - 1][$j - 1] + $c;
+                $traceback[$i][$j] = $t;
+            }
+        }
+
+        // Traceback
+        $i = $rows;
+        $j = $cols;
+
+        for ($k = 0; $k < $outputShape[1]; ++$k) {
+            $traceback[0][$k] = 2;
+        }
+
+        for ($k = 0; $k < $outputShape[0]; ++$k) {
+            $traceback[$k][0] = 1;
+        }
+
+        $textIndices = [];
+        $timeIndices = [];
+
+        while ($i > 0 || $j > 0) {
+            $textIndices[] = $i - 1;
+            $timeIndices[] = $j - 1;
+
+            $t = $traceback[$i][$j];
+
+            if ($t === 0) {
+                $i--;
+                $j--;
+            } else if ($t === 1) {
+                $i--;
+            } else {
+                $j--;
+            }
+        }
+
+
+        $textIndices = array_reverse($textIndices);
+        $timeIndices = array_reverse($timeIndices);
+
+        return [$textIndices, $timeIndices];
     }
 
 }

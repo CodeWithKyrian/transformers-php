@@ -104,7 +104,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
         $forceFullSequences = $args['forceFullSequences'] ?? false;
         $strideLengthSecs = $args['strideLengthSecs'] ?? null;
 
-        if ($returnTimestamps == 'word') {
+        if ($returnTimestamps === 'word') {
             $args['return_token_timestamps'] = true;
         }
 
@@ -209,7 +209,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 // TODO: Right now we only get top beam
                 if ($returnTimestamps === 'word') {
                     $chunk['tokens'] = $data['sequences'][0];
-                    $chunk['token_timestamps'] = array_map(fn($x) => round($x, 2), $data['token_timestamps'][0]);
+                    $chunk['token_timestamps'] = $data['token_timestamps'][0]->round(2);
                 } else {
                     $chunk['tokens'] = $data[0];
                 }
