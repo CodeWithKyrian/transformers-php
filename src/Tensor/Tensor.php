@@ -727,6 +727,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
+    public function reciprocal(): self
+    {
+        $mo = self::mo();
+
+        $ndArray = $mo->la()->reciprocal($this);
+
+        return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
     /**
      * Performs `L_p` normalization of inputs over specified dimension.
      *
@@ -908,6 +917,74 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
+     * Calculates the standard deviation and mean over the dimensions specified by dim. dim can be a
+     * single dimension or `null` to reduce over all dimensions.
+     *
+     * @param int|null $axis The dimension to reduce. If `null`, reduces over all dimensions.
+     * @param int $correction The type of normalization. Default is 0.
+     * @param bool $keepShape Whether to keep the reduced dimension or not.
+     *
+     * @return array The standard deviation and mean of the tensor.
+     */
+    public function stdMean(?int $axis = null, int $correction = 1, bool $keepShape = false): array
+    {
+        $mo = self::mo();
+
+        if ($axis === null) {
+            $mean = $mo->mean($this);
+            $std = sqrt($mo->sum($mo->la()->pow($mo->la()->sub($this, $mean), 2)) / ($this->size() - $correction));
+
+            return [
+                Tensor::fromArray([$mean], $this->dtype()),
+                Tensor::fromArray([$std], $this->dtype())
+            ];
+        }
+
+        $axis = $this->safeIndex($axis, $this->ndim());
+
+        $mean = $mo->mean($this, $axis);
+
+        $resultShape = $this->shape();
+        $resultShape[$axis] = 1;
+
+        $result = $this->zeros([count($this->buffer) / $this->shape()[$axis]], $this->dtype());
+
+        for ($i = 0; $i < count($this->buffer); ++$i) {
+            $resultIndex = 0;
+            $num = $i;
+            $resultMultiplier = 1;
+
+            for ($j = $this->ndim() - 1; $j >= 0; --$j) {
+                $size = $this->shape()[$j];
+
+                if ($j !== $axis) {
+                    $index = $num % $size;
+                    $resultIndex += $index * $resultMultiplier;
+                    $resultMultiplier *= $resultShape[$j];
+                }
+
+                $num = floor($num / $size);
+            }
+
+            $result->buffer[$resultIndex] += pow($this->buffer[$i] - $mean->buffer()[$resultIndex], 2);
+        }
+
+        for ($i = 0; $i < count($result->buffer); ++$i) {
+            $result->buffer[$i] = sqrt($result->buffer[$i] / ($this->shape()[$axis] - $correction));
+        }
+
+        if (!$keepShape) {
+            array_splice($resultShape, $axis, 1);
+        }
+
+        return [
+            new static($result->buffer(), $result->dtype(), $resultShape, $result->offset()),
+            new static($mean->buffer(), $mean->dtype(), $resultShape, $mean->offset()),
+        ];
+    }
+
+
+    /**
      * Perform mean pooling of the tensor followed by a normalization step.
      *
      * @param Tensor $other The tensor to pool of the same shape as the input tensor.
@@ -977,7 +1054,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 $slice = $this->safeIndex($slice, $this->shape()[$sliceIndex], $sliceIndex);
 
                 $start[] = $slice;
-                $size[] =  1;
+                $size[] = 1;
 
             } elseif (is_array($slice) && count($slice) === 2) {
                 // An array of length 2 means take a range of elements
@@ -993,7 +1070,29 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             }
         }
 
-        return $this->sliceWithBounds($start, $size);
+        if (count($size) <= 3) {
+            return $this->sliceWithBounds($start, $size);
+        }
+
+        // The sliceWithBounds method only supports up to 3 dimensions,
+        // so we need to slice manually for higher dimensions
+        $newShape = $size;
+        $newBufferSize = array_product($size);
+
+        $buffer = self::newBuffer($newBufferSize, $this->dtype());
+        $stride = $this->stride();
+
+        for ($i = 0; $i < $newBufferSize; ++$i) {
+            $originalIndex = 0;
+            for ($j = count($newShape) - 1, $num = $i; $j >= 0; --$j) {
+                $size = $newShape[$j];
+                $originalIndex += (($num % $size) + $start[$j]) * $stride[$j];
+                $num = floor($num / $size);
+            }
+            $buffer[$i] = $this->buffer[$originalIndex];
+        }
+
+        return new Tensor($buffer, $this->dtype(), $newShape, $this->offset());
     }
 
     /**
