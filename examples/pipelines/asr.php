@@ -18,8 +18,11 @@ $audioUrl = __DIR__ . '/../sounds/jfk.wav';
 $audioUrl = __DIR__ . '/../sounds/preamble.wav';
 $audioUrl = __DIR__ . '/../sounds/taunt.wav';
 $audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
+$audioUrl = __DIR__ . '/../sounds/kyrian-speaking-30.wav';
+$audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
+$audioUrl = __DIR__ . '/../sounds/dataset1.wav';
 
 $streamer = StdOutStreamer::make();
-$output = $transcriber($audioUrl, maxNewTokens: 256, streamer: $streamer);
+$output = $transcriber($audioUrl, maxNewTokens: 256, returnTimestamps: 'word');
 
-dd( timeUsage(), memoryUsage());
+dd($output, timeUsage(), memoryUsage());

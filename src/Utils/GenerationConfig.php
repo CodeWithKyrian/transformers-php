@@ -201,7 +201,9 @@ class GenerationConfig implements \ArrayAccess
 
     public function toArray(): array
     {
-        return array_filter(get_object_vars($this), fn($value) => $value !== null);
+        $objectProps = array_filter(get_object_vars($this), fn($value) => $value !== null);
+        unset($objectProps['kwargs']);
+        return array_merge($objectProps, $this->kwargs);
     }
 
     public function offsetExists(mixed $offset): bool
@@ -218,9 +220,9 @@ class GenerationConfig implements \ArrayAccess
     {
         if (property_exists($this, $offset)) {
             $this->$offset = $value;
-        } else {
-            $this->kwargs[$offset] = $value;
         }
+
+        $this->kwargs[$offset] = $value;
     }
 
     public function offsetUnset(mixed $offset): void

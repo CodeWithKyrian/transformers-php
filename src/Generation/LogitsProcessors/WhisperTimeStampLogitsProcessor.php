@@ -45,9 +45,12 @@ class WhisperTimeStampLogitsProcessor extends LogitsProcessor
         $this->timestampBegin = $this->noTimestampsTokenId + 1;
 
         $this->beginIndex = count($generateConfig['forced_decoder_ids'] ?? []) + 2;
-        if (end($generateConfig['forced_decoder_ids'])[1] === $this->noTimestampsTokenId) {
+
+        $forcedDecoderIds = $generateConfig['forced_decoder_ids'] ?? [];
+        if (count($forcedDecoderIds) > 0 && end($forcedDecoderIds)[1] === $this->noTimestampsTokenId) {
             $this->beginIndex -= 1;
         }
+
         $this->maxInitialTimestampIndex = $generateConfig['max_initial_timestamp_index'] ?? null;
     }
 
@@ -94,10 +97,10 @@ class WhisperTimeStampLogitsProcessor extends LogitsProcessor
         }
 
         // if sum of probability over timestamps is above any other token, sample timestamp
-//        $logProbs = log_softmax($logitsData);
         $logProbs = $logits->softmax()->log();
-        $timestampLogProb = log(array_sum(array_map('exp', array_slice($logProbs, $this->timestampBegin))));
-        $maxTextTokenLogProb = max(array_slice($logProbs, 0, $this->timestampBegin));
+        $a = $logProbs->sliceWithBounds([0, $this->timestampBegin], [1, $logProbs->size() - $this->timestampBegin]);
+        $timestampLogProb = log($a->exp()->sum());
+        $maxTextTokenLogProb = $logProbs->sliceWithBounds([0, 0], [1, $this->timestampBegin])->max();
 
         if ($timestampLogProb > $maxTextTokenLogProb) {
             for ($i = 0; $i < $this->timestampBegin; $i++) {

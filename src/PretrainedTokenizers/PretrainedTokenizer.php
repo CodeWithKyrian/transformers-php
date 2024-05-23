@@ -535,6 +535,7 @@ class PretrainedTokenizer
     public function decode(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
         if (empty($tokenIds) || !is_int($tokenIds[0])) {
+            dd($tokenIds);
             throw new Exception("token_ids must be a non-empty array of integers.");
         }
 
