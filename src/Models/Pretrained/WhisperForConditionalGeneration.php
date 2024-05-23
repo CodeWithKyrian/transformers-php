@@ -14,6 +14,7 @@ use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Exception;
+use InvalidArgumentException;
 
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
@@ -66,7 +67,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         }
 
 
-
         if (isset($generationConfig['return_token_timestamps'])) {
             $generationConfig['output_attentions'] = true;
             $generationConfig['return_dict_in_generate'] = true;
@@ -109,12 +109,13 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
      * @throws Exception If the model outputs do not contain cross attentions
      */
     public function extractTokenTimestamps(
-        array $generateOutputs,
-        array $alignmentHeads,
+        array          $generateOutputs,
+        array          $alignmentHeads,
         int|float|null $numFrames = null,
-        float $timePrecision = 0.02
-    ): Tensor {
-        $numFrames = (int) $numFrames;
+        float          $timePrecision = 0.02
+    ): Tensor
+    {
+        $numFrames = (int)$numFrames;
         if (!isset($generateOutputs['cross_attentions'])) {
             throw new Exception(
                 "Model outputs must contain cross attentions to extract timestamps. " .
@@ -128,7 +129,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $medianFilterWidth = 7;
         }
 
-        $batchedMatrices = array_map(function($batch) use ($numFrames, $alignmentHeads, $medianFilterWidth) {
+        $batchedMatrices = array_map(function ($batch) use ($numFrames, $alignmentHeads, $medianFilterWidth) {
             // Create a list with `decoder_layers` elements, each a tensor of shape
             // (batch size, attention_heads, output length, input length).
             /** @var Tensor[] $crossAttentions */
@@ -137,49 +138,49 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
                 $crossAttentions[] = Tensor::concat(array_map(fn($x) => $x[$i], $batch), 2);
             }
 
-            $weights = Tensor::stack(array_map(function($alignmentHead) use ($crossAttentions, $numFrames) {
+            $weights = Tensor::stack(array_map(function ($alignmentHead) use ($crossAttentions, $numFrames) {
                 [$l, $h] = $alignmentHead;
                 return $numFrames
-                    ? $crossAttentions[$l]->slice(null, $h, null, [0, $numFrames])
-                    : $crossAttentions[$l]->slice(null, $h);
+                    ? $crossAttentions[$l]->slice(null, $h, null, [0, $numFrames])->squeeze(1)
+                    : $crossAttentions[$l]->slice(null, $h)->squeeze(1); // experimental
             }, $alignmentHeads));
-            dd($weights->shape());
 
-            $weights = $weights->permute( 1, 0, 2, 3);
+            $weights = $weights->permute(1, 0, 2, 3);
 
-
-            list($std, $calculatedMean) = std_mean($weights, -2, 0, true);
+            [$std, $calculatedMean] = $weights->stdMean(-2, 0, true);
 
             // Normalize and smoothen the weights.
-            $smoothedWeights = $weights->clone(); // [1, 8, seqLength, 1500]
+            $smoothedWeights = clone $weights; // [1, 8, seqLength, 1500]
 
-            for ($a = 0; $a < $smoothedWeights->dims[0]; ++$a) {
+            for ($a = 0; $a < $smoothedWeights->shape()[0]; ++$a) {
                 $aTensor = $smoothedWeights[$a]; // [8, seqLength, 1500]
 
-                for ($b = 0; $b < $aTensor->dims[0]; ++$b) {
+                for ($b = 0; $b < $aTensor->shape()[0]; ++$b) {
                     $bTensor = $aTensor[$b]; // [seqLength, 1500]
 
                     $stdTensor = $std[$a][$b][0]; // [1500]
                     $meanTensor = $calculatedMean[$a][$b][0]; // [1500]
 
-                    for ($c = 0; $c < $bTensor->dims[0]; ++$c) {
+                    for ($c = 0; $c < $bTensor->shape()[0]; ++$c) {
+                        /** @var Tensor $cTensor */
                         $cTensor = $bTensor[$c]; // [1500]
-                        for ($d = 0; $d < count($cTensor->data); ++$d) {
-                            $cTensor->data[$d] = ($cTensor->data[$d] - $meanTensor->data[$d]) / $stdTensor->data[$d];
-                        }
+//                        for ($d = 0; $d < count($cTensor->buffer()); ++$d) {
+//                            $cTensor->buffer()[$d] = ($cTensor->buffer()[$d] - $meanTensor->buffer()[$d]) / $stdTensor->buffer()[$d];
+//                        }
+                        $cTensor = $cTensor->add($meanTensor->multiply(-1))->multiply($stdTensor->reciprocal());
 
                         // Apply median filter.
-                        $cTensor->data = medianFilter($cTensor->data, $medianFilterWidth);
+                        $cTensor = $this->medianFilter($cTensor, $medianFilterWidth);
                     }
                 }
             }
 
             // Average the different cross-attention heads.
-            $matrix = mean($smoothedWeights, 1);
-            return $matrix;
+            return $smoothedWeights->mean(1);
         }, $generateOutputs['cross_attentions']);
 
         $timestampsShape = [count($generateOutputs['sequences']), count($generateOutputs['sequences'][0])];
+
 
         $timestamps = new Tensor(null, Tensor::float32, $timestampsShape);
 
@@ -187,11 +188,11 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         for ($batchIdx = 0; $batchIdx < $timestampsShape[0]; ++$batchIdx) {
             // NOTE: Since we run only one batch at a time, we can squeeze to get the same dimensions
             // as the python implementation
-            $matrix = $batchedMatrices[$batchIdx]->neg()->squeeze_(0);
+            $matrix = $batchedMatrices[$batchIdx]->multiply(-1)->squeeze(0);
             list($textIndices, $timeIndices) = dynamicTimeWarping($matrix);
 
             $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
-            $jumps = array_map(fn($x) => (bool) $x, array_merge([1], $diffs));
+            $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
 
             $jumpTimes = [];
             for ($i = 0; $i < count($jumps); ++$i) {
@@ -204,6 +205,38 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         }
 
         return $timestamps;
+    }
+
+    function medianFilter(Tensor $tensor, int $windowSize): Tensor
+    {
+        if ($windowSize % 2 === 0 || $windowSize <= 0) {
+            throw new InvalidArgumentException('Window size must be a positive odd number');
+        }
+
+        $outputArray = array_fill(0, count($tensor), 0);
+        $buffer = array_fill(0, $windowSize, 0);
+
+        $halfWindowSize = (int) floor($windowSize / 2);
+
+        for ($i = 0; $i < count($tensor); ++$i) {
+            $valuesIndex = 0;
+
+            for ($j = -$halfWindowSize; $j <= $halfWindowSize; ++$j) {
+                $index = $i + $j;
+                if ($index < 0) {
+                    $index = abs($index);
+                } else if ($index >= count($tensor)) {
+                    $index = 2 * (count($tensor) - 1) - $index;
+                }
+
+                $buffer[$valuesIndex++] = $tensor->buffer()[$index];
+            }
+
+            sort($buffer);
+            $outputArray[$i] = $buffer[$halfWindowSize];
+        }
+
+        return Tensor::fromArray($outputArray, $tensor->dtype());
     }
 
 }
