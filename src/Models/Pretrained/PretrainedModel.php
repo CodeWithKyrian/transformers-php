@@ -85,7 +85,7 @@ class PretrainedModel
         string            $revision = 'main',
         ?string           $modelFilename = null,
         ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ?callable $onProgress = null
+        ?callable         $onProgress = null
     ): self
     {
         if (is_array($config)) {
@@ -116,7 +116,12 @@ class PretrainedModel
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
-                return new static($config, $session, $modelArchitecture, $generatorConfig);
+                return new static(
+                    config: $config,
+                    session: $session,
+                    modelArchitecture: $modelArchitecture,
+                    generationConfig: $generatorConfig
+                );
             }
 
             case ModelArchitecture::Seq2SeqLM:
@@ -149,8 +154,13 @@ class PretrainedModel
 
                 $generatorConfig = new GenerationConfig($generatorConfigArr);
 
-
-                return new static($config, $encoderSession, $decoderSession, $modelArchitecture, $generatorConfig);
+                return new static(
+                    config: $config,
+                    session: $encoderSession,
+                    modelArchitecture: $modelArchitecture,
+                    generationConfig: $generatorConfig,
+                    decoderMergedSession: $decoderSession
+                );
             }
 
             case ModelArchitecture::MaskGeneration:
@@ -171,7 +181,12 @@ class PretrainedModel
                     onProgress: $onProgress
                 );
 
-                return new static($config, $visionEncoder, $promptMaskEncoder, $modelArchitecture);
+                return new static(
+                    config: $config,
+                    session: $visionEncoder,
+                    promptMaskEncoderSession: $promptMaskEncoder,
+                    modelArchitecture: $modelArchitecture
+                );
             }
 
             case ModelArchitecture::EncoderDecoder:
@@ -192,7 +207,12 @@ class PretrainedModel
                     onProgress: $onProgress
                 );
 
-                return new static($config, $encoderSession, $decoderSession, $modelArchitecture);
+                return new static(
+                    config: $config,
+                    session: $encoderSession,
+                    decoderMergedSession: $decoderSession,
+                    modelArchitecture: $modelArchitecture
+                );
             }
 
             default:
@@ -211,7 +231,11 @@ class PretrainedModel
                 );
 
 
-                return new static($config, $session, $modelArchitecture);
+                return new static(
+                    config: $config,
+                    session: $session,
+                    modelArchitecture: $modelArchitecture
+                );
             }
         }
     }
@@ -233,14 +257,14 @@ class PretrainedModel
      */
 
     public static function constructSession(
-        string           $modelNameOrPath,
-        string           $fileName,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        string           $subFolder = 'onnx',
-        bool             $fatal = true,
+        string    $modelNameOrPath,
+        string    $fileName,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        string    $subFolder = 'onnx',
+        bool      $fatal = true,
         ?callable $onProgress = null,
-                         ...$sessionOptions
+                  ...$sessionOptions
     ): ?InferenceSession
     {
         $modelFileName = "$fileName.onnx";

@@ -2,6 +2,20 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.4.1 - 2024-05-24
+
+### What's Changed
+
+* configuration.md: fix indentation of Transformers::setup() by @k00ni in https://github.com/CodeWithKyrian/transformers-php/pull/35
+* PretrainedTokenizer::truncateHelper: prevent array_slice() error for flawed text input (summarization) by @k00ni in https://github.com/CodeWithKyrian/transformers-php/pull/36
+* Fix bug with Download CLI - use named parameters for model construct by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/39
+
+### New Contributors
+
+* @k00ni made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/35
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.4.0...0.4.1
+
 ## v0.3.1 - 2024-04-22
 
 ### What's Changed
@@ -95,11 +109,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -117,6 +133,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
