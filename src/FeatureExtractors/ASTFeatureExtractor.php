@@ -12,7 +12,7 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 class ASTFeatureExtractor extends FeatureExtractor
 {
     protected array $melFilters;
-    protected \SplFixedArray $window;
+    protected Tensor $window;
     protected mixed $mean;
     protected mixed $std;
 

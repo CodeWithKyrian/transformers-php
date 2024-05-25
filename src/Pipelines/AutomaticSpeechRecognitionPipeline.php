@@ -228,7 +228,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 returnTimestamps: $returnTimestamps,
                 forceFullSequences: $forceFullSequences
             );
-
             $toReturn[] = ['text' => $fullText, ...$optional];
         }
 

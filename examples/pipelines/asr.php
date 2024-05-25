@@ -16,13 +16,13 @@ $transcriber = pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en'
 $audioUrl = __DIR__ . '/../sounds/kyrian-dev.wav';
 $audioUrl = __DIR__ . '/../sounds/jfk.wav';
 $audioUrl = __DIR__ . '/../sounds/preamble.wav';
-$audioUrl = __DIR__ . '/../sounds/taunt.wav';
-$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
-$audioUrl = __DIR__ . '/../sounds/kyrian-speaking-30.wav';
+//$audioUrl = __DIR__ . '/../sounds/taunt.wav';
+//$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
+//$audioUrl = __DIR__ . '/../sounds/kyrian-speaking-30.wav';
 $audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
 //$audioUrl = __DIR__ . '/../sounds/dataset1.wav';
 
 $streamer = StdOutStreamer::make();
-$output = $transcriber($audioUrl, maxNewTokens: 256, chunkLengthSecs: 30, returnTimestamps: true);
+$output = $transcriber($audioUrl, maxNewTokens: 256, chunkLengthSecs: 30,  returnTimestamps: 'word');
 
 dd($output, timeUsage(), memoryUsage());

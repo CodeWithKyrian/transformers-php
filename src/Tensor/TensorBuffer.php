@@ -209,4 +209,9 @@ class TensorBuffer implements LinearBuffer
 
         FFI::memcpy($this->data, $string, $strlen);
     }
+
+    public function __clone()
+    {
+        $this->data = clone $this->data;
+    }
 }
