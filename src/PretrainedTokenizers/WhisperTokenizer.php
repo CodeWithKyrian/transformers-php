@@ -177,6 +177,7 @@ class WhisperTokenizer extends PretrainedTokenizer
         // - Lots of complexity comes from stride and timestamps
 
         $lastLanguage = null;
+
         $returnWordTimestamps = $returnTimestamps === "word";
 
         $newChunk = fn() => ["language" => null, "timestamp" => [null, null], "text" => ""];
@@ -275,11 +276,6 @@ class WhisperTokenizer extends PretrainedTokenizer
                     } else {
                         // This is the end of the timestamp chunk
                         if ($roundedTime !== $chunk['timestamp'][0]) {
-                            // This is a bug in timestamp token output
-                            // where we're taking the duplicate token
-                            // as a stop where it should be a start.
-                            // This is an issue in the underlying model output
-                            // Let's just skip it so it becomes de-factor a start agin
                             $chunk['timestamp'][1] = $roundedTime;
                             $previousTokens[] = $currentTokens;
 
@@ -307,6 +303,13 @@ class WhisperTokenizer extends PretrainedTokenizer
                             $previousTokenTimestamps = [];
                             $currentTokenTimestamps = [];
                             $chunk = $newChunk();
+                        }
+                        else {
+                            // This is a bug in timestamp token output
+                            // where we're taking the duplicate token
+                            // as a stop where it should be a start.
+                            // This is an issue in the underlying model output
+                            // Let's just skip it so it becomes de-factor a start agin
                         }
                     }
                 } else {
@@ -419,7 +422,6 @@ class WhisperTokenizer extends PretrainedTokenizer
             $rightSequence = $sequences[$i];
             $max = 0.0;
             $maxIndices = [$leftLength, $leftLength, 0, 0];
-//            dd($this->decode($leftSequence), $this->decode($rightSequence));
 
             $rightLength = count($rightSequence);
             for ($j = 1; $j < $leftLength + $rightLength; ++$j) {
@@ -436,9 +438,8 @@ class WhisperTokenizer extends PretrainedTokenizer
                     throw new Exception("There is a bug within whisper `decodeASR` function, please report it. Dropping to prevent bad inference.");
                 }
 
-                $matches = count(array_filter(
-                        array_map(fn($elem, $idx) => $elem === $right[$idx], $left, array_keys($left))
-                    )
+                $matches = count(
+                    array_filter($left, fn($elem, $idx) => $elem === $right[$idx], ARRAY_FILTER_USE_BOTH)
                 );
 
                 $matching = $matches / $j + $eps;
@@ -494,8 +495,6 @@ class WhisperTokenizer extends PretrainedTokenizer
      * and a list of `token_id` sequences with the tokens making up each word.
      * @param array $tokens
      * @param string|null $language
-     * @param string $prependPunctuations
-     * @param string $appendPunctuations
      * @return array
      * @private
      */
@@ -573,34 +572,34 @@ class WhisperTokenizer extends PretrainedTokenizer
      */
     private function splitTokensOnUnicode(array $tokens): array
     {
-        $decoded_full = $this->decode($tokens, decodeWithTimestamps: true);
+        $decodedFull = $this->decode($tokens, decodeWithTimestamps: true);
 
-        $replacement_char = "\u{FFFD}";
+        $replacementChar = "\u{FFFD}";
 
         $words = [];
-        $word_tokens = [];
-        $token_indices = [];
-        $current_tokens = [];
-        $current_indices = [];
-        $unicode_offset = 0;
+        $wordTokens = [];
+        $tokenIndices = [];
+        $currentTokens = [];
+        $currentIndices = [];
+        $unicodeOffset = 0;
 
         foreach ($tokens as $token_idx => $token) {
-            $current_tokens[] = $token;
-            $current_indices[] = $token_idx;
+            $currentTokens[] = $token;
+            $currentIndices[] = $token_idx;
 
-            $decoded = $this->decode($tokens, decodeWithTimestamps: true);
+            $decoded = $this->decode($currentTokens, decodeWithTimestamps: true);
 
-            if (!str_contains($decoded, $replacement_char) || $decoded_full[$unicode_offset + strpos($decoded, $replacement_char)] === $replacement_char) {
+            if (!str_contains($decoded, $replacementChar) || $decodedFull[$unicodeOffset + strpos($decoded, $replacementChar)] === $replacementChar) {
                 $words[] = $decoded;
-                $word_tokens[] = $current_tokens;
-                $token_indices[] = $current_indices;
-                $current_tokens = [];
-                $current_indices = [];
-                $unicode_offset += strlen($decoded);
+                $wordTokens[] = $currentTokens;
+                $tokenIndices[] = $currentIndices;
+                $currentTokens = [];
+                $currentIndices = [];
+                $unicodeOffset += strlen($decoded);
             }
         }
 
-        return [$words, $word_tokens, $token_indices];
+        return [$words, $wordTokens, $tokenIndices];
     }
 
     /**
@@ -617,7 +616,9 @@ class WhisperTokenizer extends PretrainedTokenizer
         $word_tokens = [];
         $token_indices = [];
 
-        $punctuationRegex = '/^\p{P}+$/u';
+//        $punctuationRegex = '/^\p{P}+$/u';
+        $punctuationRegex = '\p{P}\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E';
+        $punctuationRegex = "/\s+|([$punctuationRegex])+/u";
 
         foreach ($subwords as $i => $subword) {
             $subwordTokens = $subwordTokensList[$i];
