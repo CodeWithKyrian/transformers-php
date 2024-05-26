@@ -160,7 +160,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
                 $window = $chunkLengthSecs * $samplingRate;
                 $stride = $strideLengthSecs * $samplingRate;
-                $jump = $window - 2 * $stride;
+                $jump = (int)floor($window - 2 * $stride);
                 $offset = 0;
 
 

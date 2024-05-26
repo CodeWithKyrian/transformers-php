@@ -500,6 +500,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
+    public function copyTo(Tensor $other): void
+    {
+        self::mo()->la()->copy($this, $other);
+    }
+
 
     /**
      * Stack an array of tensors along a specified axis.
