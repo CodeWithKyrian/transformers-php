@@ -141,11 +141,13 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $weights = Tensor::stack(array_map(function ($alignmentHead) use ($crossAttentions, $numFrames) {
                 [$l, $h] = $alignmentHead;
                 return $numFrames
-                    ? $crossAttentions[$l]->slice(null, $h, null, [0, $numFrames])->squeeze(1)
-                    : $crossAttentions[$l]->slice(null, $h)->squeeze(1); // experimental
+                    ? $crossAttentions[$l]->slice(null, $h, null, [0, $numFrames])
+                    : $crossAttentions[$l]->slice(null, $h); // experimental
             }, $alignmentHeads));
 
-            $weights = $weights->permute(1, 0, 2, 3);
+            $weights = $weights
+                ->squeeze(1)
+                ->permute(1, 0, 2, 3);
 
             [$std, $calculatedMean] = $weights->stdMean(-2, 0, true);
 
@@ -155,8 +157,10 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             for ($a = 0; $a < $smoothedWeights->shape()[0]; ++$a) {
                 $aTensor = $smoothedWeights[$a]; // [8, seqLength, 1500]
 
+
                 for ($b = 0; $b < $aTensor->shape()[0]; ++$b) {
                     $bTensor = $aTensor[$b]; // [seqLength, 1500]
+
 
                     $stdTensor = $std[$a][$b][0]; // [1500]
                     $meanTensor = $calculatedMean[$a][$b][0]; // [1500]
@@ -164,13 +168,14 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
                     for ($c = 0; $c < $bTensor->shape()[0]; ++$c) {
                         /** @var Tensor $cTensor */
                         $cTensor = $bTensor[$c]; // [1500]
-//                        for ($d = 0; $d < count($cTensor->buffer()); ++$d) {
-//                            $cTensor->buffer()[$d] = ($cTensor->buffer()[$d] - $meanTensor->buffer()[$d]) / $stdTensor->buffer()[$d];
-//                        }
-                        $cTensor = $cTensor->add($meanTensor->multiply(-1))->multiply($stdTensor->reciprocal());
+
+                        $cTensor
+                            ->add($meanTensor->multiply(-1))
+                            ->multiply($stdTensor->reciprocal())
+                            ->copyTo($cTensor);
 
                         // Apply median filter.
-                        $cTensor = $this->medianFilter($cTensor, $medianFilterWidth);
+                        $this->medianFilter($cTensor, $medianFilterWidth)->copyTo($cTensor);
                     }
                 }
             }
@@ -189,7 +194,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             // NOTE: Since we run only one batch at a time, we can squeeze to get the same dimensions
             // as the python implementation
             $matrix = $batchedMatrices[$batchIdx]->multiply(-1)->squeeze(0);
-            list($textIndices, $timeIndices) = $this->dynamicTimeWarping($matrix);
+            [$textIndices, $timeIndices] = $this->dynamicTimeWarping($matrix);
 
             $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
             $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
@@ -198,10 +203,12 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             for ($i = 0; $i < count($jumps); ++$i) {
                 if ($jumps[$i]) {
                     $jumpTimes[] = $timeIndices[$i] * $timePrecision;
-                    // NOTE: No point in rounding here, since we set to Float32Array later
                 }
             }
-            $timestamps->buffer()[$batchIdx] = array_merge([0], $jumpTimes);
+//            $timestamps->buffer()[$batchIdx] = array_merge([0.0], $jumpTimes);
+            for ($i = 0; $i < count($jumpTimes); ++$i) {
+                $timestamps[$batchIdx][$i] = $jumpTimes[$i];
+            }
         }
 
         return $timestamps;
