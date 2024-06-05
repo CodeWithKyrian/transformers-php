@@ -236,8 +236,31 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
     private function __invokeWav2Vec2(array|string $inputs, ...$args): array|Tensor|Image
     {
-        throw new \Error('Not implemented');
+        $isBatched = is_array($inputs);
+
+        if (!$isBatched) {
+            $inputs = [$inputs];
+        }
+
+        $samplingRate = $this->processor->featureExtractor->config['sampling_rate'];
+
+        $toReturn = [];
+        foreach ($inputs as $input) {
+            $audio = Audio::read($input);
+            $audioTensor = $audio->toTensor(samplerate: $samplingRate);
+            $processedInputs = ($this->processor)($audioTensor);
+            $outputs = ($this->model)($processedInputs);
+
+            $logits = $outputs['logits'][0];
+
+            $predictedIds = [];
+            foreach ($logits as $item) {
+                $predictedIds[] = $item->argMax();
+            }
+
+            $predictedSentences = $this->tokenizer->decode($predictedIds);
+            $toReturn[] = ['text' => $predictedSentences];
+        }
+        return $isBatched ? $toReturn : $toReturn[0];
     }
-
-
 }
