@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForAudioClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForCTC;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageFeatureExtraction;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageToImage;
@@ -192,7 +193,13 @@ enum Task: string
 
             self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
 
-            self::AutomaticSpeechRecognition => AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::AutomaticSpeechRecognition => (function () use ($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress) {
+                try {
+                    return AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+                } catch (\Exception) {
+                    return AutoModelForCTC::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+                }
+            })(),
         };
     }
 

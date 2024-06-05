@@ -548,7 +548,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * @return int The positive index within bounds.
      * @throws InvalidArgumentException If the index is out of bounds.
      */
-    protected static function safeIndex(int $index, int $size, ?int $axis = null): int
+    public static function safeIndex(int $index, int $size, ?int $axis = null): int
     {
         if ($index < -$size || $index >= $size) {
             throw new InvalidArgumentException("IndexError: index $index is out of bounds for axis"
@@ -947,7 +947,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         $axis = $this->safeIndex($axis, $this->ndim());
 
-        $mean = $mo->mean($this, $axis);
+        $mean = $this->mean($axis, $keepShape);
 
         $resultShape = $this->shape();
         $resultShape[$axis] = 1;
@@ -982,10 +982,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             array_splice($resultShape, $axis, 1);
         }
 
-        return [
-            new static($result->buffer(), $result->dtype(), $resultShape, $result->offset()),
-            new static($mean->buffer(), $mean->dtype(), $resultShape, $mean->offset()),
-        ];
+        return [$result->reshape($resultShape), $mean];
     }
 
 

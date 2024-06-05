@@ -55,8 +55,8 @@ class AudioClassificationPipeline extends Pipeline
             $audio = Audio::read($input);
             $audioTensor = $audio->toTensor(samplerate: $sampleRate);
 
-            $inputs = ($this->processor)($audioTensor);
-            $outputs = ($this->model)($inputs);
+            $processedInputs = ($this->processor)($audioTensor);
+            $outputs = ($this->model)($processedInputs);
 
             $logits = $outputs['logits'][0];
 

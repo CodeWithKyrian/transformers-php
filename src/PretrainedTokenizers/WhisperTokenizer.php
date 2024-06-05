@@ -180,7 +180,7 @@ class WhisperTokenizer extends PretrainedTokenizer
 
         $returnWordTimestamps = $returnTimestamps === "word";
 
-        $newChunk = fn() => ["language" => null, "timestamp" => [null, null], "text" => ""];
+        $newChunk = fn() => ["language" => $lastLanguage, "timestamp" => [null, null], "text" => ""];
 
         // Welcome to the state machine!
         $chunks = [];
