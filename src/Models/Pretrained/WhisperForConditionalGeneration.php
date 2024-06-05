@@ -90,7 +90,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $outputs['token_timestamps'] = $this->extractTokenTimestamps(
                 $outputs,
                 $generationConfig['alignment_heads'],
-                $generationConfig['num_frames'] ?? null,
+                (int)$generationConfig['num_frames'] ?? null,
             );
         }
 
@@ -111,11 +111,10 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
     public function extractTokenTimestamps(
         array          $generateOutputs,
         array          $alignmentHeads,
-        int|float|null $numFrames = null,
+        int|null $numFrames = null,
         float          $timePrecision = 0.02
     ): Tensor
     {
-        $numFrames = (int)$numFrames;
         if (!isset($generateOutputs['cross_attentions'])) {
             throw new Exception(
                 "Model outputs must contain cross attentions to extract timestamps. " .
@@ -145,9 +144,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
                     : $crossAttentions[$l]->slice(null, $h); // experimental
             }, $alignmentHeads));
 
-            $weights = $weights
-                ->squeeze(1)
-                ->permute(1, 0, 2, 3);
+            $weights = $weights->squeeze(1)->permute(1, 0, 2, 3);
 
             [$std, $calculatedMean] = $weights->stdMean(-2, 0, true);
 
@@ -157,10 +154,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             for ($a = 0; $a < $smoothedWeights->shape()[0]; ++$a) {
                 $aTensor = $smoothedWeights[$a]; // [8, seqLength, 1500]
 
-
                 for ($b = 0; $b < $aTensor->shape()[0]; ++$b) {
                     $bTensor = $aTensor[$b]; // [seqLength, 1500]
-
 
                     $stdTensor = $std[$a][$b][0]; // [1500]
                     $meanTensor = $calculatedMean[$a][$b][0]; // [1500]
@@ -187,7 +182,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         $timestampsShape = [count($generateOutputs['sequences']), count($generateOutputs['sequences'][0])];
 
 
-        $timestamps = new Tensor(null, Tensor::float32, $timestampsShape);
+        $timestamps = Tensor::zeros($timestampsShape, Tensor::float32);
 
         // Perform dynamic time warping on each element of the batch.
         for ($batchIdx = 0; $batchIdx < $timestampsShape[0]; ++$batchIdx) {
@@ -199,14 +194,15 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
             $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
 
+            dd($timeIndices);
             $jumpTimes = [];
             for ($i = 0; $i < count($jumps); ++$i) {
                 if ($jumps[$i]) {
                     $jumpTimes[] = $timeIndices[$i] * $timePrecision;
                 }
             }
-//            $timestamps->buffer()[$batchIdx] = array_merge([0.0], $jumpTimes);
-            for ($i = 0; $i < count($jumpTimes); ++$i) {
+            dd($jumpTimes);
+            for ($i = 1; $i < count($jumpTimes); ++$i) {
                 $timestamps[$batchIdx][$i] = $jumpTimes[$i];
             }
         }
@@ -248,25 +244,25 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
     private function dynamicTimeWarping(Tensor $tensor): array
     {
-        [$rows, $cols] = $tensor->shape();
+        [$outputLength, $inputLength] = $tensor->shape();
 
-        $outputShape = [$rows + 1, $cols + 1];
+        $outputShape = [$outputLength + 1, $inputLength + 1];
 
-        $cost = Tensor::fill($outputShape, -INF, Tensor::float32);
+        $cost = Tensor::fill($outputShape, INF, Tensor::float32);
         $traceback = Tensor::fill($outputShape, -1, Tensor::int32);
 
         $cost[0][0] = 0;
 
-        for ($i = 1; $i < $rows + 1; ++$i) {
-            for ($j = 1; $j < $cols + 1; ++$j) {
+        for ($j = 1; $j < $inputLength + 1; ++$j) {
+            for ($i = 1; $i < $outputLength + 1; ++$i) {
                 $c0 = $cost[$i - 1][$j - 1];
                 $c1 = $cost[$i - 1][$j];
                 $c2 = $cost[$i][$j - 1];
 
-                if ($c0 <= $c1 && $c0 <= $c2) {
+                if ($c0 < $c1 && $c0 < $c2) {
                     $c = $c0;
                     $t = 0;
-                } else if ($c1 <= $c0 && $c1 <= $c2) {
+                } else if ($c1 < $c0 && $c1 < $c2) {
                     $c = $c1;
                     $t = 1;
                 } else {
@@ -280,15 +276,15 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         }
 
         // Traceback
-        $i = $rows;
-        $j = $cols;
+        $i = $outputLength;
+        $j = $inputLength;
 
         for ($k = 0; $k < $outputShape[1]; ++$k) {
-            $traceback[0][$k] = 2;
+            $traceback[0][$k] = 2; // trace[0, :] = 2
         }
 
         for ($k = 0; $k < $outputShape[0]; ++$k) {
-            $traceback[$k][0] = 1;
+            $traceback[$k][0] = 1; // trace[:, 0] = 1
         }
 
         $textIndices = [];
@@ -309,7 +305,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
                 $j--;
             }
         }
-
 
         $textIndices = array_reverse($textIndices);
         $timeIndices = array_reverse($timeIndices);

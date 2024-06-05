@@ -21,6 +21,7 @@ class AutoModel extends PretrainedMixin
         "siglip" => \Codewithkyrian\Transformers\Models\Pretrained\SigLipModel::class,
 
         "audio-spectrogram-transformer" => \Codewithkyrian\Transformers\Models\Pretrained\ASTModel::class,
+        "wav2vec2" => \Codewithkyrian\Transformers\Models\Pretrained\Wav2Vec2Model::class,
 
         'detr' => \Codewithkyrian\Transformers\Models\Pretrained\DETRModel::class,
         'yolos' => \Codewithkyrian\Transformers\Models\Pretrained\YOLOSModel::class,
