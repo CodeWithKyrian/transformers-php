@@ -159,7 +159,7 @@ use Codewithkyrian\Transformers\Transformers;
 public function boot()
 {
     Transformers::setup()
-        ->setCacheDir(storage_path('app/transfomers'))
+        ->setCacheDir(storage_path('app/transformers'))
         ->setRemoteHost('https://yourmodelshost.com')
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
