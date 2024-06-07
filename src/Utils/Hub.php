@@ -203,10 +203,10 @@ class Hub
 
         $remotePath = str_replace(
             ['{model}', '{revision}', '{file}'],
-            [$pathOrRepoID, $revision, joinPaths($subFolder, $fileName)],
+            [$pathOrRepoID, $revision, $subFolder === '' ? $fileName : "$subFolder/$fileName"],
             Transformers::$remotePathTemplate
         );
 
-        return joinPaths($remoteHost, $remotePath);
+        return "$remoteHost/$remotePath";
     }
 }
