@@ -148,6 +148,11 @@ class TextStreamer extends Streamer
 
         $tokensToDecode = array_slice($value[0]['output_token_ids'], $this->lastDecodedCheckpointForToken);
 
+        if (empty($tokensToDecode))
+        {
+            return;
+        }
+
         $decodedText = $this->tokenizer->decode($tokensToDecode, skipSpecialTokens: true);
 
         // Check for punctuation marks indicating the end of a word or sentence
