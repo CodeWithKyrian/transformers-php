@@ -237,6 +237,7 @@ class WhisperTokenizer extends PretrainedTokenizer
                     $text = $this->decode([$token]);
                     $language = self::WHISPER_LANGUAGES[substr($text, 2, -2)] ?? null;
 
+
                     if ($language !== null) {
                         // 1/ Indeed some language
                         // TODO Handle when language is different from the previous
@@ -277,6 +278,7 @@ class WhisperTokenizer extends PretrainedTokenizer
                         // This is the end of the timestamp chunk
                         if ($roundedTime !== $chunk['timestamp'][0]) {
                             $chunk['timestamp'][1] = $roundedTime;
+
                             $previousTokens[] = $currentTokens;
 
                             if ($returnWordTimestamps) {
@@ -298,13 +300,13 @@ class WhisperTokenizer extends PretrainedTokenizer
 
                             $chunks[] = $chunk;
 
+                            // Flush all our temporary context
                             $previousTokens = [];
                             $currentTokens = [];
                             $previousTokenTimestamps = [];
                             $currentTokenTimestamps = [];
                             $chunk = $newChunk();
-                        }
-                        else {
+                        } else {
                             // This is a bug in timestamp token output
                             // where we're taking the duplicate token
                             // as a stop where it should be a start.
@@ -326,7 +328,6 @@ class WhisperTokenizer extends PretrainedTokenizer
                 }
             }
 
-//            dump($this->decode($currentTokens), empty($previousTokens) ? '': $this->decode($previousTokens[0]));
             if (isset($output['stride'])) {
                 [$chunkLen, $strideLeft, $strideRight] = $output['stride'];
                 $timeOffset += $chunkLen - $strideRight;
@@ -472,18 +473,18 @@ class WhisperTokenizer extends PretrainedTokenizer
         }
     }
 
-    public function collateWordTimestamps($tokens, $token_timestamps, $language): array
+    public function collateWordTimestamps($tokens, $tokenTimestamps, $language): array
     {
-        [$words, , $token_indices] = $this->combineTokensIntoWords($tokens, $language);
+        [$words, , $tokenIndices] = $this->combineTokensIntoWords($tokens, $language);
 
         $timings = [];
         foreach ($words as $i => $word) {
-            $indices = $token_indices[$i];
+            $indices = $tokenIndices[$i];
             $timings[] = [
                 'text' => $word,
                 'timestamp' => [
-                    $token_timestamps[$indices[0]][0],
-                    $token_timestamps[end($indices)][1],
+                    $tokenTimestamps[$indices[0]][0],
+                    $tokenTimestamps[end($indices)][1],
                 ],
             ];
         }
@@ -583,9 +584,9 @@ class WhisperTokenizer extends PretrainedTokenizer
         $currentIndices = [];
         $unicodeOffset = 0;
 
-        foreach ($tokens as $token_idx => $token) {
+        foreach ($tokens as $tokenIdx => $token) {
             $currentTokens[] = $token;
-            $currentIndices[] = $token_idx;
+            $currentIndices[] = $tokenIdx;
 
             $decoded = $this->decode($currentTokens, decodeWithTimestamps: true);
 
@@ -613,8 +614,8 @@ class WhisperTokenizer extends PretrainedTokenizer
         [$subwords, $subwordTokensList, $subwordIndicesList] = $this->splitTokensOnUnicode($tokens);
 
         $words = [];
-        $word_tokens = [];
-        $token_indices = [];
+        $wordTokens = [];
+        $tokenIndices = [];
 
 //        $punctuationRegex = '/^\p{P}+$/u';
         $punctuationRegex = '\p{P}\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E';
@@ -629,19 +630,19 @@ class WhisperTokenizer extends PretrainedTokenizer
             $trimmed = trim($subword);
             $punctuation = preg_match($punctuationRegex, $trimmed);
 
-            if ($special || $withSpace || $punctuation || empty($words)) {
+            if ($special || $withSpace || $punctuation === false || empty($words)) {
                 $words[] = $subword;
-                $word_tokens[] = $subwordTokens;
-                $token_indices[] = $subwordIndices;
+                $wordTokens[] = $subwordTokens;
+                $tokenIndices[] = $subwordIndices;
             } else {
                 $ix = count($words) - 1;
                 $words[$ix] .= $subword;
-                $word_tokens[$ix] = array_merge($word_tokens[$ix], $subwordTokens);
-                $token_indices[$ix] = array_merge($token_indices[$ix], $subwordIndices);
+                $wordTokens[$ix] = array_merge($wordTokens[$ix], $subwordTokens);
+                $tokenIndices[$ix] = array_merge($tokenIndices[$ix], $subwordIndices);
             }
         }
 
-        return [$words, $word_tokens, $token_indices];
+        return [$words, $wordTokens, $tokenIndices];
     }
 
 
@@ -664,6 +665,8 @@ class WhisperTokenizer extends PretrainedTokenizer
         // prepend punctuations
         $i = count($newWords) - 2;
         $j = count($newWords) - 1;
+
+//        dd($newWords[8], str_contains($prepended, trim($newWords[$i])));
 
         while ($i >= 0) {
             if (str_starts_with($newWords[$i], ' ') && str_contains($prepended, trim($newWords[$i]))) {
@@ -787,25 +790,21 @@ class WhisperTokenizer extends PretrainedTokenizer
         }
 
         if ($noTimestamps) {
-            $noTimestampsId = $this->tokenizer->tokenToIds["<|$noTimestamps|>"] ?? null;
+            $noTimestampsId = $this->tokenizer->tokenToIds["<|notimestamps|>"] ?? null;
             if ($noTimestampsId === null) {
-                throw new Exception('Unable to find "" in model vocabulary. Please report this issue.');
+                throw new Exception('Unable to find "<|notimestamps|>" in model vocabulary. Please report this issue.');
             }
 
             $forcedDecoderIds[] = $noTimestampsId;
         }
 
-        // Remove null elements and prepend index numbers
-        $result = [];
-        $index = 1;
-        foreach ($forcedDecoderIds as $id) {
-            if ($id !== null) {
-                $result[] = [$index++, $id];
-            }
-        }
+        // Prepend index numbers
+        $mapped = array_map(fn($x, $i) => [$i + 1, $x], $forcedDecoderIds, array_keys($forcedDecoderIds));
 
+        // Remove null elements
+        $filtered = array_filter($mapped, fn($x) => $x[1] !== null);
 
-        return $result;
+        return array_values($filtered);
     }
 
 

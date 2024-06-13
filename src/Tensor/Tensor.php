@@ -865,11 +865,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * Rounds elements of input to the nearest integer.
      * @return static The rounded tensor.
      */
-    public function round(): static
+    public function round(int $precision = 0): static
     {
         $mo = self::mo();
 
-        $result = $mo->f(fn($x) => round($x), $this);
+        $result = $mo->f(fn($x) => round($x, $precision), $this);
 
         return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
@@ -937,12 +937,12 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
         if ($axis === null) {
             $mean = $mo->mean($this);
-            $std = sqrt($mo->sum($mo->la()->pow($mo->la()->sub($this, $mean), 2)) / ($this->size() - $correction));
+            $std = sqrt(
+                $mo->sum(
+                    $mo->la()->pow(
+                        $mo->la()->increment($this, -$mean), 2)) / ($this->size() - $correction));
 
-            return [
-                Tensor::fromArray([$mean], $this->dtype()),
-                Tensor::fromArray([$std], $this->dtype())
-            ];
+            return [$std, $mean];
         }
 
         $axis = $this->safeIndex($axis, $this->ndim());
@@ -952,15 +952,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         $resultShape = $this->shape();
         $resultShape[$axis] = 1;
 
-        $result = $this->zeros([count($this->buffer) / $this->shape()[$axis]], $this->dtype());
+        $result = $this->zeros([$this->size() / $this->shape[$axis]], $this->dtype());
 
-        for ($i = 0; $i < count($this->buffer); ++$i) {
+        for ($i = 0; $i < $this->size(); ++$i) {
             $resultIndex = 0;
             $num = $i;
             $resultMultiplier = 1;
 
             for ($j = $this->ndim() - 1; $j >= 0; --$j) {
-                $size = $this->shape()[$j];
+                $size = $this->shape[$j];
 
                 if ($j !== $axis) {
                     $index = $num % $size;
@@ -975,7 +975,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         }
 
         for ($i = 0; $i < count($result->buffer); ++$i) {
-            $result->buffer[$i] = sqrt($result->buffer[$i] / ($this->shape()[$axis] - $correction));
+            $result->buffer[$i] = sqrt($result->buffer[$i] / ($this->shape[$axis] - $correction));
         }
 
         if (!$keepShape) {
@@ -1095,6 +1095,56 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         }
 
         return new Tensor($buffer, $this->dtype(), $newShape, $this->offset());
+
+        $newTensorShape = [];
+        $newOffsets = [];
+
+        for ($sliceIndex = 0; $sliceIndex < $this->ndim(); ++$sliceIndex) {
+            $slice = $slices[$sliceIndex] ?? null;
+
+            if ($slice === null) {
+                $newOffsets[] = [0, $this->shape()[$sliceIndex]];
+                $newTensorShape[] = $this->shape()[$sliceIndex];
+
+            } elseif (is_int($slice)) {
+                $slice = $this->safeIndex($slice, $this->shape()[$sliceIndex], $sliceIndex);
+                $newOffsets[] = [$slice, $slice + 1];
+
+            } elseif (is_array($slice) && count($slice) === 2) {
+                if ($slice[0] > $slice[1]) {
+                    throw new Exception("Invalid slice: " . json_encode($slice));
+                }
+                $offsets = [
+                    max($slice[0], 0),
+                    min($slice[1], $this->shape()[$sliceIndex])
+                ];
+                $newOffsets[] = $offsets;
+                $newTensorShape[] = $offsets[1] - $offsets[0];
+
+            } else {
+                throw new Exception("Invalid slice: " . json_encode($slice));
+            }
+        }
+
+        $newShape = array_map(fn($offsets) => $offsets[1] - $offsets[0], $newOffsets);
+
+        $newBufferSize = array_reduce($newShape, fn($a, $b) => $a * $b, 1);
+
+        $buffer = self::newBuffer($newBufferSize, $this->dtype());
+        $stride = $this->stride();
+
+        for ($i = 0; $i < $newBufferSize; ++$i) {
+            $originalIndex = 0;
+            for ($j = count($newShape) - 1, $num = $i; $j >= 0; --$j) {
+                $size = $newShape[$j];
+                $originalIndex += (($num % $size) + $newOffsets[$j][0]) * $stride[$j];
+                $num = floor($num / $size);
+            }
+            $buffer[$i] = $this->buffer[$originalIndex];
+        }
+
+        return new Tensor($buffer, $this->dtype(), $newTensorShape, $this->offset());
+
     }
 
     /**

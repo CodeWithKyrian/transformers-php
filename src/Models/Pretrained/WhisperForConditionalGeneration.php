@@ -60,9 +60,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         // Whisper has additional options for returning timestamps
         $generationConfig['return_timestamps'] ??= false;
 
-
         if ($generationConfig['return_timestamps']) {
-            $logitsProcessor = new LogitsProcessorList();
+            $logitsProcessor ??= new LogitsProcessorList();
             $logitsProcessor->push(new WhisperTimeStampLogitsProcessor($generationConfig));
         }
 
@@ -83,14 +82,13 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             }
         }
 
-
-        $outputs = parent::generate($inputs, $generationConfig, $logitsProcessor, $inputsAttentionMask, $streamer);
+        $outputs = parent::generate($inputs, $generationConfig, $logitsProcessor, streamer: $streamer);
 
         if (isset($generationConfig['return_token_timestamps']) && isset($generationConfig['alignment_heads'])) {
             $outputs['token_timestamps'] = $this->extractTokenTimestamps(
                 $outputs,
                 $generationConfig['alignment_heads'],
-                (int)$generationConfig['num_frames'] ?? null,
+                $generationConfig['num_frames'] ?? null,
             );
         }
 
@@ -109,10 +107,10 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
      * @throws Exception If the model outputs do not contain cross attentions
      */
     public function extractTokenTimestamps(
-        array          $generateOutputs,
-        array          $alignmentHeads,
+        array    $generateOutputs,
+        array    $alignmentHeads,
         int|null $numFrames = null,
-        float          $timePrecision = 0.02
+        float    $timePrecision = 0.02
     ): Tensor
     {
         if (!isset($generateOutputs['cross_attentions'])) {
@@ -127,6 +125,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             trigger_error("Model config has no `median_filter_width`, using default value of 7.", E_USER_WARNING);
             $medianFilterWidth = 7;
         }
+
 
         $batchedMatrices = array_map(function ($batch) use ($numFrames, $alignmentHeads, $medianFilterWidth) {
             // Create a list with `decoder_layers` elements, each a tensor of shape
@@ -164,13 +163,18 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
                         /** @var Tensor $cTensor */
                         $cTensor = $bTensor[$c]; // [1500]
 
-                        $cTensor
-                            ->add($meanTensor->multiply(-1))
-                            ->multiply($stdTensor->reciprocal())
-                            ->copyTo($cTensor);
+                        for ($d = 0; $d < $cTensor->count(); ++$d) {
+                            $cTensor[$d] = ($cTensor[$d] - $meanTensor[$d]) / $stdTensor[$d];
+                        }
 
                         // Apply median filter.
                         $this->medianFilter($cTensor, $medianFilterWidth)->copyTo($cTensor);
+//                        $filtered = $this->medianFilter($cTensor, $medianFilterWidth);
+//                        for ($e = 0; $e < $filtered->count(); ++$e) {
+//                            $cTensor[$e] = $filtered[$e];
+//                        }
+
+
                     }
                 }
             }
@@ -180,7 +184,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         }, $generateOutputs['cross_attentions']);
 
         $timestampsShape = [count($generateOutputs['sequences']), count($generateOutputs['sequences'][0])];
-
 
         $timestamps = Tensor::zeros($timestampsShape, Tensor::float32);
 
@@ -194,14 +197,13 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
             $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
 
-            dd($timeIndices);
             $jumpTimes = [];
             for ($i = 0; $i < count($jumps); ++$i) {
                 if ($jumps[$i]) {
                     $jumpTimes[] = $timeIndices[$i] * $timePrecision;
                 }
             }
-            dd($jumpTimes);
+
             for ($i = 1; $i < count($jumpTimes); ++$i) {
                 $timestamps[$batchIdx][$i] = $jumpTimes[$i];
             }
@@ -210,38 +212,54 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         return $timestamps;
     }
 
-    function medianFilter(Tensor $tensor, int $windowSize): Tensor
+    /**
+     * Applies a median filter of width `$windowSize` along the last dimension of the input.
+     *
+     * The `$input` tensor is assumed to be 3- or 4-dimensional.
+     * @param Tensor $input
+     * @param int $windowSize
+     * @return Tensor
+     */
+    function medianFilter(Tensor $input, int $windowSize): Tensor
     {
         if ($windowSize % 2 === 0 || $windowSize <= 0) {
             throw new InvalidArgumentException('Window size must be a positive odd number');
         }
 
-        $outputArray = array_fill(0, count($tensor), 0);
+        $output = Tensor::fill($input->shape(), 0, $input->dtype());
         $buffer = array_fill(0, $windowSize, 0);
 
         $halfWindowSize = (int)floor($windowSize / 2);
 
-        for ($i = 0; $i < count($tensor); ++$i) {
+        for ($i = 0; $i < count($input); ++$i) {
             $valuesIndex = 0;
 
             for ($j = -$halfWindowSize; $j <= $halfWindowSize; ++$j) {
                 $index = $i + $j;
                 if ($index < 0) {
                     $index = abs($index);
-                } else if ($index >= count($tensor)) {
-                    $index = 2 * (count($tensor) - 1) - $index;
+                } else if ($index >= count($input)) {
+                    $index = 2 * (count($input) - 1) - $index;
                 }
 
-                $buffer[$valuesIndex++] = $tensor->buffer()[$index];
+                $buffer[$valuesIndex++] = $input[$index];
             }
 
             sort($buffer);
-            $outputArray[$i] = $buffer[$halfWindowSize];
+
+            $output->buffer()[$i] = $buffer[$halfWindowSize];
         }
 
-        return Tensor::fromArray($outputArray, $tensor->dtype());
+        return $output;
     }
 
+    /**
+     * Measures
+     * similarity between two temporal sequences: the input audio and the output tokens. Used to generate
+     * token-level timestamps.
+     * @param Tensor $tensor
+     * @return array
+     */
     private function dynamicTimeWarping(Tensor $tensor): array
     {
         [$outputLength, $inputLength] = $tensor->shape();
