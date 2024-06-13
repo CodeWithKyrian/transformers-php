@@ -1096,6 +1096,56 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         }
 
         return new Tensor($buffer, $this->dtype(), $newShape, $this->offset());
+
+        $newTensorShape = [];
+        $newOffsets = [];
+
+        for ($sliceIndex = 0; $sliceIndex < $this->ndim(); ++$sliceIndex) {
+            $slice = $slices[$sliceIndex] ?? null;
+
+            if ($slice === null) {
+                $newOffsets[] = [0, $this->shape()[$sliceIndex]];
+                $newTensorShape[] = $this->shape()[$sliceIndex];
+
+            } elseif (is_int($slice)) {
+                $slice = $this->safeIndex($slice, $this->shape()[$sliceIndex], $sliceIndex);
+                $newOffsets[] = [$slice, $slice + 1];
+
+            } elseif (is_array($slice) && count($slice) === 2) {
+                if ($slice[0] > $slice[1]) {
+                    throw new Exception("Invalid slice: " . json_encode($slice));
+                }
+                $offsets = [
+                    max($slice[0], 0),
+                    min($slice[1], $this->shape()[$sliceIndex])
+                ];
+                $newOffsets[] = $offsets;
+                $newTensorShape[] = $offsets[1] - $offsets[0];
+
+            } else {
+                throw new Exception("Invalid slice: " . json_encode($slice));
+            }
+        }
+
+        $newShape = array_map(fn($offsets) => $offsets[1] - $offsets[0], $newOffsets);
+
+        $newBufferSize = array_reduce($newShape, fn($a, $b) => $a * $b, 1);
+
+        $buffer = self::newBuffer($newBufferSize, $this->dtype());
+        $stride = $this->stride();
+
+        for ($i = 0; $i < $newBufferSize; ++$i) {
+            $originalIndex = 0;
+            for ($j = count($newShape) - 1, $num = $i; $j >= 0; --$j) {
+                $size = $newShape[$j];
+                $originalIndex += (($num % $size) + $newOffsets[$j][0]) * $stride[$j];
+                $num = floor($num / $size);
+            }
+            $buffer[$i] = $this->buffer[$originalIndex];
+        }
+
+        return new Tensor($buffer, $this->dtype(), $newTensorShape, $this->offset());
+
     }
 
     /**
