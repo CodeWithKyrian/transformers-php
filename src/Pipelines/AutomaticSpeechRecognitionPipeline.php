@@ -100,7 +100,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
     {
         $returnTimestamps = $args['returnTimestamps'] ?? false;
         $chunkLengthSecs = $args['chunkLengthSecs'] ?? 0;
-        $chunkCallback = $args['chunkCallback'] ?? null;
         $forceFullSequences = $args['forceFullSequences'] ?? false;
         $strideLengthSecs = $args['strideLengthSecs'] ?? null;
 
@@ -128,7 +127,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             $decoderPromptIds = $this->tokenizer->getDecoderPromptIds(language: $language, task: $task, noTimestamps: !$returnTimestamps);
 
             if (count($decoderPromptIds) > 0) {
-                $args['forcedDecoderIds'] = $decoderPromptIds;
+                $generationConfig['forced_decoder_ids'] = $decoderPromptIds;
             }
         }
 
@@ -139,7 +138,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
         $timePrecision = $this->processor->featureExtractor->config['chunk_length'] / $this->model->config['max_source_positions'];
         $hopLength = $this->processor->featureExtractor->config['hop_length'];
-
         $samplingRate = $this->processor->featureExtractor->config['sampling_rate'];
 
         $toReturn = [];
@@ -162,7 +160,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 $stride = $strideLengthSecs * $samplingRate;
                 $jump = (int)floor($window - 2 * $stride);
                 $offset = 0;
-
 
                 while ($offset < $audioTensor->size()) {
 
@@ -201,7 +198,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
             // Generate for each set of input features
             foreach ($chunks as &$chunk) {
-                $generationConfig['num_frames'] = floor($chunk['stride'][0] / $hopLength);
+                $generationConfig['num_frames'] = (int)floor($chunk['stride'][0] / $hopLength);
 
                 $streamer?->init($this->tokenizer, []);
                 $data = $this->model->generate($chunk['input_features'], generationConfig: $generationConfig, streamer: $streamer);
@@ -216,10 +213,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
                 // convert stride to seconds
                 $chunk['stride'] = array_map(fn($x) => $x / $samplingRate, $chunk['stride']);
-
-                if ($chunkCallback) {
-                    $chunkCallback($chunk);
-                }
             }
 
             // Merge text chunks

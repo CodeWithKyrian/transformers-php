@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class ForceTokensLogitsProcessor extends LogitsProcessor
 {
@@ -15,9 +16,7 @@ class ForceTokensLogitsProcessor extends LogitsProcessor
 
     public function __construct(array $forcedDecoderIds)
     {
-        foreach ($forcedDecoderIds[0] as $inputLength => $forcedId) {
-            $this->forceTokenMap[$inputLength] = $forcedId;
-        }
+        $this->forceTokenMap = array_column($forcedDecoderIds, 1, 0);
     }
 
     /**

@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperTimeStampLogitsProcessor extends LogitsProcessor
 {
@@ -40,7 +41,7 @@ class WhisperTimeStampLogitsProcessor extends LogitsProcessor
      */
     public function __construct(GenerationConfig $generateConfig)
     {
-        $this->eosTokenId = $generateConfig->eos_token_id;
+        $this->eosTokenId = $generateConfig['eos_token_id'];
         $this->noTimestampsTokenId = $generateConfig['no_timestamps_token_id'];
         $this->timestampBegin = $this->noTimestampsTokenId + 1;
 
@@ -79,11 +80,11 @@ class WhisperTimeStampLogitsProcessor extends LogitsProcessor
         if ($lastWasTimestamp) {
             if ($penultimateWasTimestamp) { // has to be non-timestamp
                 for ($i = $this->timestampBegin; $i < $logits->size(); $i++) {
-                    $logitsData[$i] = -INF;
+                    $logits->buffer()[$i] = -INF;
                 }
             } else { // cannot be normal text tokens
                 for ($i = 0; $i < $this->eosTokenId; $i++) {
-                    $logitsData[$i] = -INF;
+                    $logits->buffer()[$i] = -INF;
                 }
             }
         }
@@ -92,19 +93,19 @@ class WhisperTimeStampLogitsProcessor extends LogitsProcessor
         if (count($inputIds) === $this->beginIndex && $this->maxInitialTimestampIndex !== null) {
             $lastAllowed = $this->timestampBegin + $this->maxInitialTimestampIndex;
             for ($i = $lastAllowed + 1; $i < $logits->size(); $i++) {
-                $logitsData[$i] = -INF;
+                $logits->buffer()[$i] = -INF;
             }
         }
 
         // if sum of probability over timestamps is above any other token, sample timestamp
         $logProbs = $logits->softmax()->log();
-        $a = $logProbs->sliceWithBounds([0, $this->timestampBegin], [1, $logProbs->size() - $this->timestampBegin]);
-        $timestampLogProb = log($a->exp()->sum());
+        $timestampProbs = $logProbs->sliceWithBounds([0, $this->timestampBegin], [1, $logProbs->size() - $this->timestampBegin]);
+        $timestampLogProb = log($timestampProbs->exp()->sum());
         $maxTextTokenLogProb = $logProbs->sliceWithBounds([0, 0], [1, $this->timestampBegin])->max();
 
         if ($timestampLogProb > $maxTextTokenLogProb) {
             for ($i = 0; $i < $this->timestampBegin; $i++) {
-                $logitsData[$i] = -INF;
+                $logits->buffer()[$i] = -INF;
             }
         }
 
