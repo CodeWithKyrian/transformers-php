@@ -5,88 +5,31 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\DataStructures\FFT;
-use Codewithkyrian\Transformers\OnnxRuntime\FFI;
+use Codewithkyrian\Transformers\FFI\FastTransformersUtils;
+use Codewithkyrian\Transformers\FFI\Samplerate;
+use Codewithkyrian\Transformers\FFI\Sndfile;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Transformers;
-use FFI\CData;
+use Codewithkyrian\Transformers\Tensor\TensorBuffer;
+use FFI;
 use InvalidArgumentException;
 use RuntimeException;
 use SplFixedArray;
 
 class Audio
 {
-    private static \FFI $sndfileFFI;
-    private static \FFI $samplerateFFI;
-    private static \FFI $spectrogramFFI;
-
     public function __construct(protected $sndfile, protected $sfinfo)
     {
     }
 
-    public static function sndfileFFI(): \FFI
-    {
-        if (!isset(self::$sndfileFFI)) {
-            $headerFile = Transformers::$libsDir . '/libsndfile-darwin-1.2.2/include/sndfile.h';
-            $libFile = Transformers::$libsDir . '/libsndfile-darwin-1.2.2/lib/libsndfile.dylib';
-            self::$sndfileFFI = \FFI::cdef(file_get_contents($headerFile), $libFile);
-        }
-
-        return self::$sndfileFFI;
-    }
-
-    public static function sampleRateFFI(): \FFI
-    {
-        if (!isset(self::$samplerateFFI)) {
-            $headerFile = Transformers::$libsDir . '/libsamplerate-darwin-0.2.2/include/samplerate.h';
-            $libFile = Transformers::$libsDir . '/libsamplerate-darwin-0.2.2/lib/libsamplerate.dylib';
-            self::$samplerateFFI = \FFI::cdef(file_get_contents($headerFile), $libFile);
-        }
-
-        return self::$samplerateFFI;
-    }
-
-    public static function spectrogramFFI(): \FFI
-    {
-        if (!isset(self::$spectrogramFFI)) {
-            $headerFile = Transformers::$libsDir . '/lilbspectrogram-osx-1.0.0/include/spectrogram.h';
-            $libFile = Transformers::$libsDir . '/lilbspectrogram-osx-1.0.0/lib/libspectrogram.dylib';
-            self::$spectrogramFFI = \FFI::cdef(file_get_contents($headerFile), $libFile);
-        }
-
-        return self::$spectrogramFFI;
-    }
-
-
     public static function read(string $filename): static
     {
-        $sndfileFFI = self::sndfileFFI();
+        $sfinfo = Sndfile::new('SF_INFO');
 
-        $sfinfo = $sndfileFFI->new('SF_INFO');
-
-        if (PHP_OS_FAMILY === 'Windows') {
-            $sndfile = $sndfileFFI->sf_wchar_open($filename, $sndfileFFI->SFM_READ, \FFI::addr($sfinfo));
-        } else {
-            $sndfile = $sndfileFFI->sf_open($filename, $sndfileFFI->SFM_READ, \FFI::addr($sfinfo));
-        }
-
-        if ($sndfile === null) {
-            $error = $sndfileFFI->sf_strerror($sndfile);
-            throw new RuntimeException("Failed to open file: $error");
-        }
+        $sndfile = Sndfile::open($filename, Sndfile::enum('SFM_READ'), FFI::addr($sfinfo));
 
         return new static($sndfile, $sfinfo);
     }
 
-    public function format(): string
-    {
-        $ffi = self::sndfileFFI();
-        $info = $ffi->new('SF_FORMAT_INFO');
-        $info->format = $this->sfinfo->format;
-        $ffi->sf_command($this->sndfile, $ffi->SFC_GET_FORMAT_INFO, \FFI::addr($info), \FFI::sizeof($info));
-
-        return $info->name;
-    }
 
     public function channels(): int
     {
@@ -110,38 +53,29 @@ class Audio
 
     public function toTensor(int $samplerate = 41000, int $chunkSize = 2048): Tensor
     {
-        $sndfileFFI = self::sndfileFFI();
-        $sampleRateFFI = self::sampleRateFFI();
-
         $tensorData = '';
         $totalOutputFrames = 0;
 
-        $error = $sampleRateFFI->new('int32_t');
-        $state = $sampleRateFFI->src_new($sampleRateFFI->SRC_SINC_FASTEST, $this->channels(), \FFI::addr($error));
-
-        if ($error->cdata !== 0) {
-            $error = $sampleRateFFI->src_strerror($error);
-            throw new RuntimeException("Failed to create sample rate converter: $error");
-        }
+        $state = Samplerate::srcNew(Samplerate::enum('SRC_SINC_FASTEST'), $this->channels());
 
         $inputSize = $chunkSize * $this->channels();
-        $inputData = $sndfileFFI->new("float[$inputSize]");
+        $inputData = FFI::new("float[$inputSize]");
         $outputSize = $chunkSize * $this->channels();
-        $outputData = $sndfileFFI->new("float[$outputSize]");
+        $outputData = FFI::new("float[$outputSize]");
 
-        $srcData = $sampleRateFFI->new('SRC_DATA');
-        $srcData->data_in = \FFI::cast('float *', $inputData);
+        $srcData = Samplerate::new('SRC_DATA');
+        $srcData->data_in = FFI::cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
-        $srcData->data_out = \FFI::cast('float *', $outputData);
+        $srcData->data_out = FFI::cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
         while (true) {
             /* Read the chunk of data */
-            $srcData->input_frames = $sndfileFFI->sf_readf_float($this->sndfile, $inputData, $chunkSize);
+            $srcData->input_frames = Sndfile::readFrames($this->sndfile, $inputData, $chunkSize);
 
             /* Add to tensor data without resample if the sample rate is the same */
             if ($this->samplerate() === $samplerate) {
-                $strBuffer = \FFI::string($inputData, $srcData->input_frames * $this->channels() * \FFI::sizeof($inputData[0]));
+                $strBuffer = FFI::string($inputData, $srcData->input_frames * $this->channels() * FFI::sizeof($inputData[0]));
                 $tensorData .= $strBuffer;
                 $totalOutputFrames += $srcData->input_frames;
                 if ($srcData->input_frames < $chunkSize) {
@@ -152,15 +86,11 @@ class Audio
 
             /* The last read will not be a full buffer, so snd_of_input. */
             if ($srcData->input_frames < $chunkSize) {
-                $srcData->end_of_input = $sndfileFFI->SF_TRUE;
+                $srcData->end_of_input = Sndfile::enum('SF_TRUE');
             }
 
             /* Process current block. */
-            $error = $sampleRateFFI->src_process($state, \FFI::addr($srcData));
-            if ($error !== 0) {
-                $error = $sampleRateFFI->src_strerror($error);
-                throw new RuntimeException("Failed to convert sample rate: $error");
-            }
+            Samplerate::srcProcess($state, FFI::addr($srcData));
 
             /* Terminate if done. */
             if ($srcData->end_of_input && $srcData->output_frames_gen === 0) {
@@ -168,13 +98,13 @@ class Audio
             }
 
             /* Add the processed data to the tensor data */
-            $outputSize = $srcData->output_frames_gen * $this->channels() * \FFI::sizeof($outputData[0]);
-            $strBuffer = \FFI::string($outputData, $outputSize);
+            $outputSize = $srcData->output_frames_gen * $this->channels() * FFI::sizeof($outputData[0]);
+            $strBuffer = FFI::string($outputData, $outputSize);
             $tensorData .= $strBuffer;
             $totalOutputFrames += $srcData->output_frames_gen;
         }
 
-        $sampleRateFFI->src_delete($state);
+        Samplerate::srcDelete($state);
 
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
@@ -183,13 +113,12 @@ class Audio
 
     public function fromTensor(Tensor $tensor): void
     {
-        $ffi = self::sndfileFFI();
         $size = $tensor->size();
-        $buffer = $ffi->new("float[$size]");
+        $buffer = FFI::new("float[$size]");
         $bufferString = $tensor->toString();
-        $buffer->cdata = \FFI::cast('float *', $bufferString);
+        $buffer->cdata = FFI::cast('float *', $bufferString);
 
-        $write = $ffi->sf_writef_float($this->sndfile, $buffer, $size);
+        $write = Sndfile::writeFrames($this->sndfile, $buffer, $size);
 
         if ($write !== $size) {
             throw new RuntimeException("Failed to write to file");
@@ -199,7 +128,7 @@ class Audio
 
     public function __destruct()
     {
-        self::sndfileFFI()->sf_close($this->sndfile);
+        Sndfile::close($this->sndfile);
     }
 
     /**
@@ -261,7 +190,6 @@ class Audio
         }
 
         // TODO warn if there is a zero row
-
         return $melFilters;
     }
 
@@ -387,7 +315,7 @@ class Audio
         }
 
         if ($minValue <= 0) {
-            throw new InvalidArgumentException('min_value must be greater than zero');
+            throw new InvalidArgumentException('minValue must be greater than zero');
         }
 
         $reference = max($minValue, $reference);
@@ -492,8 +420,6 @@ class Audio
         bool    $transpose = false
     ): Tensor
     {
-        $spectrogramFFI = self::spectrogramFFI();
-
         $fftLength ??= $frameLength;
         if ($frameLength > $fftLength) {
             throw new InvalidArgumentException("frameLength ($frameLength) may not be larger than fftLength ($fftLength)");
@@ -516,16 +442,15 @@ class Audio
             $halfWindow = (int)floor(($fftLength - 1) / 2) + 1;
             $paddedLength = $waveform->size() + (2 * $halfWindow);
 
-            $padded = Tensor::zeros([$paddedLength], $waveform->dtype());
-
-            $spectrogramFFI->pad_reflect(
+            $padded = FastTransformersUtils::padReflect(
                 $waveform->buffer()->addr($waveform->offset()),
                 $waveform->size(),
-                $padded->buffer()->addr($padded->offset()),
-                $padded->size()
+                $paddedLength
             );
 
-            $waveform = $padded;
+            $paddedStr = FFI::string($padded, FFI::sizeof($padded));
+
+            $waveform = Tensor::fromString($paddedStr, $waveform->dtype(), [$paddedLength]);
         }
 
         $numFrames = 1 + floor(($waveform->size() - $frameLength) / $hopLength);
@@ -545,20 +470,18 @@ class Audio
         }
 
         $melFilters = Tensor::fromArray($melFilters, Tensor::float32);
-        $spectrogram = Tensor::zeros($transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max]);
+        $spectrogramShape = $transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max];
         $logMel = match ($logMel) {
-            'log' => $spectrogramFFI->LOG_MEL_LOG,
-            'log10' => $spectrogramFFI->LOG_MEL_LOG10,
-            'dB' => $spectrogramFFI->LOG_MEL_DB,
-            default => $spectrogramFFI->LOG_MEL_NONE,
+            'log' => FastTransformersUtils::enum('LOG_MEL_LOG'),
+            'log10' => FastTransformersUtils::enum('LOG_MEL_LOG10'),
+            'dB' => FastTransformersUtils::enum('LOG_MEL_DB'),
+            default => FastTransformersUtils::enum('LOG_MEL_NONE'),
         };
 
-
-        $spectrogramFFI->compute_spectrogram(
+        $spectrogram = FastTransformersUtils::spectrogram(
             $waveform->buffer()->addr($waveform->offset()),
             $waveform->size(),
-            $spectrogram->buffer()->addr($spectrogram->offset()),
-            $spectrogram->size(),
+            array_product($spectrogramShape),
             $hopLength,
             $fftLength,
             $window->buffer()->addr($window->offset()),
@@ -578,7 +501,9 @@ class Audio
             $transpose,
         );
 
-        return $spectrogram;
+        $spectrogramStr = FFI::string($spectrogram, FFI::sizeof($spectrogram));
+
+        return Tensor::fromString($spectrogramStr, $waveform->dtype(), $spectrogramShape);
     }
 
     /**

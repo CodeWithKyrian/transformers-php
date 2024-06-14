@@ -17,7 +17,8 @@ use OutOfRangeException;
 use Rindow\Math\Matrix\Complex;
 use Rindow\Math\Matrix\ComplexUtils;
 use Rindow\Math\Matrix\Drivers\Service;
-use Rindow\Math\Matrix\MatrixOperator;
+
+//use Rindow\Math\Matrix\MatrixOperator;
 use Rindow\Math\Matrix\Range;
 use RuntimeException;
 use Serializable;
