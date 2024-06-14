@@ -170,12 +170,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
                         // Apply median filter.
                         $this->medianFilter($cTensor, $medianFilterWidth)->copyTo($cTensor);
-//                        $filtered = $this->medianFilter($cTensor, $medianFilterWidth);
-//                        for ($e = 0; $e < $filtered->count(); ++$e) {
-//                            $cTensor[$e] = $filtered[$e];
-//                        }
-
-
                     }
                 }
             }

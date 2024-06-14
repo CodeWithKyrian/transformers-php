@@ -32,7 +32,6 @@ use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\array_some;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * A base class for pre-trained models that provides the model configuration and an ONNX session.
