@@ -9,12 +9,13 @@ use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\WhisperTimeStampLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
-use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Exception;
 use InvalidArgumentException;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
@@ -169,12 +170,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
                         // Apply median filter.
                         $this->medianFilter($cTensor, $medianFilterWidth)->copyTo($cTensor);
-//                        $filtered = $this->medianFilter($cTensor, $medianFilterWidth);
-//                        for ($e = 0; $e < $filtered->count(); ++$e) {
-//                            $cTensor[$e] = $filtered[$e];
-//                        }
-
-
                     }
                 }
             }
