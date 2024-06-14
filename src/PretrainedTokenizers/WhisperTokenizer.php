@@ -322,7 +322,7 @@ class WhisperTokenizer extends PretrainedTokenizer
 
                     if ($returnWordTimestamps) {
                         $startTime = round($tokenTimestamps[$i] + $timeOffset, 2);
-                        $endTime = $i + 1 < count($tokenTimestamps) ? round($tokenTimestamps[$i + 1] + $timeOffset, 2) : null;
+                        $endTime = $i + 1 < count($tokenTimestamps) ? round($tokenTimestamps[$i + 1] + $timeOffset, 2) : null; // Null should never happen
                         $currentTokenTimestamps[] = [$startTime, $endTime];
                     }
                 }
@@ -715,19 +715,19 @@ class WhisperTokenizer extends PretrainedTokenizer
      * **Example: Get ids for a language**
      * ```php
      * // instantiate the tokenizer and set the prefix token to Spanish
-     * $tokenizer = WhisperTokenizer::from_pretrained('Xenova/whisper-tiny');
-     * $forced_decoder_ids = $tokenizer->get_decoder_prompt_ids(['language' => 'spanish']);
-     * // [(1, 50262), (2, 50363)]
+     * $tokenizer = WhisperTokenizer::fromPretrained('Xenova/whisper-tiny');
+     * $forcedDecoderIds = $tokenizer->getDecoderPromptIds(language: 'spanish');
+     * // [[1, 50262], [2, 50363]]
      * ```
      *
      * @param string|null $language The language of the transcription text.
      * The corresponding language id token is appended to the start of the sequence for multilingual
-     * speech recognition and speech translation tasks, e.g. for "Spanish" the token "" is appended
+     * speech recognition and speech translation tasks, e.g. for "Spanish" the token "<|es|>" is appended
      * to the start of sequence.
      * @param string|null $task Task identifier to append at the start of sequence (if any).
      * This should be used for mulitlingual fine-tuning, with "transcribe" for speech recognition and
      * "translate" for speech translation.
-     * @param bool $noTimestamps Whether to add the <no_timestamps> token at the start of the sequence.
+     * @param bool $noTimestamps Whether to add the <|notimestamps|> token at the start of the sequence.
      * @return array The decoder prompt ids.
      * @throws Exception
      */
@@ -737,6 +737,7 @@ class WhisperTokenizer extends PretrainedTokenizer
         bool    $noTimestamps = true
     ): array
     {
+        // <|lang_id|> <|task|> <|notimestamps|>
         $forcedDecoderIds = [];
 
         if ($language) {
