@@ -20,17 +20,22 @@ class ReplaceDecoder extends Decoder
     {
         $pattern = $this->config['pattern'] ?? null;
 
+        if ($pattern === null) {
+            return $tokens;
+        }
 
-        return $pattern == null ?
-            $tokens :
-            array_map(function ($token) use ($pattern) {
-                if (isset($pattern['Regex'])) {
-                    return preg_replace("/{$pattern['Regex']}/u", $this->config['content'], (string)$token);
-                } elseif (isset($pattern['String'])) {
-                    return str_replace($pattern['String'], $this->config['content'], (string)$token);
-                } else {
-                    return $token;
-                }
-            }, $tokens);
+        $regex = $pattern['Regex'] ?? null;
+        $string = $pattern['String'] ?? null;
+        $replacement = $this->config['content'] ?? '';
+
+        return array_map(function ($token) use ($regex, $string, $replacement) {
+            if ($regex !== null) {
+                return preg_replace("/{$regex}/u", $replacement, (string)$token);
+            }
+            if ($string !== null) {
+                return str_replace($string, $replacement, (string)$token);
+            }
+            return $token;
+        }, $tokens);
     }
 }
