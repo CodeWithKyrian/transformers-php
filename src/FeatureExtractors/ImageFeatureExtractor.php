@@ -101,58 +101,6 @@ class ImageFeatureExtractor extends FeatureExtractor
 
 
     /**
-     * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
-     * @param int $grayThreshold Value below which pixels are considered to be gray.
-     * @return static The cropped image.
-     */
-    public function cropMargin(Image $image, int $grayThreshold = 200): static
-    {
-        $grayImage = $image->clone()->grayscale();
-
-        // Get the min and max pixel values
-        $minValue = min($grayImage->toTensor()->buffer())[0];
-        $maxValue = max($grayImage->toTensor()->buffer())[0];
-
-        $diff = $maxValue - $minValue;
-
-        // If all pixels have the same value, no need to crop
-        if ($diff === 0) {
-            return $this;
-        }
-
-        $threshold = $grayThreshold / 255;
-
-        $xMin = $image->width();
-        $yMin = $image->height();
-        $xMax = 0;
-        $yMax = 0;
-
-        $width = $image->width();
-        $height = $image->height();
-
-        // Iterate over each pixel in the image
-        for ($y = 0; $y < $height; ++$y) {
-            for ($x = 0; $x < $width; ++$x) {
-                $color = $grayImage->image->getColorAt(new Point($x, $y));
-                $pixelValue = $color->getRed(); // Assuming grayscale, so red channel is sufficient
-
-                if (($pixelValue - $minValue) / $diff < $threshold) {
-                    // We have a non-gray pixel, so update the min/max values accordingly
-                    $xMin = min($xMin, $x);
-                    $yMin = min($yMin, $y);
-                    $xMax = max($xMax, $x);
-                    $yMax = max($yMax, $y);
-                }
-            }
-        }
-
-        // Crop the image using the calculated bounds
-        $image->crop($xMin, $yMin, $xMax, $yMax);
-
-        return $this;
-    }
-
-    /**
      * Pad the image by a certain amount.
      * @param Tensor $imageTensor The pixel data to pad.
      * @param int[]|int $padSize The dimensions of the padded image.
@@ -365,7 +313,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         if ($this->doCropMargin) {
             // Specific to nougat processors. This is done before resizing,
             // and can be interpreted as a pre-preprocessing step.
-            $this->cropMargin($image);
+            $image = $image->cropMargin();
         }
 
 
@@ -373,21 +321,21 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         // Convert image to RGB if specified in config.
         if ($doConvertRGB ?? $this->doConvertRGB) {
-            $image->rgb();
+            $image = $image->rgb();
         } elseif ($doConvertGrayscale) {
-            $image->grayscale();
+            $image = $image->grayscale();
         }
 
         // Resize if specified in config.
         if ($this->doResize) {
             [$newWidth, $newHeight] = $this->getResizeOutputImageSize($image, $this->size);
 
-            $image->resize($newWidth, $newHeight, $this->resample);
+            $image = $image->resize($newWidth, $newHeight, $this->resample);
         }
 
         // Resize the image using thumbnail method.
         if ($this->doThumbnail) {
-            $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
+            $image = $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
         }
 
         if ($this->doCenterCrop) {
@@ -400,7 +348,7 @@ class ImageFeatureExtractor extends FeatureExtractor
                 $cropHeight = $this->cropSize['height'];
             }
 
-            $image->centerCrop($cropWidth, $cropHeight);
+           $image =  $image->centerCrop($cropWidth, $cropHeight);
         }
 
         $reshapedInputSize = $image->size();
