@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Utils\GenerationConfig;
 
 class NllbTokenizer extends PretrainedTokenizer
 {
-    protected string $languageRegex = '/^[a-z]{3}_[A-Z]{3}$/';
+    protected string $languageRegex = '/^[a-z]{3}_[a-zA-Z]{3,4}$/';
 
     protected array $languageCodes = [];
     protected \Closure $langToToken;
