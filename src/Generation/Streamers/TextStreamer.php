@@ -1,81 +1,5 @@
 <?php
 
-//declare(strict_types=1);
-//
-//namespace Codewithkyrian\Transformers\Generation\Streamers;
-//
-//use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
-//use InvalidArgumentException;
-//use function Codewithkyrian\Transformers\Utils\timeUsage;
-//
-///**
-// * Simple text streamer that prints the token(s) to stdout as soon as entire words are formed.
-// */
-//class TextStreamer extends Streamer
-//{
-//    protected string $printedText = '';
-//    protected mixed $onStreamCallback = null;
-//    protected mixed $onStreamEndCallback = null;
-//    protected StreamMode $streamMode = StreamMode::PARTIAL;
-//
-//    public function __construct(protected PretrainedTokenizer $tokenizer)
-//    {
-//    }
-//
-//    public static function make(PretrainedTokenizer $tokenizer): self
-//    {
-//        return new static($tokenizer);
-//    }
-//
-//    public function onStream(callable $callback): self
-//    {
-//        $this->onStreamCallback = $callback;
-//        return $this;
-//    }
-//
-//    public function onStreamEnd(callable $callback): self
-//    {
-//        $this->onStreamEndCallback = $callback;
-//        return $this;
-//    }
-//
-//    public function setStreamMode(StreamMode $streamMode): self
-//    {
-//        $this->streamMode = $streamMode;
-//        return $this;
-//    }
-//
-//    public function put(mixed $value): void
-//    {
-//        dump("beforePut" .timeUsage(sinceLastCall: true));
-//        if (count($value) > 1) {
-//            throw new InvalidArgumentException("TextStreamer only supports batch size 1");
-//        }
-//
-//        $decodedText = $this->tokenizer->decode($value[0]['output_token_ids'], skipSpecialTokens: true);
-//        $printedLength = mb_strlen($this->printedText);
-//        $newText = mb_substr($decodedText, $printedLength);
-//        $this->printedText .= $newText;
-//
-////        if ($this->onStreamCallback !== null) {
-////            call_user_func(
-////                $this->onStreamCallback,
-////                $this->streamMode === StreamMode::PARTIAL ? $newText : $this->printedText
-////            );
-////        }
-//
-//        dump("afterPut" .timeUsage(sinceLastCall: true));
-//    }
-//
-//    public function end(): void
-//    {
-//        if ($this->onStreamEndCallback !== null) {
-//            call_user_func($this->onStreamEndCallback, $this->printedText);
-//        }
-//    }
-//}
-
-
 declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Streamers;
@@ -88,57 +12,11 @@ use InvalidArgumentException;
  */
 class TextStreamer extends Streamer
 {
-    protected PretrainedTokenizer $tokenizer;
-    protected bool $excludeInput = true;
     protected string $printedText = '';
-    protected mixed $onStreamCallback = null;
-    protected mixed $onStreamEndCallback = null;
     protected StreamMode $streamMode = StreamMode::PARTIAL;
     protected int $printedLength = 0;
     protected int $lastDecodedCheckpointForToken = 0;
     protected int $lastDecodedCheckpointForText = 0;
-
-    public function __construct()
-    {
-    }
-
-    public static function make(): self
-    {
-        return new static();
-    }
-
-    public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void
-    {
-        $this->tokenizer = $tokenizer;
-        $this->excludeInput = $excludeInput;
-
-        if ($this->excludeInput) {
-            $this->printedText = $this->tokenizer->decode($inputTokens, skipSpecialTokens: true);
-            $this->printedLength = mb_strlen($this->printedText);
-
-
-            $this->lastDecodedCheckpointForToken = count($inputTokens) - 1;
-            $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
-        }
-    }
-
-    public function onStream(callable $callback): self
-    {
-        $this->onStreamCallback = $callback;
-        return $this;
-    }
-
-    public function onStreamEnd(callable $callback): self
-    {
-        $this->onStreamEndCallback = $callback;
-        return $this;
-    }
-
-    public function setStreamMode(StreamMode $streamMode): self
-    {
-        $this->streamMode = $streamMode;
-        return $this;
-    }
 
     public function put(mixed $value): void
     {
@@ -146,12 +24,18 @@ class TextStreamer extends Streamer
             throw new InvalidArgumentException("TextStreamer only supports batch size 1");
         }
 
-        $tokensToDecode = array_slice($value[0]['output_token_ids'], $this->lastDecodedCheckpointForToken);
-
-        if (empty($tokensToDecode))
-        {
+        if ($this->skipPrompt && $this->nextTokensArePrompt) {
+            $this->nextTokensArePrompt = false;
+            $this->printedText = $this->tokenizer->decode($this->promptTokens, skipSpecialTokens: true);
+            $this->printedLength = mb_strlen($this->printedText);
+            $this->lastDecodedCheckpointForToken = count($this->promptTokens) - 1;
+            $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
             return;
         }
+
+        $tokensToDecode = array_slice($value[0]['output_token_ids'], $this->lastDecodedCheckpointForToken);
+
+        if (empty($tokensToDecode)) return;
 
         $decodedText = $this->tokenizer->decode($tokensToDecode, skipSpecialTokens: true);
 
@@ -184,6 +68,11 @@ class TextStreamer extends Streamer
         if ($this->onStreamEndCallback !== null) {
             call_user_func($this->onStreamEndCallback, $this->printedText);
         }
+
+        $this->printedText = '';
+        $this->printedLength = 0;
+        $this->lastDecodedCheckpointForToken = 0;
+        $this->lastDecodedCheckpointForText = 0;
     }
 }
 

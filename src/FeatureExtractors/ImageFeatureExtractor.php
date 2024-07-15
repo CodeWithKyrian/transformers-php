@@ -379,7 +379,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         if ($this->doCropMargin) {
             // Specific to nougat processors. This is done before resizing,
             // and can be interpreted as a pre-preprocessing step.
-            $this->cropMargin($image);
+            $image = $image->cropMargin();
         }
 
 
@@ -387,21 +387,21 @@ class ImageFeatureExtractor extends FeatureExtractor
 
         // Convert image to RGB if specified in config.
         if ($doConvertRGB ?? $this->doConvertRGB) {
-            $image->rgb();
+            $image = $image->rgb();
         } elseif ($doConvertGrayscale) {
-            $image->grayscale();
+            $image = $image->grayscale();
         }
 
         // Resize if specified in config.
         if ($this->doResize) {
             [$newWidth, $newHeight] = $this->getResizeOutputImageSize($image, $this->size);
 
-            $image->resize($newWidth, $newHeight, $this->resample);
+            $image = $image->resize($newWidth, $newHeight, $this->resample);
         }
 
         // Resize the image using thumbnail method.
         if ($this->doThumbnail) {
-            $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
+            $image = $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
         }
 
         if ($this->doCenterCrop) {
@@ -414,7 +414,7 @@ class ImageFeatureExtractor extends FeatureExtractor
                 $cropHeight = $this->cropSize['height'];
             }
 
-            $image->centerCrop($cropWidth, $cropHeight);
+           $image =  $image->centerCrop($cropWidth, $cropHeight);
         }
 
         $reshapedInputSize = $image->size();
