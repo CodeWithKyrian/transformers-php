@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once './bootstrap.php';
 
 use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
+use Codewithkyrian\Transformers\Generation\Streamers\TextStreamer;
 use function Codewithkyrian\Transformers\Pipelines\pipeline;
 use function Codewithkyrian\Transformers\Utils\memoryUsage;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
@@ -15,7 +16,7 @@ ini_set('memory_limit', -1);
 //$generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
 $generator = pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0');
 
-$streamer = StdOutStreamer::make();
+$streamer = TextStreamer::make();
 
 $messages = [
     ['role' => 'system', 'content' => 'You are a helpful assistant.'],

@@ -12,7 +12,66 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
  */
 abstract class Streamer
 {
-    abstract public function init(PretrainedTokenizer $tokenizer, array $inputTokens, bool $excludeInput = false): void;
+    protected array $promptTokens = [];
+    protected bool $skipPrompt;
+    protected bool $nextTokensArePrompt;
+
+    protected PretrainedTokenizer $tokenizer;
+    protected mixed $onStreamCallback = null;
+    protected mixed $onStreamEndCallback = null;
+    protected StreamMode $streamMode = StreamMode::PARTIAL;
+
+    public static function make(): static
+    {
+        $streamer =  new static();
+
+        $streamer->onStreamCallback ??= function ($value) {
+            echo $value;
+        };
+
+        $streamer->onStreamEndCallback ??= function () {
+            echo PHP_EOL;
+        };
+
+        return $streamer;
+    }
+
+    public function setTokenizer(PretrainedTokenizer $tokenizer): static
+    {
+        $this->tokenizer = $tokenizer;
+        return $this;
+    }
+
+    public function setPromptTokens(array $promptTokens): static
+    {
+        $this->promptTokens = $promptTokens;
+        $this->nextTokensArePrompt = true;
+        return $this;
+    }
+
+    public function shouldSkipPrompt(bool $skipPrompt = true): static
+    {
+        $this->skipPrompt = $skipPrompt;
+        return $this;
+    }
+
+    public function onStream(callable $callback): static
+    {
+        $this->onStreamCallback = $callback;
+        return $this;
+    }
+
+    public function onStreamEnd(callable $callback): static
+    {
+        $this->onStreamEndCallback = $callback;
+        return $this;
+    }
+
+    public function setStreamMode(StreamMode $streamMode): static
+    {
+        $this->streamMode = $streamMode;
+        return $this;
+    }
 
     abstract public function put(mixed $value): void;
 

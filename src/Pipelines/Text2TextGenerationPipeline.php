@@ -7,6 +7,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+use function Codewithkyrian\Transformers\Utils\array_to_snake_case;
 
 /**
  * A pipeline for generating text using a model that performs text-to-text generation tasks.
@@ -28,21 +30,12 @@ class Text2TextGenerationPipeline extends Pipeline
 
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $streamer = null;
+        /** @var Streamer $streamer */
+        $streamer = array_pop_key($args, 'streamer');
 
-        if (array_key_exists('streamer', $args)) {
-            /** @var Streamer $streamer */
-            $streamer = $args['streamer'];
-            unset($args['streamer']);
-        }
+        $kwargs = array_to_snake_case($args);
 
-        // Convert the rest of the arguments key names from camelCase to snake_case
-        $snakeCasedArgs = [];
-        foreach ($args as $key => $value) {
-            $snakeCasedArgs[$this->camelCaseToSnakeCase($key)] = $value;
-        }
-
-        $generateKwargs = new GenerationConfig($snakeCasedArgs);
+        $generateKwargs = new GenerationConfig($kwargs);
 
 
         if (!is_array($inputs)) {
@@ -79,7 +72,7 @@ class Text2TextGenerationPipeline extends Pipeline
 
 
         // Streamer can only handle one input at a time for now, so we only pass the first input
-        $streamer?->init($this->tokenizer, $inputIds[0]->toArray());
+        $streamer?->setTokenizer($this->tokenizer)?->shouldSkipPrompt(false);
 
         // Generate output token ids
         $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);

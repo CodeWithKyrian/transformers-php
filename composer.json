@@ -28,6 +28,10 @@
     "pestphp/pest": "^2.31",
     "symfony/var-dumper": "^7.0"
   },
+  "suggest": {
+    "ext-imagick": "Needed if you want to use the Imagick Driver for image processing",
+    "ext-gd": "Needed if you want to use the GD Driver for image processing"
+  },
   "license": "Apache-2.0",
   "autoload": {
     "psr-4": {

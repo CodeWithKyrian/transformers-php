@@ -71,6 +71,17 @@ function array_pop_key(array &$array, string|int $key, mixed $default = null)
     return $default;
 }
 
+function array_to_snake_case(array $array): array
+{
+    $snakeCasedArray = [];
+
+    foreach ($array as $key => $value) {
+        $snakeCasedArray[camelCaseToSnakeCase($key)] = $value;
+    }
+
+    return $snakeCasedArray;
+}
+
 function camelCaseToSnakeCase(string $input): string
 {
     return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));

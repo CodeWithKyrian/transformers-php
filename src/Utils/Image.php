@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
@@ -11,7 +10,10 @@ use Imagick;
 use Imagine\Image\AbstractImagine;
 use Imagine\Image\Box;
 use Imagine\Image\ImageInterface;
+use Imagine\Image\Metadata\MetadataBag;
 use Imagine\Image\Point;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Helper file for Image Processing.
@@ -83,7 +85,7 @@ class Image
         }
     }
 
-    public static function setDriver(ImageDriver $imageDriver) : void
+    public static function setDriver(ImageDriver $imageDriver): void
     {
         self::$imagine = match ($imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
@@ -121,13 +123,18 @@ class Image
         return [$size->getWidth(), $size->getHeight()];
     }
 
+    public function metadata(): MetadataBag
+    {
+        return $this->image->metadata();
+    }
+
     /**
      * Clone the image.
      * @return Image The cloned image.
      */
     public function clone(): static
     {
-        return clone $this;
+        return new self($this->image->copy(), $this->channels);
     }
 
     /**
@@ -137,9 +144,9 @@ class Image
     {
         $resampleMethod = $resample instanceof Resample ? $resample : Resample::from($resample) ?? Resample::NEAREST;
 
-        $this->image = $this->image->resize(new Box($width, $height), $resampleMethod->toString());
+        $image = $this->image->copy()->resize(new Box($width, $height), $resampleMethod->toString());
 
-        return $this;
+        return new self($image, $this->channels);
     }
 
     /**
@@ -156,7 +163,7 @@ class Image
         $width = min($inputWidth, $width);
 
         if ($height === $inputHeight && $width === $inputWidth) {
-            return $this;
+            return $this->clone();
         }
 
         if ($inputHeight > $inputWidth) {
@@ -165,9 +172,7 @@ class Image
             $height = floor($inputHeight * $width / $inputWidth);
         }
 
-        $this->resize($width, $height, $resample);
-
-        return $this;
+        return $this->resize($width, $height, $resample);
     }
 
     /**
@@ -177,13 +182,13 @@ class Image
     public function grayscale(bool $force = false): static
     {
         if ($this->channels === 1 && !$force) {
-            return $this;
+            return $this->clone();
         }
 
-        $this->image->effects()->grayscale();
-        $this->channels = 1;
+        $image = $this->image->copy();
+        $image->effects()->grayscale();
 
-        return $this;
+        return new self($image, 1);
     }
 
     /**
@@ -194,23 +199,16 @@ class Image
     {
         // If the image is already in RGB format, return it as is
         if ($this->channels === 3 && !$force) {
-            return $this;
+            return $this->clone();
         }
-
-        $this->channels = 3;
 
         // If it's a Vips image, we can extract the RGB channels
         if ($this->image instanceof \Imagine\Vips\Image) {
-            $this->channels = 3;
-
-            $vipImage = $this->image->getVips()->extract_band(0, ['n' => 3]);
-
-            $this->image = $this->image->setVips($vipImage);
-
-            return $this;
+            $vipImage = $this->image->copy()->getVips()->extract_band(0, ['n' => 3]);
+            return new self($vipImage, 3);
         }
 
-        return $this;
+        return new self($this->image->copy(), 3);
     }
 
     /**
@@ -221,22 +219,17 @@ class Image
     {
         // If the image is already in RGBA format, return it as is
         if ($this->channels === 4 && !$force) {
-            return $this;
+            return $this->clone();
         }
-
-        $this->channels = 4;
 
         // If it's a Vips image, we can handle the RGBA channels
         if ($this->image instanceof \Imagine\Vips\Image) {
-            $this->channels = 4;
 
-            $vipImage = $this->image->getVips();
+            $vipImage = $this->image->copy()->getVips();
 
             $vipImage = $vipImage->hasAlpha() ? $vipImage->extract_band(0, ['n' => 4]) : $vipImage->bandjoin([255]);
 
-            $this->image = $this->image->setVips($vipImage);
-
-            return $this;
+            return new self($vipImage, 4);
         }
 
         return $this;
@@ -248,18 +241,16 @@ class Image
         $originalHeight = $this->image->getSize()->getHeight();
 
         if ($originalWidth === $cropWidth && $originalHeight === $cropHeight) {
-            return $this;
+            return $this->clone();
         }
 
         // Calculate the coordinates for center cropping
         $xOffset = max(0, ($originalWidth - $cropWidth) / 2);
         $yOffset = max(0, ($originalHeight - $cropHeight) / 2);
 
-        $croppedImage = $this->image->crop(new Point($xOffset, $yOffset), new Box($cropWidth, $cropHeight));
+        $croppedImage = $this->image->copy()->crop(new Point($xOffset, $yOffset), new Box($cropWidth, $cropHeight));
 
-        $this->image = $croppedImage;
-
-        return $this;
+        return new self($croppedImage, $this->channels);
     }
 
     public function crop(int $xMin, int $yMin, int $xMax, int $yMax): static
@@ -268,7 +259,7 @@ class Image
         $originalHeight = $this->image->getSize()->getHeight();
 
         if ($xMin === 0 && $yMin === 0 && $xMax === $originalWidth && $yMax === $originalHeight) {
-            return $this;
+            return $this->clone();
         }
         // Ensure crop bounds are within the image
         $xMin = max($xMin, 0);
@@ -279,11 +270,58 @@ class Image
         $cropWidth = $xMax - $xMin + 1;
         $cropHeight = $yMax - $yMin + 1;
 
-        $croppedImage = $this->image->crop(new Point($xMin, $yMin), new Box($cropWidth, $cropHeight));
+        $croppedImage = $this->image->copy()->crop(new Point($xMin, $yMin), new Box($cropWidth, $cropHeight));
 
-        $this->image = $croppedImage;
+        return new self($croppedImage, $this->channels);
+    }
 
-        return $this;
+    /**
+     * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
+     * @param int $grayThreshold Value below which pixels are considered to be gray.
+     * @return static The cropped image.
+     * @throws Exception
+     */
+    public function cropMargin(int $grayThreshold = 200): static
+    {
+        $grayImage = $this->grayscale();
+
+        // Get the min and max pixel values
+        $minValue = min($grayImage->toTensor()->buffer())[0];
+        $maxValue = max($grayImage->toTensor()->buffer())[0];
+
+        $diff = $maxValue - $minValue;
+
+        // If all pixels have the same value, no need to crop
+        if ($diff === 0) {
+            return $this->clone();
+        }
+
+        $threshold = $grayThreshold / 255;
+
+        [$xMin, $yMin] = $this->size();
+        $xMax = 0;
+        $yMax = 0;
+
+        [$width, $height] = $this->size();
+
+        // Iterate over each pixel in the image
+        for ($y = 0; $y < $height; ++$y) {
+            for ($x = 0; $x < $width; ++$x) {
+                $color = $grayImage->image->getColorAt(new Point($x, $y));
+                $pixelValue = $color->getRed(); // Assuming grayscale, so red channel is sufficient
+
+                if (($pixelValue - $minValue) / $diff < $threshold) {
+                    // We have a non-gray pixel, so update the min/max values accordingly
+                    $xMin = min($xMin, $x);
+                    $yMin = min($yMin, $y);
+                    $xMax = max($xMax, $x);
+                    $yMax = max($yMax, $y);
+                }
+            }
+        }
+
+        // Crop the image using the calculated bounds
+        return $this->crop($xMin, $yMin, $xMax, $yMax);
     }
 
     public function pad(int $left, int $right, int $top, int $bottom): static
@@ -292,25 +330,79 @@ class Image
             return $this;
         }
 
-        $originalWidth = $this->image->getSize()->getWidth();
-        $originalHeight = $this->image->getSize()->getHeight();
+        [$originalWidth, $originalHeight] = $this->size();
 
         $newWidth = $originalWidth + $left + $right;
         $newHeight = $originalHeight + $top + $bottom;
 
-        $canvas = self::$imagine->create(new Box($newWidth, $newHeight));
+        $paddedImage = self::$imagine->create(new Box($newWidth, $newHeight));
 
-        $canvas->paste($this->image, new Point($left, $top));
+        $paddedImage->paste($this->image, new Point($left, $top));
 
-        $this->image = $canvas;
+        return new self($paddedImage, $this->channels);
+    }
 
-        // Convert to the same format as the original image
-        if ($this->channels === 1) {
-            $this->grayscale(true);
-        } elseif ($this->channels === 3) {
-            $this->rgb(true);
-        } elseif ($this->channels === 4) {
-            $this->rgba(true);
+    public function invert(): static
+    {
+        $image = $this->image->copy();
+        $image->effects()->negative();
+
+        return new self($image, $this->channels);
+    }
+
+    public function applyMask(Image $mask): static
+    {
+        $size = $this->size();
+        $maskSize = $mask->size();
+
+        if ($size != $maskSize) {
+            throw new InvalidArgumentException(
+                sprintf('The given mask doesn\'t match current image\'s size, current mask\'s dimensions are %s, while image\'s dimensions are %s',
+                    json_encode($maskSize),
+                    json_encode($size)
+                )
+            );
+        }
+
+        /**
+         * Imagine uses white transparency i.e. black stays and white is hidden which goes against
+         * the common convention of black being hidden and white being shown
+         *
+         * So, we'll handle things manually here depending on the driver
+         */
+        if ($this->image instanceof \Imagine\Vips\Image) {
+            // The vips driver seems to have the correct convention
+            $this->image = $this->image->applyMask($mask->image);
+        } else if ($this->image instanceof \Imagine\Imagick\Image) {
+            $maskImagick = $mask->image->mask()->getImagick();
+            $imageImagick = $this->image->getImagick();
+
+            $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
+            $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
+
+            $maskImagick->clear();
+            $maskImagick->destroy();
+        } else if ($this->image instanceof \Imagine\Gd\Image) {
+            for ($x = 0, $width = $this->width(); $x < $width; $x++) {
+                for ($y = 0, $height = $this->height(); $y < $height; $y++) {
+                    $position = new Point($x, $y);
+                    $color = $this->image->getColorAt($position);
+                    $maskColor = $mask->image->getColorAt($position);
+                    $newAlpha = 127 - (int)floor($maskColor->getRed() / 2);
+
+                    $newColor = imagecolorallocatealpha(
+                        $this->image->getGdResource(),
+                        $color->getRed(),
+                        $color->getGreen(),
+                        $color->getBlue(),
+                        $newAlpha
+                    );
+
+                    if (imagesetpixel($this->image->getGdResource(), $x, $y, $newColor) === false) {
+                        throw new RuntimeException('Apply mask operation failed');
+                    }
+                }
+            }
         }
 
         return $this;
@@ -320,7 +412,7 @@ class Image
     {
         $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
 
-        [$width, $height, $channels] = $tensor->shape();
+        [$height, $width, $channels] = $tensor->shape();
 
         $image = self::$imagine->create(new Box($width, $height));
 
@@ -372,19 +464,28 @@ class Image
         // Iterate through each pixel's worth of string data
         for ($y = 0; $y < $height; $y++) {
             for ($x = 0; $x < $width; $x++) {
-                $argb = 0;
-
-                if ($channels >= 1) {
-                    $argb |= ($reverseCHR[$imageData[$j++]] << 16); // R
-                }
-                if ($channels >= 2) {
-                    $argb |= ($reverseCHR[$imageData[$j++]] << 8); // G
-                }
-                if ($channels >= 3) {
-                    $argb |= $reverseCHR[$imageData[$j++]]; // B
-                }
-                if ($channels >= 4) {
-                    $argb |= $reverseAlphaLookup[$imageData[$j++]]; // A
+                if ($channels === 1) {
+                    // Grayscale: get the single channel value and set it to R, G, B equally
+                    $gray = $reverseCHR[$imageData[$j++]];
+                    $argb = imagecolorallocate($gdImage, $gray, $gray, $gray);
+                } else {
+                    $argb = 0;
+                    if ($channels >= 1) {
+                        $argb |= ($reverseCHR[$imageData[$j++]] << 16); // R
+                    }
+                    if ($channels >= 2) {
+                        $argb |= ($reverseCHR[$imageData[$j++]] << 8); // G
+                    }
+                    if ($channels >= 3) {
+                        $argb |= $reverseCHR[$imageData[$j++]]; // B
+                    }
+                    if ($channels === 4) {
+                        // Ensure alpha value is handled
+                        $alpha = $reverseAlphaLookup[$imageData[$j++]];
+                        $argb |= $alpha << 24;
+                    } else {
+                        $argb |= 0xFF000000; // Set full opacity for RGB images
+                    }
                 }
 
                 // Set the pixel at (x, y) to the ARGB value
