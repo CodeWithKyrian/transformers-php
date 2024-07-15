@@ -192,7 +192,8 @@ class TensorBuffer implements LinearBuffer
 
         if ($byteSize === 0) return '';
 
-        $buf = FFI::new("char[$byteSize]");
+        $buf = self::$ffi->new("char[$byteSize]");
+
         FFI::memcpy($buf, $this->data, $byteSize);
 
         return FFI::string($buf, $byteSize);
