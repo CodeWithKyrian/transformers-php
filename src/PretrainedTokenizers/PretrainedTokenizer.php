@@ -379,7 +379,7 @@ class PretrainedTokenizer
 
         $combinedTokens = $this->postProcessor
             ? $this->postProcessor->postProcess($tokens, $tokens2, addSpecialTokens: $addSpecialTokens)
-            : new PostProcessedOutput(tokens: array_merge($tokens, $tokens2));
+            : new PostProcessedOutput(tokens: array_merge($tokens ?? [], $tokens2 ?? []));
 
 
         $inputIds = $this->tokenizer->convertTokensToIds($combinedTokens->tokens);
