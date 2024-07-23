@@ -46,7 +46,7 @@ class DownloadModelCommand extends Command
 
         $this->addOption(
             'quantized',
-            'q',
+            null,
             InputOption::VALUE_OPTIONAL,
             'Whether to download the quantized version of the model.',
             true
@@ -70,6 +70,7 @@ class DownloadModelCommand extends Command
         $cacheDir = $input->getOption('cache-dir');
         $quantized = filter_var($input->getOption('quantized'), FILTER_VALIDATE_BOOLEAN);
         $task = $input->getArgument('task');
+        $modelFilename = $input->getOption('model-filename');
 
         Transformers::setup()
             ->setCacheDir($cacheDir)
@@ -91,10 +92,10 @@ class DownloadModelCommand extends Command
             };
 
             if ($task != null) {
-                pipeline($task, $model, quantized: $quantized, onProgress: $onProgress);
+                pipeline($task, $model, quantized: $quantized, modelFilename: $modelFilename, onProgress: $onProgress);
             } else {
                 AutoTokenizer::fromPretrained($model, onProgress: $onProgress);
-                AutoModel::fromPretrained($model, $quantized, onProgress: $onProgress);
+                AutoModel::fromPretrained($model, $quantized, modelFilename: $modelFilename, onProgress: $onProgress);
             }
 
             $output->writeln('✔ Model files downloaded successfully.');
