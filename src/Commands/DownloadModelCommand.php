@@ -46,10 +46,18 @@ class DownloadModelCommand extends Command
 
         $this->addOption(
             'quantized',
-            null,
+            'q',
             InputOption::VALUE_OPTIONAL,
             'Whether to download the quantized version of the model.',
             true
+        );
+
+        $this->addOption(
+            'model-filename',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The filename of the exact model weights version to download.',
+            null
         );
 
     }

@@ -66,11 +66,13 @@ Arguments:
   can
   specify it here. This downloads any additional configuration or data needed for that task.
 - `[options]` (optional): Additional options to customize the download process.
-    - `-cache_dir=<directory>`: Choose where to save the models. If you've got a preferred storage spot, mention it
+    - `--cache-dir=<directory>`: Choose where to save the models. If you've got a preferred storage spot, mention it
       here. Otherwise, it goes to the default cache location. You can use the shorthand `-c` instead of `--cache_dir`.
     - `--quantized=<true|false>`: Decide whether you want the quantized version of the model, which is smaller and
       faster. The default is true, but if for some reason you prefer the full version, you can set this to false. You
       can use the shorthand `-q` instead of `--quantized`. Example: `--quantized=false`, `-q false`.
+    - `--model-filename=<filename>`: Specify the exact model filename to download (without the `.onnx` suffix. Eg. "
+      model" or "model_quantized".
 
 The `download` command will download the model weights and save them to the cache directory. The next time you use the
 model, TransformersPHP will use the cached weights instead of downloading them again.
@@ -199,7 +201,7 @@ OpenMP is a set of compiler directives and library routines that enable parallel
 programs. TransformersPHP uses OpenMP to enable multithreaded operations in the Tensors, which can improve performance
 on multi-core systems. OpenMP is not required, but it can provide a significant performance boost for some operations.
 Checkout the [OpenMP website](https://www.openmp.org/) for more information on how to install and configure OpenMP on
-your system. 
+your system.
 
 Example: On Ubuntu, you can install OpenMP using the following command:
 
