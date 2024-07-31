@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
-use function Codewithkyrian\Transformers\Utils\array_to_snake_case;
+use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 
 /**
  * A pipeline for generating text using a model that performs text-to-text generation tasks.
@@ -33,7 +33,7 @@ class Text2TextGenerationPipeline extends Pipeline
         /** @var Streamer $streamer */
         $streamer = array_pop_key($args, 'streamer');
 
-        $kwargs = array_to_snake_case($args);
+        $kwargs = array_keys_to_snake_case($args);
 
         $generateKwargs = new GenerationConfig($kwargs);
 

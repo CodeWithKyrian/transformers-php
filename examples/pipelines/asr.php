@@ -18,23 +18,18 @@ $transcriber = pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en'
 
 $audioUrl = __DIR__ . '/../sounds/kyrian-dev.wav';
 $audioUrl = __DIR__ . '/../sounds/jfk.wav';
-//$audioUrl = __DIR__ . '/../sounds/preamble.wav';
-//$audioUrl = __DIR__ . '/../sounds/taunt.wav';
-//$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
-//$audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
+$audioUrl = __DIR__ . '/../sounds/preamble.wav';
+$audioUrl = __DIR__ . '/../sounds/taunt.wav';
+$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
+$audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
 $audioUrl = __DIR__ . '/../sounds/ted_60.wav';
 //$audioUrl = __DIR__ . '/../sounds/french-audio.wav';
 
-$streamer = WhisperTextStreamer::make()
-//    ->onTimestampStart(fn($time) => print("$time: "))
-//    ->onTimestampEnd(fn($time) => print("\n"))
-;
 
 $output = $transcriber($audioUrl,
     maxNewTokens: 256,
     chunkLengthSecs: 24,
 //    returnTimestamps: true,
-    streamer: $streamer
 );
 
-//dd($output, timeUsage(), memoryUsage());
+dd($output, timeUsage(), memoryUsage());
