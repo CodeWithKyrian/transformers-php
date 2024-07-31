@@ -11,12 +11,12 @@ use function Codewithkyrian\Transformers\Utils\memoryUsage;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 ini_set('memory_limit', -1);
-//
+
 //$generator = pipeline('text-generation', 'Xenova/gpt2');
 //$generator = pipeline('text-generation', 'Xenova/Qwen1.5-0.5B-Chat');
 $generator = pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0');
 
-$streamer = TextStreamer::make();
+$streamer = TextStreamer::make()->shouldSkipPrompt();
 
 $messages = [
     ['role' => 'system', 'content' => 'You are a helpful assistant.'],
@@ -36,14 +36,14 @@ $output = $generator($input,
 );
 
 //$generator = pipeline('text-generation', 'Xenova/codegen-350M-mono');
-//$streamer = StdOutStreamer::make();
-//
+//$streamer = TextStreamer::make();
+
 //$output = $generator(
 //    'def fib(n):',
 //    streamer: $streamer,
 //    maxNewTokens: 100,
 //    doSample: true,
-//    returnFullText: false,
+//    returnFullText: true,
 //);
-//
+
 dd($output[0]['generated_text'], timeUsage(), memoryUsage());

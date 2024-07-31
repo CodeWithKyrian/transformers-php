@@ -13,7 +13,7 @@ use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
 abstract class Streamer
 {
     protected array $promptTokens = [];
-    protected bool $skipPrompt;
+    protected bool $skipPrompt = false;
     protected bool $nextTokensArePrompt;
 
     protected PretrainedTokenizer $tokenizer;

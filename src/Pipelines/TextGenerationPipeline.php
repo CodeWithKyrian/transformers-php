@@ -9,7 +9,7 @@ use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
-use function Codewithkyrian\Transformers\Utils\array_to_snake_case;
+use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
@@ -62,7 +62,7 @@ class TextGenerationPipeline extends Pipeline
 
         $returnFullText = array_pop_key($args, 'returnFullText', true);
 
-        $kwargs = array_to_snake_case($args);
+        $kwargs = array_keys_to_snake_case($args);
 
         $generationConfig = new GenerationConfig($kwargs);
 
@@ -104,9 +104,7 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
-        $streamer?->setTokenizer($this->tokenizer)
-            ?->shouldSkipPrompt()
-            ?->setPromptTokens($inputIds[0]->toArray());
+        $streamer?->setTokenizer($this->tokenizer)?->setPromptTokens($inputIds[0]->toArray());
 
         $outputTokenIds = $this->model->generate($inputIds,
             generationConfig: $generationConfig,
