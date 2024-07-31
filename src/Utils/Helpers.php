@@ -71,7 +71,7 @@ function array_pop_key(array &$array, string|int $key, mixed $default = null)
     return $default;
 }
 
-function array_to_snake_case(array $array): array
+function array_keys_to_snake_case(array $array): array
 {
     $snakeCasedArray = [];
 
