@@ -2,6 +2,24 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.4.3 - 2024-07-31
+
+### What's Changed
+
+* Fix typo in docs by @BlackyDrum in https://github.com/CodeWithKyrian/transformers-php/pull/42
+* fix: statically calling FFI::new deprecated in PHP 8.3 by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/48
+* fix: improve regex for detecting language codes in NllbTokenizer by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/49
+* fix: digits pre-tokenizer returning empty array for text with no digits by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/51
+* [feat: allow passing model filename when downloading a model from CLI](https://github.com/CodeWithKyrian/transformers-php/commit/91db063eab90da732f301a028e23a0a00ee25979)
+* fix: preTokenizer null error when there's no text pair](https://github.com/CodeWithKyrian/transformers-php/commit/901a049b8bd837c83d3edcd517dd76cf8e3ba6b9)
+* feat: implement enforce size divisibility for image feature extractor by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/pull/53
+
+### New Contributors
+
+* @BlackyDrum made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/42
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.4.2...0.4.3
+
 ## v0.4.2 - 2024-06-05
 
 ### What's Changed
@@ -119,11 +137,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -143,6 +163,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
