@@ -47,7 +47,9 @@ Image::setDriver(ImageDriver::GD);
 ## Image Processing Operations
 
 The `Image` utility class provides a range of image processing operations that can be performed on images. These
-operations include:
+operations are immutable, meaning that all operations essentially return a new instance of `Image` with the operation
+applied without affecting the current instance. This allows for method chaining and simplifies the process of applying
+multiple operations to an image.
 
 - ### `read(string $input, array $options = [])`
   Reads an image from a file path, URL, or resource and returns an image object.
@@ -94,8 +96,7 @@ operations include:
   ```
 
 - ### `resize(int $width, int $height, int|Resample $resample = 2)`
-  Resizes an image to the specified width and height, using the specified resampling method. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Resizes an image to the specified width and height, using the specified resampling method.
 
   Parameters:
     - `$width` (int) The target width of the resized image.
@@ -111,8 +112,7 @@ operations include:
   ```
   
 - ### `thumbnail(int $width, int $height, int|Resample $resample = 2)`
-    Creates a thumbnail of the image with the specified width and height, using the specified resampling method. This
-    operation affects the instance it's called on, but still returns that instance for method chaining.
+    Creates a thumbnail of the image with the specified width and height, using the specified resampling method.
     
     Parameters:
         - `$width` (int) The target width of the thumbnail.
@@ -128,8 +128,7 @@ operations include:
     ```
 
 - ### `crop(int $xMin, int $yMin, int $xMax, int $yMax)`
-  Crops the image to the specified bounding box defined by the top-left and bottom-right coordinates. This operation
-  affects the instance it's called on, but still returns that instance for method chaining.
+  Crops the image to the specified bounding box defined by the top-left and bottom-right coordinates.
 
   Parameters:
     - `$xMin` (int) The x-coordinate of the top-left corner of the bounding box.
@@ -146,8 +145,7 @@ operations include:
   ```
 
 - ### `centerCrop(int $width, int $height)`
-  Crops the image to the specified width and height by centering the crop around the image's center. This operation
-  affects the instance it's called on, but still returns that instance for method chaining.
+  Crops the image to the specified width and height by centering the crop around the image's center.
 
   Parameters:
     - `$width` (int) The target width of the cropped image.
@@ -162,8 +160,7 @@ operations include:
   ```
 
 - ### `pad(int $left, int $right, int $top, int $bottom)`
-  Pads the image with the specified number of pixels on each side. This operation affects the instance it's called on,
-  but still returns that instance for method chaining.
+  Pads the image with the specified number of pixels on each side.
 
   Parameters:
     - `$left` (int) The number of pixels to add to the left side.
@@ -180,8 +177,7 @@ operations include:
   ```
 
 - ### `grayscale()`
-  Converts the image to grayscale. This operation affects the instance it's called on, but still returns that instance
-  for method chaining.
+  Converts the image to grayscale.
 
   Returns:
     - An image object representing the grayscale image.
@@ -192,8 +188,7 @@ operations include:
   ```
 
 - ### `rgb()`
-  Converts the image to RGB color space. This operation affects the instance it's called on, but still returns that
-  instance for method chaining.
+  Converts the image to RGB color space.
 
   Returns:
     - An image object representing the RGB image.
@@ -204,8 +199,7 @@ operations include:
   ```
 
 - ### `rgba()`
-  Converts the image to RGBA color space. This operation affects the instance it's called on, but still returns that
-  instance for method chaining.
+  Converts the image to RGBA color space.
 
   Returns:
     - An image object representing the RGBA image.
@@ -214,10 +208,27 @@ operations include:
   ```php
   $rgbaImage = $image->rgba();
   ```
+  
+- ### `applyMask(Image $mask)`
+  Applies a mask to the current image.
+
+  Parameters:
+  - `$mask` (Image) The mask to apply.
+
+  Returns:
+  - An image object representing the image with the mask applied.
+
+  Throws:
+  - `InvalidArgumentException` if the given mask doesn't match the current image's size or if the image driver is unsupported.
+  - `RuntimeException` if the apply mask operation fails.
+
+  Example:
+  ```php
+  $maskedImage = $image->applyMask($mask);
+  ```
 
 - ### `drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1)`
-  Draws a rectangle on the image with the specified coordinates, color, and thickness. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Draws a rectangle on the image with the specified coordinates, color, and thickness.
 
   Parameters:
     - `$xMin` (int) The x-coordinate of the top-left corner of the rectangle.
@@ -238,8 +249,7 @@ operations include:
 
 - ### `drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF')`
 
-  Draws text on the image at the specified position with the specified font, size, and color. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Draws text on the image at the specified position with the specified font, size, and color.
 
   Parameters:
     - `$text` (string) The text to draw on the image.
