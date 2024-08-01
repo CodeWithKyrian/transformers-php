@@ -114,6 +114,7 @@ class Image
 
     /**
      * Returns the size of the image (width, height).
+     *
      * @return array{int, int}
      */
     public function size(): array
@@ -130,6 +131,7 @@ class Image
 
     /**
      * Clone the image.
+     *
      * @return Image The cloned image.
      */
     public function clone(): static
@@ -177,6 +179,7 @@ class Image
 
     /**
      * Convert the image to grayscale format.
+     *
      * @return $this
      */
     public function grayscale(bool $force = false): static
@@ -193,6 +196,7 @@ class Image
 
     /**
      * Convert the image to RGB format.
+     *
      * @return $this
      */
     public function rgb(bool $force = false): static
@@ -213,6 +217,7 @@ class Image
 
     /**
      * Convert the image to RGBA format.
+     *
      * @return $this
      */
     public function rgba(bool $force = false): static
@@ -232,7 +237,7 @@ class Image
             return new self($vipImage, 4);
         }
 
-        return $this;
+        return new self($this->image->copy(), 4);
     }
 
     public function centerCrop(int $cropWidth, int $cropHeight): static
@@ -277,7 +282,9 @@ class Image
 
     /**
      * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
+     *
      * @param int $grayThreshold Value below which pixels are considered to be gray.
+     *
      * @return static The cropped image.
      * @throws Exception
      */
@@ -350,6 +357,14 @@ class Image
         return new self($image, $this->channels);
     }
 
+    /**
+     * Applies a mask to the current image.
+     *
+     * @param Image $mask The mask to apply.
+     * @return static A new instance of the current image with the mask applied.
+     * @throws InvalidArgumentException If the given mask doesn't match the current image's size or if the image driver is unsupported.
+     * @throws RuntimeException If the apply mask operation fails.
+     */
     public function applyMask(Image $mask): static
     {
         $size = $this->size();
@@ -357,57 +372,69 @@ class Image
 
         if ($size != $maskSize) {
             throw new InvalidArgumentException(
-                sprintf('The given mask doesn\'t match current image\'s size, current mask\'s dimensions are %s, while image\'s dimensions are %s',
+                sprintf("The given mask doesn't match current image's size, current mask's dimensions are %s, while image's dimensions are %s",
                     json_encode($maskSize),
                     json_encode($size)
                 )
             );
         }
 
-        /**
-         * Imagine uses white transparency i.e. black stays and white is hidden which goes against
-         * the common convention of black being hidden and white being shown
-         *
-         * So, we'll handle things manually here depending on the driver
-         */
-        if ($this->image instanceof \Imagine\Vips\Image) {
-            // The vips driver seems to have the correct convention
-            $this->image = $this->image->applyMask($mask->image);
-        } else if ($this->image instanceof \Imagine\Imagick\Image) {
-            $maskImagick = $mask->image->mask()->getImagick();
-            $imageImagick = $this->image->getImagick();
+        $image = match (true) {
+            $this->image instanceof \Imagine\Vips\Image => $this->image->copy()->applyMask($mask->image),
 
-            $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
-            $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
+            $this->image instanceof \Imagine\Imagick\Image => (function () use ($mask) {
+                $maskImagick = $mask->image->copy()->mask()->getImagick();
+                $imageImagick = clone $this->image->getImagick();
 
-            $maskImagick->clear();
-            $maskImagick->destroy();
-        } else if ($this->image instanceof \Imagine\Gd\Image) {
-            for ($x = 0, $width = $this->width(); $x < $width; $x++) {
-                for ($y = 0, $height = $this->height(); $y < $height; $y++) {
-                    $position = new Point($x, $y);
-                    $color = $this->image->getColorAt($position);
-                    $maskColor = $mask->image->getColorAt($position);
-                    $newAlpha = 127 - (int)floor($maskColor->getRed() / 2);
+                $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
+                $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
 
-                    $newColor = imagecolorallocatealpha(
-                        $this->image->getGdResource(),
-                        $color->getRed(),
-                        $color->getGreen(),
-                        $color->getBlue(),
-                        $newAlpha
-                    );
+                $maskImagick->clear();
+                $maskImagick->destroy();
 
-                    if (imagesetpixel($this->image->getGdResource(), $x, $y, $newColor) === false) {
-                        throw new RuntimeException('Apply mask operation failed');
+                return new \Imagine\Imagick\Image($imageImagick, $this->image->palette(), $this->image->metadata());
+            })(),
+
+            $this->image instanceof \Imagine\Gd\Image => (function () use ($mask) {
+                $gdResource = $this->image->getGdResource();
+
+                for ($x = 0, $width = $this->width(); $x < $width; $x++) {
+                    for ($y = 0, $height = $this->height(); $y < $height; $y++) {
+                        $position = new Point($x, $y);
+                        $color = $this->image->getColorAt($position);
+                        $maskColor = $mask->image->getColorAt($position);
+                        $newAlpha = 127 - (int)floor($maskColor->getRed() / 2);
+
+                        $newColor = imagecolorallocatealpha(
+                            $this->image->getGdResource(),
+                            $color->getRed(),
+                            $color->getGreen(),
+                            $color->getBlue(),
+                            $newAlpha
+                        );
+
+                        if (imagesetpixel($gdResource, $x, $y, $newColor) === false) {
+                            throw new RuntimeException('Apply mask operation failed');
+                        }
                     }
                 }
-            }
-        }
 
-        return $this;
+                return new \Imagine\Gd\Image($gdResource, $this->image->palette(), $this->image->metadata());
+            })(),
+            default => throw new InvalidArgumentException('Unsupported image driver'),
+        };
+
+        return new self($image, $this->channels);
     }
 
+    /**
+     * Creates an image from a tensor.
+     *
+     * @param Tensor $tensor The tensor containing the image data.
+     * @param string $channelFormat The format of the tensor channels. Defaults to 'CHW'.
+     * @return static The created image.
+     * @throws Exception If the number of channels in the tensor is unsupported.
+     */
     public static function fromTensor(Tensor $tensor, string $channelFormat = 'CHW'): static
     {
         $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
@@ -496,6 +523,13 @@ class Image
         return new self($image, $channels);
     }
 
+    /**
+     * Converts the image to a tensor.
+     *
+     * @param string $channelFormat The channel format of the tensor. Defaults to 'CHW'.
+     * @return Tensor The tensor representation of the image.
+     * @throws Exception If the channel format is unsupported.
+     */
     public function toTensor(string $channelFormat = 'CHW'): Tensor
     {
         $width = $this->image->getSize()->getWidth();
@@ -581,23 +615,53 @@ class Image
         $this->image->save($path);
     }
 
-    public function drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): void
+    /**
+     * Draws a rectangle on the image at the specified position with the given color and thickness.
+     *
+     * @param int $xMin The x-coordinate of the top-left corner of the rectangle.
+     * @param int $yMin The y-coordinate of the top-left corner of the rectangle.
+     * @param int $xMax The x-coordinate of the bottom-right corner of the rectangle.
+     * @param int $yMax The y-coordinate of the bottom-right corner of the rectangle.
+     * @param string $color The color of the rectangle in hexadecimal format. Default is 'FFF'.
+     * @param bool $fill Whether to fill the rectangle with the color. Default is false.
+     * @param float $thickness The thickness of the rectangle border. Default is 1.
+     * @return self A new instance of the Image class with the rectangle drawn.
+     */
+    public function drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): self
     {
-        $this->image->draw()->rectangle(
+        $image = $this->image->copy();
+        $image->draw()->rectangle(
             new Point($xMin, $yMin),
             new Point($xMax, $yMax),
             $this->image->palette()->color($color),
             $fill,
             $thickness
         );
+
+        return new self($image, $this->channels);
     }
 
-    public function drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): void
+    /**
+     * Draws text on an image at the specified position using the given font and color.
+     *
+     * @param string $text The text to be drawn.
+     * @param int $xPos The x-coordinate of the text position.
+     * @param int $yPos The y-coordinate of the text position.
+     * @param string $fontFile The path to the font file.
+     * @param int $fontSize The size of the font in points. Default is 16.
+     * @param string $color The color of the text in hexadecimal format. Default is 'FFF'.
+     * @return self A new instance of Image with the drawn text.
+     */
+    public function drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): self
     {
         $font = self::$imagine->font($fontFile, $fontSize, $this->image->palette()->color($color));
 
         $position = new Point($xPos, $yPos);
 
-        $this->image->draw()->text($text, $font, $position);
+        $image = $this->image->copy();
+
+        $image->draw()->text($text, $font, $position);
+
+        return new self($image, $this->channels);
     }
 }
