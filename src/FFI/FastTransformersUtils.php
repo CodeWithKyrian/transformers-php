@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
 use FFI;
 use FFI\CData;
+use RuntimeException;
 
 class FastTransformersUtils
 {
@@ -17,11 +18,20 @@ class FastTransformersUtils
     private static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
+            self::validateLibrary();
+
             $headerCode = file_get_contents(Libraries::FastTransformersUtils->headerFile(Transformers::$libsDir));
             self::$ffi = FFI::cdef($headerCode, Libraries::FastTransformersUtils->libFile(Transformers::$libsDir));
         }
 
         return self::$ffi;
+    }
+
+    private static function validateLibrary(): void
+    {
+        if (!Libraries::FastTransformersUtils->exists(Transformers::$libsDir)) {
+            throw new RuntimeException('FastTransformersUtils library not found. Please run "./vendor/bin/transformers install" to install all dependencies.');
+        }
     }
 
     public static function new($type, bool $owned = true, bool $persistent = false): ?CData

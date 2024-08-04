@@ -361,6 +361,7 @@ class Image
      * Applies a mask to the current image.
      *
      * @param Image $mask The mask to apply.
+     *
      * @return static A new instance of the current image with the mask applied.
      * @throws InvalidArgumentException If the given mask doesn't match the current image's size or if the image driver is unsupported.
      * @throws RuntimeException If the apply mask operation fails.
@@ -432,6 +433,7 @@ class Image
      *
      * @param Tensor $tensor The tensor containing the image data.
      * @param string $channelFormat The format of the tensor channels. Defaults to 'CHW'.
+     *
      * @return static The created image.
      * @throws Exception If the number of channels in the tensor is unsupported.
      */
@@ -527,6 +529,7 @@ class Image
      * Converts the image to a tensor.
      *
      * @param string $channelFormat The channel format of the tensor. Defaults to 'CHW'.
+     *
      * @return Tensor The tensor representation of the image.
      * @throws Exception If the channel format is unsupported.
      */
@@ -618,18 +621,20 @@ class Image
     /**
      * Draws a rectangle on the image at the specified position with the given color and thickness.
      *
-     * @param int $xMin The x-coordinate of the top-left corner of the rectangle.
+     * @param int|float $xMin The x-coordinate of the top-left corner of the rectangle.
      * @param int $yMin The y-coordinate of the top-left corner of the rectangle.
-     * @param int $xMax The x-coordinate of the bottom-right corner of the rectangle.
-     * @param int $yMax The y-coordinate of the bottom-right corner of the rectangle.
+     * @param int|float $xMax The x-coordinate of the bottom-right corner of the rectangle.
+     * @param int|float $yMax The y-coordinate of the bottom-right corner of the rectangle.
      * @param string $color The color of the rectangle in hexadecimal format. Default is 'FFF'.
      * @param bool $fill Whether to fill the rectangle with the color. Default is false.
      * @param float $thickness The thickness of the rectangle border. Default is 1.
+     *
      * @return self A new instance of the Image class with the rectangle drawn.
      */
-    public function drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): self
+    public function drawRectangle(int|float $xMin, int|float $yMin, int|float $xMax, int|float $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): self
     {
         $image = $this->image->copy();
+
         $image->draw()->rectangle(
             new Point($xMin, $yMin),
             new Point($xMax, $yMax),
@@ -645,14 +650,15 @@ class Image
      * Draws text on an image at the specified position using the given font and color.
      *
      * @param string $text The text to be drawn.
-     * @param int $xPos The x-coordinate of the text position.
-     * @param int $yPos The y-coordinate of the text position.
+     * @param int|float $xPos The x-coordinate of the text position.
+     * @param int|float $yPos The y-coordinate of the text position.
      * @param string $fontFile The path to the font file.
      * @param int $fontSize The size of the font in points. Default is 16.
      * @param string $color The color of the text in hexadecimal format. Default is 'FFF'.
+     *
      * @return self A new instance of Image with the drawn text.
      */
-    public function drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): self
+    public function drawText(string $text, int|float $xPos, int|float $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): self
     {
         $font = self::$imagine->font($fontFile, $fontSize, $this->image->palette()->color($color));
 

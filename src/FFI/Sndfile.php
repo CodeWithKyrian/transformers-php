@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\FFI;
 
 use Codewithkyrian\Transformers\Transformers;
@@ -18,11 +17,20 @@ class Sndfile
     private static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
+            self::validateLibrary();
+
             $headerCode = file_get_contents(Libraries::Sndfile->headerFile(Transformers::$libsDir));
             self::$ffi = FFI::cdef($headerCode, Libraries::Sndfile->libFile(Transformers::$libsDir));
         }
 
         return self::$ffi;
+    }
+
+    private static function validateLibrary(): void
+    {
+        if (!Libraries::Sndfile->exists(Transformers::$libsDir)) {
+            throw new RuntimeException('Sndfile library not found. Please run "./vendor/bin/transformers install" to install all dependencies.');
+        }
     }
 
     public static function new($type, bool $owned = true, bool $persistent = false): ?CData
@@ -37,9 +45,11 @@ class Sndfile
 
     /**
      * Open the specified file for read, write or both.
+     *
      * @param string $path
      * @param int $mode
      * @param CData $sfinfo
+     *
      * @return mixed
      */
     public static function open(string $path, int $mode, CData $sfinfo): mixed
