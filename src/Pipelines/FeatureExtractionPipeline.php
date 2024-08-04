@@ -5,6 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Tensor\Tensor;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+
 /**
  * Feature extraction pipeline using no model head. This pipeline extracts the hidden
  *  states from the base transformer, which can be used as features in downstream tasks.
@@ -63,15 +66,15 @@ class FeatureExtractionPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $pooling = $args["pooling"] ?? 'none';
-        $normalize = $args["normalize"] ?? false;
+        $pooling = array_pop_key($args, 'pooling', 'none');
+        $normalize = array_pop_key($args, 'normalize', false);
 
         $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         $outputs = $this->model->__invoke($modelInputs);
 
-        $result = $outputs["last_hidden_state"] ?? $outputs["logits"];
-
+        /** @var Tensor $result */
+        $result = $outputs["last_hidden_state"] ?? $outputs["logits"] ?? $outputs["token_embeddings"];
 
         switch ($pooling) {
             case 'none':

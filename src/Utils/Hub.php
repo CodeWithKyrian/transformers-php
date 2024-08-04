@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Utils;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Transformers;
 use Exception;
+use RuntimeException;
 use Symfony\Component\Console\Helper\ProgressBar;
 
 /**
@@ -71,17 +72,17 @@ class Hub
         $partCounter = 1;
         $partBasePath = "$filePath.part";
 
-        while (file_exists($partBasePath . $partCounter)) {
+        while (file_exists($partBasePath.$partCounter)) {
             $partCounter++;
         }
 
-        $partPath = $partBasePath . $partCounter;
+        $partPath = $partBasePath.$partCounter;
 
         # Resume download if partially downloaded
         $downloadedBytes = 0;
         if ($partCounter > 1) {
             for ($i = 1; $i < $partCounter; $i++) {
-                $downloadedBytes += filesize($partBasePath . $i);
+                $downloadedBytes += filesize($partBasePath.$i);
             }
         }
 
@@ -91,14 +92,14 @@ class Hub
         $options = [
             'http' => [
                 'header' => [
-                    'Range: bytes=' . $downloadedBytes . '-',
+                    'Range: bytes='.$downloadedBytes.'-',
                 ],
                 'User-Agent' => Transformers::$userAgent,
             ],
         ];
 
         if (Transformers::$authToken) {
-            $options['http']['header'][] = 'Authorization: Bearer ' . Transformers::$authToken;
+            $options['http']['header'][] = 'Authorization: Bearer '.Transformers::$authToken;
         }
 
         try {
@@ -152,7 +153,16 @@ class Hub
             return null;
         }
 
-        return json_decode(file_get_contents($file), true);
+        $json = file_get_contents($file);
+        $data = json_decode($json, true);
+
+        if ($data === null) {
+            $error = json_last_error_msg();
+            $message = "Unable to decode JSON file `$file`: $error";
+            throw new RuntimeException($message, json_last_error());
+        }
+
+        return $data;
     }
 
 
@@ -171,7 +181,7 @@ class Hub
     {
         $fileHandle = fopen($filePath, 'w');
         for ($i = 1; $i <= $partCount; $i++) {
-            $partPath = $partBasePath . $i;
+            $partPath = $partBasePath.$i;
             $partFileHandle = fopen($partPath, 'r');
             stream_copy_to_stream($partFileHandle, $fileHandle);
             fclose($partFileHandle);

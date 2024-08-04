@@ -16,11 +16,20 @@ class OnnxRuntime
     public static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
+            self::validateLibrary();
+
             $headerCode = file_get_contents(Libraries::OnnxRuntime->headerFile(Transformers::$libsDir));
             self::$ffi = FFI::cdef($headerCode, Libraries::OnnxRuntime->libFile(Transformers::$libsDir));
         }
 
         return self::$ffi;
+    }
+
+    private static function validateLibrary(): void
+    {
+        if (!Libraries::OnnxRuntime->exists(Transformers::$libsDir)) {
+            throw new RuntimeException("OnnxRuntime library not found. Please run \033[32m`./vendor/bin/transformers install`\033[39m to install all dependencies.");
+        }
     }
 
     public static function api(): mixed

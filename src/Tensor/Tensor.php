@@ -196,11 +196,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         foreach ($shape as $num) {
             if (!is_int($num)) {
                 throw new InvalidArgumentException(
-                    "Invalid shape numbers. It gives " . gettype($num));
+                    "Invalid shape numbers. It gives ".gettype($num));
             }
             if ($num < 0) {
                 throw new InvalidArgumentException(
-                    "Invalid shape numbers. It gives " . $num);
+                    "Invalid shape numbers. It gives ".$num);
             }
         }
     }
@@ -332,6 +332,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Returns how many dimensions the tensor has.
+     *
      * @return int
      */
     public function ndim(): int
@@ -363,8 +364,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         $this->assertShape($shape);
 
         if ($this->size() != array_product($shape)) {
-            throw new InvalidArgumentException("Unmatched size to reshape: " .
-                "[" . implode(',', $this->shape()) . "]=>[" . implode(',', $shape) . "]");
+            throw new InvalidArgumentException("Unmatched size to reshape: ".
+                "[".implode(',', $this->shape())."]=>[".implode(',', $shape)."]");
         }
 
         return new self($this->buffer(), $this->dtype(), $shape, $this->offset());
@@ -414,7 +415,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      */
     public function toBufferArray(): array
     {
-        $fmt = self::$pack[$this->dtype] . '*';
+        $fmt = self::$pack[$this->dtype].'*';
 
         return array_values(unpack($fmt, $this->buffer->dump()));
     }
@@ -446,6 +447,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @param array $shape The shape of the one matrix to return.
      * @param ?int $dtype The data type of the one matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     *
      * @return static
      */
     public static function ones(array $shape, ?int $dtype = null): static
@@ -473,8 +475,10 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Return a zero matrix with the given shape.
+     *
      * @param array $shape The shape of the zero matrix to return.
      * @param int|null $dtype The data type of the zero matrix to return. Eg: float32, int32, etc. If null, defaults to float32.
+     *
      * @return static
      */
     public static function zeros(array $shape, ?int $dtype = null): static
@@ -543,9 +547,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Safely calculates the positive index within the specified size and axis.
+     *
      * @param int $index The input index.
      * @param int $size The size of the dimension.
      * @param int|null $axis The axis (optional).
+     *
      * @return int The positive index within bounds.
      * @throws InvalidArgumentException If the index is out of bounds.
      */
@@ -553,7 +559,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         if ($index < -$size || $index >= $size) {
             throw new InvalidArgumentException("IndexError: index $index is out of bounds for axis"
-                . ($axis === null ? '' : ' ' . $axis) . " with size $size"
+                .($axis === null ? '' : ' '.$axis)." with size $size"
             );
         }
 
@@ -604,6 +610,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * an element-wise addition. If it's a scalar, it adds the scalar to every element in the tensor.
      *
      * @param Tensor|float|int $other The NDArray to add to this NDArray.
+     *
      * @return static
      */
     public function add(Tensor|float|int $other): static
@@ -622,13 +629,14 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Return a new Tensor with the sigmoid function applied to each element.
+     *
      * @return self
      */
     public function sigmoid(): self
     {
         $mo = self::mo();
 
-        $ndArray = $mo->f(fn($x) => 1 / (1 + exp(-$x)), $this);
+        $ndArray = $mo->f(fn ($x) => 1 / (1 + exp(-$x)), $this);
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
@@ -722,6 +730,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Return a transposed version of this Tensor.
+     *
      * @return $this
      */
     public function transpose(): self
@@ -796,7 +805,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         $mo = self::mo();
 
         if ($axis === null) {
-            $val = pow(array_reduce($this->toBufferArray(), fn($carry, $item) => $carry + pow($item, $ord), 0), 1 / $ord);
+            $val = pow(array_reduce($this->toBufferArray(), fn ($carry, $item) => $carry + pow($item, $ord), 0), 1 / $ord);
 
             return new Tensor([$val], $this->dtype(), []);
         }
@@ -851,35 +860,38 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @param float|int $min The minimum value.
      * @param float|int $max The maximum value.
+     *
      * @return static The clamped tensor.
      */
     public function clamp(float|int $min, float|int $max): static
     {
         $mo = self::mo();
 
-        $result = $mo->f(fn($x) => max($min, min($max, $x)), $this);
+        $result = $mo->f(fn ($x) => max($min, min($max, $x)), $this);
 
         return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
 
     /**
      * Rounds elements of input to the nearest integer.
+     *
      * @return static The rounded tensor.
      */
     public function round(int $precision = 0): static
     {
         $mo = self::mo();
 
-        $result = $mo->f(fn($x) => round($x, $precision), $this);
+        $result = $mo->f(fn ($x) => round($x, $precision), $this);
 
         return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
 
     /**
-     * Performs Tensor dtype conversion.
+     * Cast the tensor to a new dtype.
      *
-     * @param int $dtype The target data type.
-     * @return static The converted tensor.
+     * @param int $dtype The new dtype.
+     *
+     * @return static
      */
     public function to(int $dtype): static
     {
@@ -988,25 +1000,23 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
 
     /**
-     * Perform mean pooling of the tensor followed by a normalization step.
+     * Perform mean pooling of the last hidden state (shape : [batchSize, seqLength, embedDim])
      *
-     * @param Tensor $other The tensor to pool of the same shape as the input tensor.
+     * @param Tensor $other The other tensor of shape : [batchSize, seqLength]
      *
-     * @return Tensor The pooled tensor.
+     * @return Tensor The pooled tensor of shape : [batchSize, embedDim]
      */
     public function meanPooling(Tensor $other): Tensor
     {
-        // $this->shape should be : [batchSize, seqLength, embedAxis]
-        // $other->shape should be : [batchSize, seqLength]
-        [$batchSize, $seqLength, $embedAxis] = $this->shape();
+        [$batchSize, $seqLength, $embedDim] = $this->shape();
 
-        $returnedData = [];
+        $pooledTensor = Tensor::zeros([$batchSize, $embedDim], $this->dtype());
         $outIndex = 0;
 
         for ($i = 0; $i < $batchSize; ++$i) {
-            $offset = $i * $embedAxis * $seqLength;
+            $offset = $i * $embedDim * $seqLength;
 
-            for ($k = 0; $k < $embedAxis; ++$k) {
+            for ($k = 0; $k < $embedDim; ++$k) {
                 $sum = 0;
                 $count = 0;
 
@@ -1016,20 +1026,28 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 // Pool over all words in sequence
                 for ($j = 0; $j < $seqLength; ++$j) {
                     // index into attention mask
-                    $attn = (int)$other[$i][$j];
+                    $attn = $other->buffer[$otherOffset + $j];
 
                     $count += $attn;
-                    $sum += $this[$i][$j][$k] * $attn;
+                    $sum += $this->buffer[$offset2 + $j * $embedDim] * $attn;
                 }
 
-                $avg = $count ? $sum / $count : 0;
-                $returnedData[$outIndex++] = $avg;
+                $avg = $sum / $count;
+                $pooledTensor->buffer[$outIndex++] = $avg;
             }
         }
 
-        return new Tensor($returnedData, $this->dtype(), [$batchSize, $embedAxis]);
+        return $pooledTensor;
     }
 
+    /**
+     * Slices the tensor with the given bounds.
+     *
+     * @param array $start The starting indices of the slice.
+     * @param array $size The size of the slice.
+     *
+     * @return Tensor The sliced tensor.
+     */
     public function sliceWithBounds(array $start, array $size): Tensor
     {
         $mo = self::mo();
@@ -1039,6 +1057,13 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
+    /**
+     * Slices the tensor with the given slices.
+     *
+     * @param array ...$slices The slices to apply.
+     *
+     * @return Tensor The sliced tensor.
+     */
     public function slice(...$slices): Tensor
     {
         $start = [];
@@ -1062,14 +1087,14 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             } elseif (is_array($slice) && count($slice) === 2) {
                 // An array of length 2 means take a range of elements
                 if ($slice[0] > $slice[1]) {
-                    throw new InvalidArgumentException("Invalid slice: " . json_encode($slice));
+                    throw new InvalidArgumentException("Invalid slice: ".json_encode($slice));
                 }
 
                 $start[] = max($slice[0], 0);
                 $size[] = min($slice[1], $this->shape()[$sliceIndex]);
 
             } else {
-                throw new InvalidArgumentException("Invalid slice: " . json_encode($slice));
+                throw new InvalidArgumentException("Invalid slice: ".json_encode($slice));
             }
         }
 
@@ -1101,6 +1126,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Compute and return the stride of this tensor.
      * Stride is the jump necessary to go from one element to the next one in the specified axis.
+     *
      * @return array The stride of this tensor.
      */
     public function stride(): array
@@ -1118,7 +1144,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     /**
      * Permutes a tensor according to the provided axes.
+     *
      * @param array $axes The axes to permute the tensor along.
+     *
      * @return Tensor The permuted tensor.
      */
     public function permute(...$axes): static
@@ -1142,6 +1170,11 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
 
+    /**
+     * Calculates the softmax of a 2D tensor.
+     *
+     * @return static The softmax of the input tensor.
+     */
     protected function softmax2D(): static
     {
         $mo = self::mo();
@@ -1153,7 +1186,12 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
 
     /**
-     * @return Tensor[]
+     * Calculate the top k values and indices of the tensor.
+     *
+     * @param ?int $k The number of top values to return.
+     * @param bool $sorted Whether to return the top values in sorted order.
+     *
+     * @return array The top k values and indices of the tensor.
      */
     public function topk(int $k = null, bool $sorted = true): array
     {
@@ -1233,7 +1271,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
             if ($sorted) {
                 // Sort the heap to get the top k elements in descending order
-                usort($heap, fn($a, $b) => $b['value'] <=> $a['value']);
+                usort($heap, fn ($a, $b) => $b['value'] <=> $a['value']);
             }
 
             // Extract top K values and indices from the heap
@@ -1338,8 +1376,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 $offset[0] > $offset[1]) {
                 $det = '';
                 if (is_numeric($offset[0]) && is_numeric($offset[1]))
-                    $det = ':[' . implode(',', $offset) . ']';
-                throw new OutOfRangeException("Illegal range specification." . $det);
+                    $det = ':['.implode(',', $offset).']';
+                throw new OutOfRangeException("Illegal range specification.".$det);
             }
             $start = $offset[0];
             $limit = $offset[1];
@@ -1354,8 +1392,8 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             $limit = $offset->limit();
             $delta = $offset->delta();
             if ($start >= $limit || $delta != 1) {
-                $det = ":[$start,$limit" . (($delta != 1) ? ",$delta" : "") . ']';
-                throw new OutOfRangeException("Illegal range specification." . $det);
+                $det = ":[$start,$limit".(($delta != 1) ? ",$delta" : "").']';
+                throw new OutOfRangeException("Illegal range specification.".$det);
             }
         } else {
             throw new OutOfRangeException("Dimension must be integer");
@@ -1402,7 +1440,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
             $start = $offset->start();
             $limit = $offset->limit();
             if ($offset->delta() != 1) {
-                throw new OutOfRangeException("Illegal range specification.:delta=" . $offset->delta());
+                throw new OutOfRangeException("Illegal range specification.:delta=".$offset->delta());
             }
         }
 
@@ -1497,7 +1535,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
 
     public function serialize(): ?string
     {
-        return static::SERIALIZE_NDARRAY_KEYWORD . serialize($this->__serialize());
+        return static::SERIALIZE_NDARRAY_KEYWORD.serialize($this->__serialize());
     }
 
     public function __serialize()
@@ -1569,7 +1607,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 $this->buffer[$key] = $value;
             }
         } else {
-            throw new RuntimeException('Illegal save mode: ' . $mode);
+            throw new RuntimeException('Illegal save mode: '.$mode);
         }
     }
 
@@ -1586,7 +1624,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         } elseif (self::service()->serviceLevel() >= Service::LV_BASIC) {
             $this->buffer = clone $this->buffer;
         } else {
-            throw new RuntimeException('Unknown buffer type is uncloneable:' . get_class($this->buffer));
+            throw new RuntimeException('Unknown buffer type is uncloneable:'.get_class($this->buffer));
         }
     }
 

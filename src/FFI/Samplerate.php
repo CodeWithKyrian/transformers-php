@@ -18,11 +18,20 @@ class Samplerate
     private static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
+            self::validateLibrary();
+
             $headerCode = file_get_contents(Libraries::Samplerate->headerFile(Transformers::$libsDir));
             self::$ffi = FFI::cdef($headerCode, Libraries::Samplerate->libFile(Transformers::$libsDir));
         }
 
         return self::$ffi;
+    }
+
+    private static function validateLibrary(): void
+    {
+        if (!Libraries::Samplerate->exists(Transformers::$libsDir)) {
+            throw new RuntimeException('Samplerate library not found. Please run "./vendor/bin/transformers install" to install all dependencies.');
+        }
     }
 
     public static function new($type, bool $owned = true, bool $persistent = false): ?CData
