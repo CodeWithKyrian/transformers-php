@@ -59,6 +59,14 @@ class DownloadModelCommand extends Command
             'The filename of the exact model weights version to download.',
             null
         );
+        
+        $this->addOption(
+            'host',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            'The host to download the model from.',
+            null
+        );
 
     }
 
@@ -71,9 +79,11 @@ class DownloadModelCommand extends Command
         $quantized = filter_var($input->getOption('quantized'), FILTER_VALIDATE_BOOLEAN);
         $task = $input->getArgument('task');
         $modelFilename = $input->getOption('model-filename');
-
+        $host = $input->getOption('host') ?? Transformers::$remoteHost;
+        
         Transformers::setup()
             ->setCacheDir($cacheDir)
+            ->setRemoteHost(rtrim($host,'/'))
             ->apply();
 
         try {
