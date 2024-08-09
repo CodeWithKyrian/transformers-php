@@ -5,11 +5,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\FFI\FastTransformersUtils;
-use Codewithkyrian\Transformers\FFI\Samplerate;
-use Codewithkyrian\Transformers\FFI\Sndfile;
+use Codewithkyrian\Transformers\FFI\Libs\FastTransformersUtils;
+use Codewithkyrian\Transformers\FFI\Libs\Samplerate;
+use Codewithkyrian\Transformers\FFI\Libs\Sndfile;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Tensor\TensorBuffer;
 use FFI;
 use InvalidArgumentException;
 use RuntimeException;
@@ -17,9 +16,7 @@ use SplFixedArray;
 
 class Audio
 {
-    public function __construct(protected $sndfile, protected $sfinfo)
-    {
-    }
+    public function __construct(protected $sndfile, protected $sfinfo) {}
 
     public static function read(string $filename): static
     {
@@ -144,6 +141,7 @@ class Audio
      * @param string|null $norm If `"slaney"`, divide the triangular mel weights by the width of the mel band (area normalization).
      * @param string $melScale The mel frequency scale to use, `"htk"` or `"slaney"`.
      * @param bool $triangularizeInMelSpace If this option is enabled, the triangular filter is applied in mel space rather than frequency space.
+     *
      * @return array Triangular filter bank matrix, which is a 2D array of shape (`num_frequency_bins`, `num_mel_filters`).
      * This is a projection matrix to go from a spectrogram to a mel spectrogram.
      */
@@ -171,7 +169,7 @@ class Audio
 
         if ($triangularizeInMelSpace) {
             $fft_bin_width = $samplingRate / ($nFrequencyBins * 2);
-            $fftFreqs = self::hertzToMel(array_map(fn($i) => $i * $fft_bin_width, range(0, $nFrequencyBins - 1)), $melScale);
+            $fftFreqs = self::hertzToMel(array_map(fn ($i) => $i * $fft_bin_width, range(0, $nFrequencyBins - 1)), $melScale);
             $filterFreqs = $melFreqs;
         } else {
             $fftFreqs = self::linspace(0, floor($samplingRate / 2), $nFrequencyBins);
@@ -198,8 +196,10 @@ class Audio
      * various implementation exist, which differ in the number of filters, the shape of the filters, the way the filters
      * are spaced, the bandwidth of the filters, and the manner in which the spectrum is warped. The goal of these
      * features is to approximate the non-linear human perception of the variation in pitch with respect to the frequency.
+     *
      * @param float[] $fftFreqs Discrete frequencies of the FFT bins in Hz, of shape `(num_frequency_bins,)`.
      * @param float[] $filterFreqs Center frequencies of the triangular filters to create, in Hz, of shape `(num_mel_filters,)`.
+     *
      * @return array of shape `(num_frequency_bins, num_mel_filters)`.
      */
     private static function createTriangularFilterBank(array $fftFreqs, array $filterFreqs): array
@@ -238,21 +238,23 @@ class Audio
 
     /**
      * Return evenly spaced numbers over a specified interval.
+     *
      * @param float $start The starting value of the sequence.
      * @param float $end The end value of the sequence.
      * @param int $num Number of samples to generate.
+     *
      * @return float[] `num` evenly spaced samples, calculated over the interval `[start, stop]`.
      */
     private static function linspace(float $start, float $end, int $num): array
     {
         $step = ($end - $start) / ($num - 1);
-        return array_map(fn($i) => $start + $step * $i, range(0, $num - 1));
+        return array_map(fn ($i) => $start + $step * $i, range(0, $num - 1));
     }
 
     public static function hertzToMel(array|float|int $hz, string $melScale = "htk"): float|int|array
     {
         if (is_array($hz)) {
-            return array_map(fn($i) => self::hertzToMel($i, $melScale), $hz);
+            return array_map(fn ($i) => self::hertzToMel($i, $melScale), $hz);
         }
 
         if ($melScale === "htk") {
@@ -277,7 +279,7 @@ class Audio
     public static function melToHertz(array|float|int $mel, string $melScale = "htk"): float|int|array
     {
         if (is_array($mel)) {
-            return array_map(fn($i) => self::melToHertz($i, $melScale), $mel);
+            return array_map(fn ($i) => self::melToHertz($i, $melScale), $mel);
         }
 
         if ($melScale === "htk") {
@@ -324,7 +326,7 @@ class Audio
 //        for ($i = 0; $i < count($spectrogram); $i++) {
 //            $spectrogram->buffer()[$i] = $factor * log10(max($minValue, $spectrogram->buffer()[$i]) - $logReference);
 //        }
-        $spectrogram->u(fn($x) => $factor * log10(max($minValue, $x) - $logReference));
+        $spectrogram->u(fn ($x) => $factor * log10(max($minValue, $x) - $logReference));
 
         if ($dbRange !== null) {
             if ($dbRange <= 0) {
@@ -336,7 +338,7 @@ class Audio
 //            for ($i = 0; $i < count($spectrogram); $i++) {
 //                $spectrogram->buffer()[$i] = max($spectrogram->buffer()[$i], $maxValue);
 //            }
-            $spectrogram->u(fn($x) => max($x, $maxValue));
+            $spectrogram->u(fn ($x) => max($x, $maxValue));
         }
 
         return $spectrogram;
@@ -350,6 +352,7 @@ class Audio
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
+     *
      * @return SplFixedArray
      */
     public static function amplitudeToDB(
@@ -370,6 +373,7 @@ class Audio
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
+     *
      * @return SplFixedArray
      */
     public static function powerToDB(
@@ -510,6 +514,7 @@ class Audio
      * Generates a Hanning window of length M.
      *
      * @param int $M The length of the Hanning window to generate.
+     *
      * @return Tensor The generated Hanning window.
      */
     private static function hanning(int $M): Tensor
@@ -535,12 +540,14 @@ class Audio
 
     /**
      * Returns an array containing the specified window.
+     *
      * @param int $windowLength The length of the window in samples.
      * @param string $name The name of the window function.
      * @param bool $periodic Whether the window is periodic or symmetric.
      * @param int|null $frameLength The length of the analysis frames in samples.
      * Provide a value for `frame_length` if the window is smaller than the frame length, so that it will be zero-padded.
      * @param bool $center Whether to center the window inside the FFT buffer. Only used when `frameLength` is provided.
+     *
      * @return Tensor The window of shape `(windowLength)` or `(frameLength)`.
      */
     public static function windowFunction(

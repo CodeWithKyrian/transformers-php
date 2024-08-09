@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
+use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use Imagick;
 use Imagine\Image\AbstractImagine;
@@ -85,18 +86,22 @@ class Image
         }
     }
 
-    public static function setDriver(ImageDriver $imageDriver): void
+    public static function getImagine(): AbstractImagine
     {
-        self::$imagine = match ($imageDriver) {
-            ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
-            ImageDriver::GD => new \Imagine\Gd\Imagine(),
-            ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
-        };
+        if (!isset(self::$imagine)) {
+            self::$imagine = match (Transformers::getImageDriver()) {
+                ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
+                ImageDriver::GD => new \Imagine\Gd\Imagine(),
+                ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
+            };
+        }
+
+        return self::$imagine;
     }
 
     public static function read(string $input, array $options = []): static
     {
-        $image = self::$imagine->open($input, $options);
+        $image = self::getImagine()->open($input, $options);
 
         return new self($image);
     }
@@ -342,7 +347,7 @@ class Image
         $newWidth = $originalWidth + $left + $right;
         $newHeight = $originalHeight + $top + $bottom;
 
-        $paddedImage = self::$imagine->create(new Box($newWidth, $newHeight));
+        $paddedImage = self::getImagine()->create(new Box($newWidth, $newHeight));
 
         $paddedImage->paste($this->image, new Point($left, $top));
 
@@ -443,7 +448,7 @@ class Image
 
         [$height, $width, $channels] = $tensor->shape();
 
-        $image = self::$imagine->create(new Box($width, $height));
+        $image = self::getImagine()->create(new Box($width, $height));
 
         // Make sure the tensor is the right data type
         $tensor = $tensor->to(Tensor::uint8);
@@ -660,7 +665,7 @@ class Image
      */
     public function drawText(string $text, int|float $xPos, int|float $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): self
     {
-        $font = self::$imagine->font($fontFile, $fontSize, $this->image->palette()->color($color));
+        $font = self::getImagine()->font($fontFile, $fontSize, $this->image->palette()->color($color));
 
         $position = new Point($xPos, $yPos);
 

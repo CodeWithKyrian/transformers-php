@@ -4,38 +4,80 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
-use Codewithkyrian\Transformers\Utils\Image;
+use Codewithkyrian\Transformers\FFI\Resolvers\Resolver;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
+use RuntimeException;
 
 class Transformers
 {
-    public static string $cacheDir = '.transformers-cache';
+    protected static bool $isInitialized = false;
 
-    public static string $libsDir = __DIR__ . '/../libs';
+    protected static string $cacheDir = '.transformers-cache';
 
-    public static string $remoteHost = 'https://huggingface.co';
+    protected static string $libsDir = __DIR__.'/../libs';
 
-    public static string $remotePathTemplate = '{model}/resolve/{revision}/{file}';
+    protected static string $remoteHost = 'https://huggingface.co';
 
-    public static ?string $authToken = null;
+    protected static string $remotePathTemplate = '{model}/resolve/{revision}/{file}';
 
-    public static ?string $userAgent = 'transformers-php/0.1.0';
+    protected static ?string $authToken = null;
 
-    public static ImageDriver $imageDriver = ImageDriver::IMAGICK;
+    protected static ?string $userAgent = 'transformers-php/0.4.0';
 
+    protected static ImageDriver $imageDriver;
+
+    protected static Resolver $resolver;
+
+
+    /**
+     * Initializes the static class by creating a new instance, setting the `$isInitialized` flag to `true`,
+     * creating a resolver using the factory method, and adding the `$libsDir` directory to the resolver.
+     *
+     * @return static The newly created instance of the static class.
+     */
     public static function setup(): static
     {
-        return new static;
+        $instance = new static;
+
+        self::$isInitialized = true;
+
+        self::$resolver = Resolver::factory();
+
+        self::$resolver->addLibDirectory(self::$libsDir, -1);
+
+        return $instance;
     }
 
-    public function apply(): void
+    /**
+     * Resets the static class by setting the `$isInitialized` flag to `false` and removing the `$libsDir` directory
+     * from the resolver.
+     *
+     * @return void
+     */
+    public static function tearDown(): void
     {
-        Image::setDriver(self::$imageDriver);
+        self::$isInitialized = false;
+
+        self::$resolver->removeLibDirectory(self::$libsDir);
+    }
+
+    public static function apply() {}
+
+    /**
+     * Ensures that the static class has been initialized. If not, an exception is thrown.
+     */
+    public static function ensureInitialized(): void
+    {
+        if (!self::$isInitialized) {
+            throw new RuntimeException('Transformers has not been initialized. Please call `Transformers::setup()` first.');
+        }
     }
 
     /**
      * Set the default cache directory for transformers models and tokenizers
-     * @param string $cacheDir
+     *
+     * @param string|null $cacheDir
+     *
      * @return $this
      */
     public function setCacheDir(?string $cacheDir): static
@@ -47,12 +89,20 @@ class Transformers
 
     /**
      * Set the default directory for shared libraries
+     *
      * @param string|null $libsDir
+     *
      * @return $this
      */
     public function setLibsDir(?string $libsDir): static
     {
-        if ($libsDir != null) self::$libsDir = $libsDir;
+        if ($libsDir == null) return $this;
+
+        self::$resolver->removeLibDirectory(self::$libsDir);
+
+        self::$libsDir = $libsDir;
+
+        self::$resolver->addLibDirectory($libsDir, -1);
 
         return $this;
     }
@@ -60,7 +110,9 @@ class Transformers
     /**
      * Set the remote host for downloading models and tokenizers. This is useful for using a custom mirror
      * or a local server for downloading models and tokenizers
+     *
      * @param string $remoteHost
+     *
      * @return $this
      */
     public function setRemoteHost(string $remoteHost): static
@@ -73,7 +125,9 @@ class Transformers
     /**
      * Set the remote path template for downloading models and tokenizers. This is useful for using a custom mirror
      * or a local server for downloading models and tokenizers
+     *
      * @param string $remotePathTemplate
+     *
      * @return $this
      */
     public function setRemotePathTemplate(string $remotePathTemplate): static
@@ -86,7 +140,9 @@ class Transformers
     /**
      * Set the authentication token for downloading models and tokenizers. This is useful for using a private model
      * repository in Hugging Face
+     *
      * @param string $authToken
+     *
      * @return $this
      */
     public function setAuthToken(string $authToken): static
@@ -99,7 +155,9 @@ class Transformers
     /**
      * Set the user agent for downloading models and tokenizers. This is useful for using a custom user agent
      * for downloading models and tokenizers
+     *
      * @param string $userAgent
+     *
      * @return $this
      */
     public function setUserAgent(string $userAgent): static
@@ -109,10 +167,73 @@ class Transformers
         return $this;
     }
 
+    /**
+     * Set the image driver for processing images.
+     *
+     * @param ImageDriver $imageDriver
+     *
+     * @return $this
+     */
     public function setImageDriver(ImageDriver $imageDriver): static
     {
         self::$imageDriver = $imageDriver;
 
         return $this;
+    }
+
+    public static function getLibraryResolver(): Resolver
+    {
+        self::ensureInitialized();
+
+        return self::$resolver;
+    }
+
+    public static function getImageDriver(): ?ImageDriver
+    {
+        self::ensureInitialized();
+
+        return self::$imageDriver;
+    }
+
+    public static function getRemoteHost(): string
+    {
+        self::ensureInitialized();
+
+        return self::$remoteHost;
+    }
+
+    public static function getRemotePathTemplate(): string
+    {
+        self::ensureInitialized();
+
+        return self::$remotePathTemplate;
+    }
+
+    public static function getAuthToken(): ?string
+    {
+        self::ensureInitialized();
+
+        return self::$authToken;
+    }
+
+    public static function getUserAgent(): string
+    {
+        self::ensureInitialized();
+
+        return self::$userAgent;
+    }
+
+    public static function getCacheDir(): string
+    {
+        self::ensureInitialized();
+
+        return self::$cacheDir;
+    }
+
+    public static function getLibsDir(): string
+    {
+        self::ensureInitialized();
+
+        return self::$libsDir;
     }
 }

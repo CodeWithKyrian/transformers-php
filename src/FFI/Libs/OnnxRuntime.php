@@ -1,47 +1,51 @@
 <?php
 
-namespace Codewithkyrian\Transformers\FFI;
+declare(strict_types=1);
 
-use Codewithkyrian\Transformers\Transformers;
-use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
+namespace Codewithkyrian\Transformers\FFI\Libs;
+
+use Codewithkyrian\Transformers\FFI\Lib;
+use Exception;
 use FFI;
 use FFI\CData;
 use RuntimeException;
 
 class OnnxRuntime
 {
-    private static FFI $ffi;
-    private static mixed $api;
+    protected static FFI $ffi;
+    protected static mixed $api;
 
-    public static function ffi(): FFI
+
+    /**
+     * Returns an instance of the FFI class after checking if it has already been instantiated.
+     * If not, it creates a new instance by defining the header contents and library path.
+     *
+     * @return FFI The FFI instance.
+     * @throws Exception
+     */
+    protected static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
-            self::validateLibrary();
-
-            $headerCode = file_get_contents(Libraries::OnnxRuntime->headerFile(Transformers::$libsDir));
-            self::$ffi = FFI::cdef($headerCode, Libraries::OnnxRuntime->libFile(Transformers::$libsDir));
+            self::$ffi = FFI::cdef(
+                file_get_contents(Lib::OnnxRuntime->header()),
+                Lib::OnnxRuntime->library()
+            );
         }
 
         return self::$ffi;
     }
 
-    private static function validateLibrary(): void
-    {
-        if (!Libraries::OnnxRuntime->exists(Transformers::$libsDir)) {
-            throw new RuntimeException("OnnxRuntime library not found. Please run \033[32m`./vendor/bin/transformers install`\033[39m to install all dependencies.");
-        }
-    }
-
-    public static function api(): mixed
-    {
-        if (!isset(self::$api)) {
-            self::$api = (self::ffi()->OrtGetApiBase()[0]->GetApi)(11)[0];
-        }
-
-        return self::$api;
-    }
-
-    public static function new($type, bool $owned = true, bool $persistent = false): ?CData
+    /**
+     * Creates a new instance of the specified type.
+     *
+     * @param string $type The type of the instance to create.
+     * @param bool $owned Whether the instance should be owned. Default is true.
+     * @param bool $persistent Whether the instance should be persistent. Default is false.
+     *
+     * @return CData|null The created instance, or null if the creation failed.
+     * @throws Exception
+     */
+    public static function new(string $type, bool $owned = true, bool $persistent = false): ?CData
     {
         return self::ffi()->new($type, $owned, $persistent);
     }
@@ -51,14 +55,36 @@ class OnnxRuntime
         return self::ffi()->cast($type, $ptr);
     }
 
-    public static function enum(string $name)
+    /**
+     * Retrieves the value of the enum constant with the given name.
+     *
+     * @param string $name The name of the enum constant.
+     *
+     * @return mixed The value of the enum constant.
+     * @throws Exception
+     */
+    public static function enum(string $name): mixed
     {
         return self::ffi()->{$name};
     }
 
+    /**
+     * Returns the version of the library as a string.
+     *
+     * @return string The version of the library.
+     */
     public static function version(): string
     {
-        return self::ffi()->OrtGetApiBase()[0]->GetVersionString();
+        return (self::ffi()->OrtGetApiBase()[0]->GetVersionString)();
+    }
+
+    public static function api(): mixed
+    {
+        if (!isset(self::$api)) {
+            self::$api = (self::ffi()->OrtGetApiBase()[0]->GetApi)(11)[0];
+        }
+
+        return self::$api;
     }
 
     private static function checkStatus($status): void
@@ -709,7 +735,7 @@ class OnnxRuntime
 
     public static function CreateEnv(int $logSecurityLevel, string $logId): ?CData
     {
-        $env = OnnxRuntime::new('OrtEnv*');
+        $env = static::new('OrtEnv*');
 
         (self::api()->CreateEnv)($logSecurityLevel, $logId, FFI::addr($env));
 

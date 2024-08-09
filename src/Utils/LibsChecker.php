@@ -15,8 +15,8 @@ class LibsChecker
         echo self::colorize("Checking TransformersPHP libraries.... ") . "\n";
 
         foreach (Libraries::cases() as $library) {
-            if (!$library->exists(Transformers::$libsDir)) {
-                $name = $library->folder(Transformers::$libsDir);
+            if (!$library->exists(Transformers::getLibsDir())) {
+                $name = $library->folder(Transformers::getLibsDir());
 
                 self::downloadLibrary($name);
             }
@@ -27,7 +27,7 @@ class LibsChecker
 
     private static function downloadLibrary(string $name): void
     {
-        $baseUrl = Libraries::baseUrl(Transformers::$libsDir);
+        $baseUrl = Libraries::baseUrl(Transformers::getLibsDir());
         $ext = Libraries::ext();
 
         $downloadUrl = "$baseUrl/$name.$ext";
@@ -45,7 +45,7 @@ class LibsChecker
             $archive = $archive->decompress();
         }
 
-        $archive->extractTo(Transformers::$libsDir);
+        $archive->extractTo(Transformers::getLibsDir());
     }
 
     private static function colorize(string $text, string $color = 'green'): string

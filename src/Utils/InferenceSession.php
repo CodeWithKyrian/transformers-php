@@ -9,8 +9,8 @@
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\FFI\Libc;
-use Codewithkyrian\Transformers\FFI\OnnxRuntime;
+use Codewithkyrian\Transformers\FFI\Libs\Libc;
+use Codewithkyrian\Transformers\FFI\Libs\OnnxRuntime;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Exception;
 use FFI;

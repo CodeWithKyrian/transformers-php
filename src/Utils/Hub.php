@@ -58,7 +58,7 @@ class Hub
     ): ?string
     {
         # Local cache and file paths
-        $cacheDir ??= Transformers::$cacheDir;
+        $cacheDir ??= Transformers::getCacheDir();
 
         $filePath = joinPaths($cacheDir, $pathOrRepoID, $subFolder, $fileName);
 
@@ -94,12 +94,12 @@ class Hub
                 'header' => [
                     'Range: bytes='.$downloadedBytes.'-',
                 ],
-                'User-Agent' => Transformers::$userAgent,
+                'User-Agent' => Transformers::getUserAgent(),
             ],
         ];
 
-        if (Transformers::$authToken) {
-            $options['http']['header'][] = 'Authorization: Bearer '.Transformers::$authToken;
+        if (Transformers::getAuthToken()) {
+            $options['http']['header'][] = 'Authorization: Bearer '.Transformers::getAuthToken();
         }
 
         try {
@@ -209,12 +209,12 @@ class Hub
 
     private static function resolveRepositoryURL(string $pathOrRepoID, string $revision, string $fileName, string $subFolder): string
     {
-        $remoteHost = Transformers::$remoteHost;
+        $remoteHost = Transformers::getRemoteHost();
 
         $remotePath = str_replace(
             ['{model}', '{revision}', '{file}'],
             [$pathOrRepoID, $revision, $subFolder === '' ? $fileName : "$subFolder/$fileName"],
-            Transformers::$remotePathTemplate
+            Transformers::getRemotePathTemplate()
         );
 
         return "$remoteHost/$remotePath";
