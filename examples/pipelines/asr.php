@@ -23,7 +23,7 @@ $audioUrl = __DIR__ . '/../sounds/taunt.wav';
 $audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
 $audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
 $audioUrl = __DIR__ . '/../sounds/ted_60.wav';
-//$audioUrl = __DIR__ . '/../sounds/french-audio.wav';
+//$audioUrl = __DIR__ . '/../sounds/sample-1.mp3';
 
 
 $output = $transcriber($audioUrl,

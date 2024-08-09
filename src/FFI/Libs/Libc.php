@@ -2,29 +2,38 @@
 
 declare(strict_types=1);
 
-
-namespace Codewithkyrian\Transformers\FFI;
+namespace Codewithkyrian\Transformers\FFI\Libs;
 
 use FFI;
 use FFI\CData;
-use http\Exception\RuntimeException;
+use RuntimeException;
 
 class Libc
 {
-    private static FFI $ffi;
+    protected static FFI $ffi;
 
-    public static function ffi(): FFI
+    public static function version(): string
+    {
+        return '1.0.0';
+    }
+
+
+    /**
+     * Returns an instance of the FFI class after checking if it has already been instantiated.
+     * If not, it creates a new instance by defining the header contents and library path.
+     *
+     * @return FFI The FFI instance.
+     */
+    protected static function ffi(): FFI
     {
         if (!isset(self::$ffi)) {
-            if (PHP_OS_FAMILY == 'Windows') {
-                self::$ffi = FFI::cdef(
-                    'size_t mbstowcs(void *wcstr, const char *mbstr, size_t count);',
+            self::$ffi = match (PHP_OS_FAMILY) {
+                'Windows' => FFI::cdef(
+                    "\nsize_t mbstowcs(void *wcstr, const char *mbstr, size_t count);",
                     'msvcrt.dll'
-                );
-            }
-            else{
-                self::$ffi = FFI::cdef();
-            }
+                ),
+                default => FFI::cdef()
+            };
         }
 
         return self::$ffi;
@@ -38,8 +47,9 @@ class Libc
     public static function mbStringToWcString(CData $wcStr, string $mbStr, int $count): CData
     {
         $length = self::ffi()->mbstowcs($wcStr, $mbStr, $count);
+
         if ($length != strlen($mbStr)) {
-            throw new RuntimeException('Expected mbstowcs to return ' . strlen($mbStr) . ", got $length");
+            throw new RuntimeException('Expected mbstowcs to return '.strlen($mbStr).", got $length");
         }
 
         return $wcStr;

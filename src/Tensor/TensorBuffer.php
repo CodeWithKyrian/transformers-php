@@ -69,7 +69,7 @@ class TensorBuffer implements LinearBuffer
     public function __construct(int $size, int $dtype)
     {
         if (self::$ffi === null) {
-            $code = file_get_contents(__DIR__ . '/../../libs/buffer.h');
+            $code = file_get_contents(__DIR__ . '/../../includes/buffer.h');
             self::$ffi = FFI::cdef($code);
         }
 

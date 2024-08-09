@@ -9,7 +9,7 @@ function memoryUsage(): string
     $mem = memory_get_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
 }
 
 function memoryPeak(): string
@@ -17,7 +17,7 @@ function memoryPeak(): string
     $mem = memory_get_peak_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
 }
 
 
@@ -36,7 +36,7 @@ function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true, bool 
     $timeDiff = $milliseconds ? $timeDiff * 1000 : $timeDiff;
 
 //    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
-    return $returnString ? @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
+    return $returnString ? @round($timeDiff, 4).($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
 }
 
 function array_some(array $array, callable $callback): bool
@@ -95,11 +95,11 @@ function joinPaths(string ...$args): string
         if ($path === '') {
             continue;
         } elseif ($key === 0) {
-            $paths[$key] = rtrim($path, '/');
+            $paths[$key] = rtrim($path, DIRECTORY_SEPARATOR);
         } elseif ($key === count($paths) - 1) {
-            $paths[$key] = ltrim($path, '/');
+            $paths[$key] = ltrim($path, DIRECTORY_SEPARATOR);
         } else {
-            $paths[$key] = trim($path, '/');
+            $paths[$key] = trim($path, DIRECTORY_SEPARATOR);
         }
     }
 
@@ -115,7 +115,9 @@ function ensureDirectory($filePath): void
 
 /**
  * Prepare images for further tasks.
+ *
  * @param mixed $images Images to prepare.
+ *
  * @return Image[] Returns processed images.
  */
 function prepareImages(mixed $images): array
@@ -136,15 +138,17 @@ function prepareImages(mixed $images): array
 
 /**
  * Helper function to convert list [xmin, xmax, ymin, ymax] into object { "xmin": xmin, ... }
+ *
  * @param array $box The bounding box as a list.
  * @param bool $asInteger Whether to cast to integers.
+ *
  * @return array The bounding box as an object.
  * @private
  */
 function getBoundingBox(array $box, bool $asInteger): array
 {
     if ($asInteger) {
-        $box = array_map(fn($x) => (int)$x, $box);
+        $box = array_map(fn ($x) => (int)$x, $box);
     }
 
     [$xmin, $ymin, $xmax, $ymax] = $box;

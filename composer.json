@@ -22,7 +22,8 @@
     "rindow/rindow-math-matrix": "^2.0",
     "rindow/rindow-matlib-ffi": "^1.0",
     "rindow/rindow-openblas-ffi": "^1.0",
-    "symfony/console": "^6.4|^7.0"
+    "symfony/console": "^6.4|^7.0",
+    "ffi/location": "^1.0"
   },
   "require-dev": {
     "pestphp/pest": "^2.31",
