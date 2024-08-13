@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
-use Codewithkyrian\Transformers\FFI\Resolvers\Resolver;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
 use RuntimeException;
 
@@ -13,8 +12,6 @@ class Transformers
     protected static bool $isInitialized = false;
 
     protected static string $cacheDir = '.transformers-cache';
-
-    protected static string $libsDir = __DIR__.'/../libs';
 
     protected static string $remoteHost = 'https://huggingface.co';
 
@@ -25,8 +22,6 @@ class Transformers
     protected static ?string $userAgent = 'transformers-php/0.4.0';
 
     protected static ImageDriver $imageDriver;
-
-    protected static Resolver $resolver;
 
 
     /**
@@ -41,10 +36,6 @@ class Transformers
 
         self::$isInitialized = true;
 
-        self::$resolver = Resolver::factory();
-
-        self::$resolver->addLibDirectory(self::$libsDir, -1);
-
         return $instance;
     }
 
@@ -57,8 +48,6 @@ class Transformers
     public static function tearDown(): void
     {
         self::$isInitialized = false;
-
-        self::$resolver->removeLibDirectory(self::$libsDir);
     }
 
     public static function apply() {}
@@ -83,26 +72,6 @@ class Transformers
     public function setCacheDir(?string $cacheDir): static
     {
         if ($cacheDir != null) self::$cacheDir = $cacheDir;
-
-        return $this;
-    }
-
-    /**
-     * Set the default directory for shared libraries
-     *
-     * @param string|null $libsDir
-     *
-     * @return $this
-     */
-    public function setLibsDir(?string $libsDir): static
-    {
-        if ($libsDir == null) return $this;
-
-        self::$resolver->removeLibDirectory(self::$libsDir);
-
-        self::$libsDir = $libsDir;
-
-        self::$resolver->addLibDirectory($libsDir, -1);
 
         return $this;
     }
@@ -181,16 +150,13 @@ class Transformers
         return $this;
     }
 
-    public static function getLibraryResolver(): Resolver
-    {
-        self::ensureInitialized();
-
-        return self::$resolver;
-    }
-
     public static function getImageDriver(): ?ImageDriver
     {
         self::ensureInitialized();
+
+        if (!isset($imageDriver)) {
+            throw new RuntimeException('Image driver not set. Please set the image driver using `Transformers::setup()->setImageDriver()`');
+        }
 
         return self::$imageDriver;
     }
@@ -228,12 +194,5 @@ class Transformers
         self::ensureInitialized();
 
         return self::$cacheDir;
-    }
-
-    public static function getLibsDir(): string
-    {
-        self::ensureInitialized();
-
-        return self::$libsDir;
     }
 }

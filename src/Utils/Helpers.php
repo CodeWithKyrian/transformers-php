@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Transformers;
+
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
@@ -154,5 +156,22 @@ function getBoundingBox(array $box, bool $asInteger): array
     [$xmin, $ymin, $xmax, $ymax] = $box;
 
     return ['xmin' => $xmin, 'ymin' => $ymin, 'xmax' => $xmax, 'ymax' => $ymax];
+}
+
+
+/**
+ * Returns base path value of the project
+ *
+ * @param string $dir Directory to append to base path
+ *
+ * @return string
+ */
+function basePath(string $dir = ""): string
+{
+    $loader = require 'vendor/autoload.php';
+
+    $transformersClass = $loader->findFile(Transformers::class);
+
+    return joinPaths(dirname($transformersClass, 2), $dir);
 }
 
