@@ -51,25 +51,64 @@ class LibsChecker
             default => 'tar.gz',
         };
 
-        $baseUrl = "https://github.com/CodeWithKyrian/transformers-php/releases/download/$version";
-        $downloadFile = "transformersphp-$version-$os-$arch.$extension";
-        $downloadUrl = "$baseUrl/$downloadFile";
-        $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php').".$extension";
+        $maxRetries = 10;
+        $attempts = 0;
 
-        echo "  - Downloading ".self::colorize("transformersphp-$version-$os-$arch")."\n";
-        Downloader::download($downloadUrl, $downloadPath);
-        echo "  - Installing ".self::colorize($downloadFile)." : Extracting archive\n";
+        do {
+            $baseUrl = "https://github.com/CodeWithKyrian/transformers-php/releases/download/$version";
+            $downloadFile = "transformersphp-$version-$os-$arch.$extension";
+            $downloadUrl = "$baseUrl/$downloadFile";
+            $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php').".$extension";
 
-        $archive = new \PharData($downloadPath);
-        if ($extension != 'zip') {
-            $archive = $archive->decompress();
+            echo "  - Downloading ".self::colorize("transformersphp-$version-$os-$arch")."\n";
+
+            $downloadSuccess = false;
+
+            try {
+                $downloadSuccess = Downloader::download($downloadUrl, $downloadPath);
+            } catch (\Exception) {
+            }
+
+            if ($downloadSuccess) {
+                echo "  - Installing ".self::colorize("transformersphp-$version-$os-$arch")." : Extracting archive\n";
+
+                $archive = new \PharData($downloadPath);
+                if ($extension != 'zip') {
+                    $archive = $archive->decompress();
+                }
+
+                $archive->extractTo($libsDir, overwrite: true);
+                @unlink($downloadPath);
+
+                echo "TransformersPHP libraries installed\n";
+                return;
+            } else {
+                echo "  - Failed to download transformersphp-$version-$os-$arch, trying a lower version...\n";
+                $version = self::getLowerVersion($version);
+            }
+
+            $attempts++;
+        } while ($version !== null && $attempts < $maxRetries);
+
+        throw new \Exception("Could not find the required binaries after $maxRetries attempts.");
+    }
+
+    private static function getLowerVersion(string $version): ?string
+    {
+        $parts = explode('.', $version);
+
+        if (count($parts) === 3 && $parts[2] > 0) {
+            $parts[2]--;
+        } elseif (count($parts) === 3) {
+            $parts[1]--;
+            $parts[2] = 9;  // Reset patch version
+        } elseif (count($parts) === 2 && $parts[1] > 0) {
+            $parts[1]--;
+        } else {
+            return null;  // No lower version possible
         }
 
-        $archive->extractTo($libsDir, overwrite: true);
-
-        @unlink($downloadPath);
-
-        echo "TransformersPHP libraries installed\n";
+        return implode('.', $parts);
     }
 
     private static function colorize(string $text, string $color = 'green'): string
