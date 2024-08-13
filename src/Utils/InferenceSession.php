@@ -325,13 +325,13 @@ class InferenceSession
             $ndim = $input->ndim();
             $size = $input->size();
 
-            $inputNodeShape = FFI::new("int64_t[$ndim]");
+            $inputNodeShape = OnnxRuntime::new("int64_t[$ndim]");
             for ($i = 0; $i < $ndim; $i++) {
                 $inputNodeShape[$i] = $shape[$i];
             }
 
             if ($inp['type'] == 'tensor(string)') {
-                $inputTensorValues = FFI::new("char*[$size]");
+                $inputTensorValues = OnnxRuntime::new("char*[$size]");
                 $this->fillStringTensorValues($input, $inputTensorValues, $refs);
 
                 $typeEnum = OnnxRuntime::enum('ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING');
@@ -351,9 +351,9 @@ class InferenceSession
                 }
 
                 if ($size === 0) {
-                    $inputTensorValues = FFI::new("void *");
+                    $inputTensorValues = OnnxRuntime::new("void *");
                 } else {
-                    $inputTensorValues = FFI::new("{$castType}[$size]");
+                    $inputTensorValues = OnnxRuntime::new("{$castType}[$size]");
                 }
 
                 $inputDump = $input->buffer()->dump();
@@ -386,7 +386,7 @@ class InferenceSession
     private function createNodeNames($names, &$refs): CData
     {
         $namesSize = count($names);
-        $ptr = FFI::new("char*[$namesSize]");
+        $ptr = OnnxRuntime::new("char*[$namesSize]");
         foreach ($names as $i => $name) {
             $strPtr = Libc::cstring($name);
             $ptr[$i] = $strPtr;

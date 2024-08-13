@@ -8,6 +8,7 @@ use Codewithkyrian\Transformers\FFI\Lib;
 use Exception;
 use FFI;
 use FFI\CData;
+use FFI\CType;
 
 class FastTransformersUtils
 {
@@ -36,16 +37,30 @@ class FastTransformersUtils
     /**
      * Creates a new instance of the specified type.
      *
-     * @param string $type The type of the instance to create.
+     * @param CType|string $type The type of the instance to create.
      * @param bool $owned Whether the instance should be owned. Default is true.
      * @param bool $persistent Whether the instance should be persistent. Default is false.
      *
      * @return CData|null The created instance, or null if the creation failed.
      * @throws Exception
      */
-    public static function new(string $type, bool $owned = true, bool $persistent = false): ?CData
+    public static function new(CType|string $type, bool $owned = true, bool $persistent = false): ?CData
     {
         return self::ffi()->new($type, $owned, $persistent);
+    }
+
+    /**
+     * Casts a pointer to a different type.
+     *
+     * @param CType|string $type The type to cast to.
+     * @param CData|int|float|bool|null $ptr The pointer to cast.
+     *
+     * @return ?CData The cast pointer, or null if the cast failed.
+     * @throws Exception
+     */
+    public static function cast(CType|string$type, CData|int|float|bool|null$ptr): ?CData
+    {
+        return self::ffi()->cast($type, $ptr);
     }
 
     /**
@@ -74,7 +89,7 @@ class FastTransformersUtils
 
     public static function padReflect($input, int $length, int $paddedLength): CData
     {
-        $padded = FFI::new("float[$paddedLength]");
+        $padded = self::new("float[$paddedLength]");
         self::ffi()->pad_reflect($input, $length, $padded, $paddedLength);
 
         return $padded;
@@ -87,7 +102,7 @@ class FastTransformersUtils
         bool $doPad, bool $transpose
     ): CData
     {
-        $spectrogram = FFI::new("float[$spectrogramLength]");
+        $spectrogram = self::new("float[$spectrogramLength]");
 
         self::ffi()->spectrogram(
             $waveform, $waveformLength, $spectrogram, $spectrogramLength, $hopLength, $fftLength, $window,
