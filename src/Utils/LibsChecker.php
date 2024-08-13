@@ -56,7 +56,7 @@ class LibsChecker
         $downloadUrl = "$baseUrl/$downloadFile";
         $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php').".$extension";
 
-        echo "  - Downloading ".self::colorize($downloadFile)."\n";
+        echo "  - Downloading ".self::colorize("transformersphp-$version-$os-$arch")."\n";
         Downloader::download($downloadUrl, $downloadPath);
         echo "  - Installing ".self::colorize($downloadFile)." : Extracting archive\n";
 
