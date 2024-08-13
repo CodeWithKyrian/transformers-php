@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\FFI\Libs;
+namespace Codewithkyrian\Transformers\FFI;
 
 use FFI;
 use FFI\CData;

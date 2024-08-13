@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\FFI\Libs\FastTransformersUtils;
-use Codewithkyrian\Transformers\FFI\Libs\Samplerate;
-use Codewithkyrian\Transformers\FFI\Libs\Sndfile;
+use Codewithkyrian\Transformers\FFI\FastTransformersUtils;
+use Codewithkyrian\Transformers\FFI\Samplerate;
+use Codewithkyrian\Transformers\FFI\Sndfile;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use FFI;
 use InvalidArgumentException;

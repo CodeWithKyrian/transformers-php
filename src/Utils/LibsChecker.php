@@ -2,50 +2,74 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\Transformers;
-use Codewithkyrian\TransformersLibrariesDownloader\Libraries;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
+use Composer\InstalledVersions;
 
 class LibsChecker
 {
-    public static function check(): void
+    public static function check($event): void
     {
-        echo self::colorize("Checking TransformersPHP libraries.... ") . "\n";
+        $vendorDir = $event->getComposer()->getConfig()->get('vendor-dir');
+        require $vendorDir.'/autoload.php';
 
-        foreach (Libraries::cases() as $library) {
-            if (!$library->exists(Transformers::getLibsDir())) {
-                $name = $library->folder(Transformers::getLibsDir());
+        $libsDir = basePath('libs');
+        $installationNeeded = false;
 
-                self::downloadLibrary($name);
+        foreach (Library::cases() as $library) {
+            if (!$library->exists($libsDir)) {
+                $installationNeeded = true;
+                break;
             }
         }
 
-        echo self::colorize("All TransformersPHP libraries are installed") . "\n";
+        if ($installationNeeded) {
+            echo self::colorize("Installing TransformersPHP libraries...")."\n";
+            self::install($libsDir);
+        }
     }
 
-    private static function downloadLibrary(string $name): void
+    private static function install(string $libsDir): void
     {
-        $baseUrl = Libraries::baseUrl(Transformers::getLibsDir());
-        $ext = Libraries::ext();
+        $version = file_get_contents(basePath('VERSION'));
 
-        $downloadUrl = "$baseUrl/$name.$ext";
-        $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php') . ".$ext";
+        $os = match (PHP_OS_FAMILY) {
+            'Windows' => 'windows',
+            'Darwin' => 'macosx',
+            default => 'linux',
+        };
 
-        echo "  - Downloading " . self::colorize($name) . "\n";
+        $arch = match (PHP_OS_FAMILY) {
+            'Windows' => 'x86_64',
+            'Darwin' => php_uname('m') == 'x86_64' ? 'x86_64' : 'arm64',
+            default => php_uname('m') == 'x86_64' ? 'x86_64' : 'aarch64',
+        };
 
+        $extension = match ($os) {
+            'windows' => 'zip',
+            default => 'tar.gz',
+        };
+
+        $baseUrl = "https://github.com/CodeWithKyrian/transformers-php/releases/download/$version";
+        $downloadFile = "transformersphp-$version-$os-$arch.$extension";
+        $downloadUrl = "$baseUrl/$downloadFile";
+        $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php').".$extension";
+
+        echo "  - Downloading ".self::colorize($downloadFile)."\n";
         Downloader::download($downloadUrl, $downloadPath);
-
-        echo "  - Installing " . self::colorize($name) . " : Extracting archive\n";
+        echo "  - Installing ".self::colorize($downloadFile)." : Extracting archive\n";
 
         $archive = new \PharData($downloadPath);
-
-        if ($ext != 'zip') {
+        if ($extension != 'zip') {
             $archive = $archive->decompress();
         }
 
-        $archive->extractTo(Transformers::getLibsDir());
+        $archive->extractTo($libsDir, overwrite: true);
+
+        @unlink($downloadPath);
+
+        echo "TransformersPHP libraries installed\n";
     }
 
     private static function colorize(string $text, string $color = 'green'): string

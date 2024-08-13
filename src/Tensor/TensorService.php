@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tensor;
 
-use Codewithkyrian\Transformers\FFI\Lib;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
 use Rindow\Math\Matrix\Drivers\AbstractMatlibService;
 use Rindow\Matlib\FFI\MatlibFactory;
+use function Codewithkyrian\Transformers\Utils\basePath;
 
 class TensorService extends AbstractMatlibService
 {
@@ -15,12 +16,12 @@ class TensorService extends AbstractMatlibService
         $this->bufferFactory = new TensorBufferFactory();
 
         $this->openblasFactory = new OpenBLASFactory(
-            headerFile: Lib::OpenBlas->header(),
-            libFiles: [Lib::OpenBlas->library()],
+            headerFile: Library::OpenBlas->header(basePath('includes')),
+            libFiles: [Library::OpenBlas->library(basePath('libs'))],
         );
 
         $this->mathFactory = new MatlibFactory(
-            libFiles: [Lib::RindowMatlib->library()]
+            libFiles: [Library::RindowMatlib->library(basePath('libs'))]
         );
     }
 }

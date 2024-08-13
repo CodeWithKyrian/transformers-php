@@ -2,49 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\FFI\Libs;
+namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\Transformers\FFI\Lib;
-use Codewithkyrian\Transformers\Transformers;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
 use Exception;
 use FFI;
 use FFI\CData;
 use FFI\CType;
 use RuntimeException;
-use function Codewithkyrian\Transformers\Utils\joinPaths;
+use function Codewithkyrian\Transformers\Utils\basePath;
 
 class Sndfile
 {
     protected static FFI $ffi;
 
-    protected const LIBRARY_NAME = 'libsndfile';
-
-    protected const INSTALLER_COMMANDS = [
-        'brew' => 'brew install libsndfile',
-        'macports' => 'port install libsndfile',
-        'apt' => 'apt install libsndfile1',
-        'apk' => 'apk add libsndfile',
-        'yum' => 'yum install libsndfile',
-        'choco' => 'choco install libsndfile',
-        'scoop' => 'scoop install libsndfile',
-    ];
-
-    public static function getInstallerSuggestion(): ?string
-    {
-        $libName = self::LIBRARY_NAME;
-        $resolver = Transformers::getLibraryResolver();
-        $installer = $resolver->inferInstaller();
-
-        $installerCommand = self::INSTALLER_COMMANDS[$installer] ?? null;
-
-        if ($installerCommand) {
-            return "Try running `$installerCommand` to install the library. "
-                ."If you don't want to install it on a system level, "
-                ."you can install it manually by running: `./vendor/bin/transformers install $libName`";
-        }
-
-        return "Install the library manually by running: `./vendor/bin/transformers install $libName`";
-    }
 
     /**
      * Returns an instance of the FFI class after checking if it has already been instantiated.
@@ -57,8 +28,8 @@ class Sndfile
     {
         if (!isset(self::$ffi)) {
             self::$ffi = FFI::cdef(
-                file_get_contents(Lib::Sndfile->header()),
-                Lib::Sndfile->library()
+                file_get_contents(Library::Sndfile->header(basePath('includes'))),
+                Library::Sndfile->library(basePath('libs'))
             );
         }
 
@@ -89,7 +60,7 @@ class Sndfile
      * @return ?CData The cast pointer, or null if the cast failed.
      * @throws Exception
      */
-    public static function cast(CType|string$type, CData|int|float|bool|null $ptr): ?CData
+    public static function cast(CType|string $type, CData|int|float|bool|null $ptr): ?CData
     {
         return self::ffi()->cast($type, $ptr);
     }
@@ -130,10 +101,10 @@ class Sndfile
     public static function open(string $path, int $mode, CData $sfinfo): mixed
     {
         if (PHP_OS_FAMILY === 'Windows') {
-            $sndfile = self::ffi()->sf_wchar_open($path, $mode, $sfinfo);
-        } else {
-            $sndfile = self::ffi()->sf_open($path, $mode, $sfinfo);
+            $path = mb_convert_encoding($path, 'UTF-8', mb_detect_encoding($path));
         }
+
+        $sndfile = self::ffi()->sf_open($path, $mode, $sfinfo);
 
         if ($sndfile === null) {
             $error = self::ffi()->sf_strerror($sndfile);

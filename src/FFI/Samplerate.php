@@ -2,16 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\FFI\Libs;
+namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\Transformers\FFI\Lib;
-use Codewithkyrian\Transformers\Transformers;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
 use Exception;
 use FFI;
 use FFI\CData;
 use FFI\CType;
 use RuntimeException;
-use function Codewithkyrian\Transformers\Utils\joinPaths;
+use function Codewithkyrian\Transformers\Utils\basePath;
 
 class Samplerate
 {
@@ -29,8 +28,8 @@ class Samplerate
     {
         if (!isset(self::$ffi)) {
             self::$ffi = FFI::cdef(
-                file_get_contents(Lib::Samplerate->header()),
-                Lib::Samplerate->library()
+                file_get_contents(Library::Samplerate->header(basePath('includes'))),
+                Library::Samplerate->library(basePath('libs'))
             );
         }
 

@@ -1,0 +1,36 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Is it a prerelease?'
+        default: true
+        type: boolean
+      body:
+        description: 'Release body'
+        default: ''
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read Version
+        id: get_version
+        run: echo "VERSION=$(cat VERSION)" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.get_version.outputs.VERSION }}
+          name: v${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          body: ${{ github.event.inputs.body }}

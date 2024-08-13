@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\FFI\Libs;
+namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\Transformers\FFI\Lib;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
 use Exception;
 use FFI;
 use FFI\CData;
 use FFI\CType;
+use function Codewithkyrian\Transformers\Utils\basePath;
 
 class FastTransformersUtils
 {
@@ -26,8 +27,8 @@ class FastTransformersUtils
     {
         if (!isset(self::$ffi)) {
             self::$ffi = FFI::cdef(
-                file_get_contents(Lib::FastTransformersUtils->header()),
-                Lib::FastTransformersUtils->library()
+                file_get_contents(Library::FastTransformersUtils->header(basePath('includes'))),
+                Library::FastTransformersUtils->library(basePath('libs'))
             );
         }
 

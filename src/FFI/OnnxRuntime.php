@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Codewithkyrian\Transformers\FFI\Libs;
+namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\Transformers\FFI\Lib;
+use Codewithkyrian\TransformersLibrariesDownloader\Library;
 use Exception;
 use FFI;
 use FFI\CData;
 use FFI\CType;
 use RuntimeException;
+use function Codewithkyrian\Transformers\Utils\basePath;
 
 class OnnxRuntime
 {
@@ -28,8 +29,8 @@ class OnnxRuntime
     {
         if (!isset(self::$ffi)) {
             self::$ffi = FFI::cdef(
-                file_get_contents(Lib::OnnxRuntime->header()),
-                Lib::OnnxRuntime->library()
+                file_get_contents(Library::OnnxRuntime->header(basePath('includes'))),
+                Library::OnnxRuntime->library(basePath('libs'))
             );
         }
 
