@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use FFI;
 use FFI\CData;
+use FFI\CType;
 use RuntimeException;
 use function Codewithkyrian\Transformers\Utils\joinPaths;
 
@@ -77,6 +78,20 @@ class Sndfile
     public static function new(string $type, bool $owned = true, bool $persistent = false): ?CData
     {
         return self::ffi()->new($type, $owned, $persistent);
+    }
+
+    /**
+     * Casts a pointer to a different type.
+     *
+     * @param CType|string $type The type to cast to.
+     * @param CData|int|float|bool|null $ptr The pointer to cast.
+     *
+     * @return ?CData The cast pointer, or null if the cast failed.
+     * @throws Exception
+     */
+    public static function cast(CType|string$type, CData|int|float|bool|null $ptr): ?CData
+    {
+        return self::ffi()->cast($type, $ptr);
     }
 
     /**

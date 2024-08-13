@@ -5,7 +5,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Generation\Streamers\WhisperTextStreamer;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Audio;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;

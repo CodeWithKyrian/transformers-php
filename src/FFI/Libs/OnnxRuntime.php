@@ -8,6 +8,7 @@ use Codewithkyrian\Transformers\FFI\Lib;
 use Exception;
 use FFI;
 use FFI\CData;
+use FFI\CType;
 use RuntimeException;
 
 class OnnxRuntime
@@ -50,7 +51,16 @@ class OnnxRuntime
         return self::ffi()->new($type, $owned, $persistent);
     }
 
-    public static function cast($type, $ptr): ?CData
+    /**
+     * Casts a pointer to a different type.
+     *
+     * @param CType|string $type The type to cast to.
+     * @param CData|int|float|bool|null $ptr The pointer to cast.
+     *
+     * @return ?CData The cast pointer, or null if the cast failed.
+     * @throws Exception
+     */
+    public static function cast(CType|string$type, CData|int|float|bool|null$ptr): ?CData
     {
         return self::ffi()->cast($type, $ptr);
     }
@@ -306,8 +316,8 @@ class OnnxRuntime
 
     public static function GetAvailableProviders(): array
     {
-        $outPtr = FFI::new('char**');
-        $lengthPtr = FFI::new('int');
+        $outPtr = self::new('char**');
+        $lengthPtr = self::new('int');
 
         self::checkStatus((self::api()->GetAvailableProviders)(FFI::addr($outPtr), FFI::addr($lengthPtr)));
 

@@ -56,14 +56,14 @@ class Audio
         $state = Samplerate::srcNew(Samplerate::enum('SRC_SINC_FASTEST'), $this->channels());
 
         $inputSize = $chunkSize * $this->channels();
-        $inputData = FFI::new("float[$inputSize]");
+        $inputData = Samplerate::new("float[$inputSize]");
         $outputSize = $chunkSize * $this->channels();
-        $outputData = FFI::new("float[$outputSize]");
+        $outputData = Samplerate::new("float[$outputSize]");
 
         $srcData = Samplerate::new('SRC_DATA');
-        $srcData->data_in = FFI::cast('float *', $inputData);
+        $srcData->data_in = Samplerate::cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
-        $srcData->data_out = FFI::cast('float *', $outputData);
+        $srcData->data_out = Samplerate::cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
         while (true) {
@@ -105,15 +105,19 @@ class Audio
 
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
-        return $audioTensor->mean(1);
+        if ($this->channels() > 1) {
+            $audioTensor = $audioTensor->mean(1);
+        }
+
+        return $audioTensor->squeeze();
     }
 
     public function fromTensor(Tensor $tensor): void
     {
         $size = $tensor->size();
-        $buffer = FFI::new("float[$size]");
+        $buffer = Sndfile::new("float[$size]");
         $bufferString = $tensor->toString();
-        $buffer->cdata = FFI::cast('float *', $bufferString);
+        $buffer->cdata = Sndfile::cast('float *', (int)$bufferString);
 
         $write = Sndfile::writeFrames($this->sndfile, $buffer, $size);
 

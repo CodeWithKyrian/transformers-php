@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use FFI;
 use FFI\CData;
+use FFI\CType;
 use RuntimeException;
 use function Codewithkyrian\Transformers\Utils\joinPaths;
 
@@ -52,6 +53,20 @@ class Samplerate
     }
 
     /**
+     * Casts a pointer to a different type.
+     *
+     * @param CType|string $type The type to cast to.
+     * @param CData|int|float|bool|null $ptr The pointer to cast.
+     *
+     * @return ?CData The cast pointer, or null if the cast failed.
+     * @throws Exception
+     */
+    public static function cast(CType|string$type, CData|int|float|bool|null$ptr): ?CData
+    {
+        return self::ffi()->cast($type, $ptr);
+    }
+
+    /**
      * Retrieves the value of the enum constant with the given name.
      *
      * @param string $name The name of the enum constant.
@@ -85,7 +100,7 @@ class Samplerate
      */
     public static function srcNew(int $converterType, int $channels): CData
     {
-        $error = FFI::new('int32_t');
+        $error = self::new('int32_t');
 
         $state = self::ffi()->src_new($converterType, $channels, FFI::addr($error));
 
