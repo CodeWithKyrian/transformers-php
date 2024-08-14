@@ -65,13 +65,13 @@ class Transformers
     /**
      * Set the default cache directory for transformers models and tokenizers
      *
-     * @param string|null $cacheDir
+     * @param string $cacheDir
      *
      * @return $this
      */
-    public function setCacheDir(?string $cacheDir): static
+    public function setCacheDir(string $cacheDir): static
     {
-        if ($cacheDir != null) self::$cacheDir = $cacheDir;
+        self::$cacheDir = $cacheDir;
 
         return $this;
     }
