@@ -73,6 +73,9 @@ Arguments:
       can use the shorthand `-q` instead of `--quantized`. Example: `--quantized=false`, `-q false`.
     - `--model-filename=<filename>`: Specify the exact model filename to download (without the `.onnx` suffix. Eg. "
       model" or "model_quantized".
+  - `--host=<remote_host>`: Choose a different model hub host. Instead of fetching models from the Hugging Face model
+    hub, you can use a different host. You can use a private model hub or mirror the original hub.
+    Eg. `--host=https://hf.co`
 
 The `download` command will download the model weights and save them to the cache directory. The next time you use the
 model, TransformersPHP will use the cached weights instead of downloading them again.
