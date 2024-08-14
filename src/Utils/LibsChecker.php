@@ -9,9 +9,9 @@ use Composer\InstalledVersions;
 
 class LibsChecker
 {
-    public static function check($event): void
+    public static function check(): void
     {
-        $vendorDir = $event->getComposer()->getConfig()->get('vendor-dir');
+        $vendorDir = basePath('vendor');
         require $vendorDir.'/autoload.php';
 
         $libsDir = basePath('libs');
