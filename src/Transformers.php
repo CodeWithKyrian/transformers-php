@@ -154,7 +154,7 @@ class Transformers
     {
         self::ensureInitialized();
 
-        if (!isset($imageDriver)) {
+        if (!isset(self::$imageDriver)) {
             throw new RuntimeException('Image driver not set. Please set the image driver using `Transformers::setup()->setImageDriver()`');
         }
 
