@@ -2,6 +2,18 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.4.4 - 2024-08-14
+
+### What's Changed
+
+* feat: add optional host argument for model download by @k99k5 in https://github.com/CodeWithKyrian/transformers-php/pull/56
+
+### New Contributors
+
+* @k99k5 made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/56
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.4.3...0.4.4
+
 ## v0.4.3 - 2024-07-31
 
 ### What's Changed
@@ -138,11 +150,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -163,6 +177,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
