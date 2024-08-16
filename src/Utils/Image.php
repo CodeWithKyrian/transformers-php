@@ -160,9 +160,9 @@ class Image
         }
 
         if ($inputHeight > $inputWidth) {
-            $width = floor($inputWidth * $height / $inputHeight);
+	        $width = (int)floor($inputWidth * $height / $inputHeight);
         } elseif ($inputWidth > $inputHeight) {
-            $height = floor($inputHeight * $width / $inputWidth);
+	        $height = (int)floor($inputHeight * $width / $inputWidth);
         }
 
         $this->resize($width, $height, $resample);
