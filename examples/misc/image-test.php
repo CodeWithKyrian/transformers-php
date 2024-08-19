@@ -20,26 +20,26 @@ function toTensorTest(ImageDriver $imageDriver): Tensor
         ->setImageDriver($imageDriver)
         ->apply();
 
-    $image = Image::read('images/kyrian-cartoon.jpeg');
+    $url = __DIR__.'/../images/kyrian-cartoon.jpeg';
+    $tensor = Image::read($url)
+        ->rgb()
+        ->thumbnail(101, 101)
+        ->toTensor();
 
-    $image->rgb();
-
-    $tensor =  $image->toTensor();
-
-    dump("$imageDriver->name (toTensor) : ". timeUsage(true));
+    dump("$imageDriver->name (toTensor) : ".timeUsage(true));
 
     return $tensor;
 }
 
-function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor) : Image
+function fromTensorTest(ImageDriver $imageDriver, Tensor $tensor): Image
 {
     Transformers::setup()
         ->setImageDriver($imageDriver)
         ->apply();
 
-    $image =  Image::fromTensor($tensor);
+    $image = Image::fromTensor($tensor);
 
-    dump("$imageDriver->name (fromTensor) : ". timeUsage(true));
+    dump("$imageDriver->name (fromTensor) : ".timeUsage(true));
 
     return $image;
 }

@@ -12,9 +12,9 @@ ini_set('memory_limit', '2048M');
 
 $upscaler = pipeline('image-to-image', 'Xenova/swin2SR-classical-sr-x2-64');
 
-$url = __DIR__ . '/../images/versus.jpeg';
+$url = __DIR__ . '/../images/butterfly.jpg';
 
-$savePath = __DIR__ . '/../images/versus-x4.jpeg';
+$savePath = __DIR__ . '/../images/butterfly-x4.jpeg';
 
 $output = $upscaler($url, saveTo: $savePath);
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\TransformersLibrariesDownloader\Library;
+use Codewithkyrian\TransformersLibsLoader\Library;
 use Exception;
 use FFI;
 use FFI\CData;

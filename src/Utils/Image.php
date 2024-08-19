@@ -86,6 +86,15 @@ class Image
         }
     }
 
+    public static function setDriver(ImageDriver $imageDriver): void
+    {
+        self::$imagine = match ($imageDriver) {
+            ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
+            ImageDriver::GD => new \Imagine\Gd\Imagine(),
+            ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
+        };
+    }
+
     public static function getImagine(): AbstractImagine
     {
         if (!isset(self::$imagine)) {

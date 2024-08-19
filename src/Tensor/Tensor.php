@@ -7,7 +7,6 @@ namespace Codewithkyrian\Transformers\Tensor;
 use ArrayObject;
 use Countable;
 use EmptyIterator;
-use Exception;
 use Interop\Polite\Math\Matrix\Buffer;
 use Interop\Polite\Math\Matrix\NDArray;
 use InvalidArgumentException;

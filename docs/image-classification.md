@@ -50,7 +50,7 @@ $result = $classifier('path/to/image.jpg');
 
 When running the `image-classification` pipeline, you can the following options:
 
-- ### `texts` *(string)*
+- ### `inputs` *(string)*
   The image(s) to classify. It can be a local file path, a file resource, a URL to an image (local or remote), or an
   array of these inputs. It's the first argument so there's no need to pass it as a named argument.
   ```php

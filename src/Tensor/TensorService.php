@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tensor;
 
-use Codewithkyrian\TransformersLibrariesDownloader\Library;
+use Codewithkyrian\TransformersLibsLoader\Library;
 use Rindow\Math\Matrix\Drivers\AbstractMatlibService;
 use Rindow\Matlib\FFI\MatlibFactory;
 use function Codewithkyrian\Transformers\Utils\basePath;

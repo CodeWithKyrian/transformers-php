@@ -18,16 +18,17 @@ use Codewithkyrian\Transformers\Utils\ImageDriver;
 
 Transformers::setup()
         ->setCacheDir('/path/to/models')
-        ->setImageDriver(ImageDriver::IMAGICK)
         ->setRemoteHost('https://yourmodelshost.com')
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
         ->setUserAgent('your-user-agent')
-        ->apply();
+        ->setImageDriver(ImageDriver::IMAGICK);
 ```
 
-> [!NOTE]
-> You can leave out any of the `set*()` methods if you don't need to change the default settings.
+::: tip
+You can leave out any of the `set*()` methods if you don't need to change the default settings for that field, or
+leave out the entire setup if you don't want to change any of the default setting for all fields.
+:::
 
 ## Configuration Options
 
@@ -36,11 +37,6 @@ Transformers::setup()
 The cache directory is where TransformersPHP stores the downloaded ONNX models. By default, this is set to
 the `.transformers-cache/models` directory from the root of your project. Please ensure this directory is writable by
 your application.
-
-### `setLibsDir(?string $libsDir)`
-
-The libs directory is where TransformersPHP stores the shared libraries required for running the models. You typically
-don't need to change this setting unless you have a specific requirement to store the libraries in a different location.
 
 ### `setRemoteHost(string $remoteHost)`
 
@@ -53,8 +49,7 @@ this:
 
 ```php
 Transformers::setup()
-    ->setRemoteHost('https://models.example.com')
-    ->apply();
+    ->setRemoteHost('https://models.example.com');
 ```
 
 This setting is particularly useful when you need to comply with data governance policies or want to speed up model
@@ -72,7 +67,6 @@ template like this:
 ```php
 Transformers::setup()
     ->setRemotePathTemplate('models/{model}/{file}')
-    ->apply()
 ```
 
 In this example, accessing a model named `bert-base-uncased` would result in a URL
@@ -84,9 +78,7 @@ The auth token is used to authenticate requests to the remote host. If your mode
 private repository on Hugging Face, you can set an authentication token to access them.
 
 ```php
-Transformers::setup()
-    ->setAuthToken('your-token')
-    ->apply();
+Transformers::setup()->setAuthToken('your-token');
 ```
 
 ### `setUserAgent(string $userAgent)`
@@ -96,16 +88,14 @@ PHP uses a user agent string that identifies the library and its version. You ca
 identify your application when making requests.
 
 ```php
-Transformers::setup()
-    ->setUserAgent('your-user-agent')
-    ->apply();
+Transformers::setup()->setUserAgent('your-user-agent');
 ```
 
 ### `setImageDriver(ImageDriver $imageDriver)`
 
-This setting allows you to specify the image backend to use for image processing tasks. By default, TransformersPHP uses
-the `IMAGICK` image driver. You can change this to `GD` or `VIPS` if you prefer, just make sure to have the required
-extensions installed.
+This setting allows you to specify the image backend to use for image processing tasks. By default, the image driver is
+not set and an error will be thrown if you try to perform any image related task. You can change this to `IMAGICK`, `GD`
+or `VIPS` if you prefer, just make sure to have the required extensions installed.
 
 ```php
 use Codewithkyrian\Transformers\Utils\ImageDriver;
@@ -115,14 +105,7 @@ Transformers::setup()
     ->apply();
 ```
 
-## Applying Configuration
-
-::: danger VERY IMPORTANT
-Even if you do not want to modify any of the default configurations, you must call the `apply()` function to
-establish the default configuration, else, you will not be able to run any inference sessions.
-:::
-
-### Standalone PHP Projects
+## Standalone PHP Projects
 
 In a standalone PHP project, the best place to add global configuration is in your project's bootstrap or initialization
 script. This script should run before any feature utilizing the TransformersPHP library is called.
@@ -145,11 +128,11 @@ use Codewithkyrian\Transformers\Transformers;
 
 :::
 
-### Laravel Projects
+## Laravel Projects
 
 In a Laravel project, you can add global configuration in the `AppServiceProvider` class. Laravel service providers are
 excellent locations for bootstrap code, making them the best place to set up global configurations. It's recommended to
-set the cache directory to the a subdirectory of the `storage` directory, as it's writable and not publicly accessible.
+set the cache directory to the subdirectory of the `storage` directory, as it's writable and not publicly accessible.
 
 ::: code-group
 
@@ -170,7 +153,7 @@ public function boot()
 
 :::
 
-### Symfony Projects
+## Symfony Projects
 
 In a Symfony project, you can add global configuration in the `Kernel` class. This class is loaded before any other
 services, making it a good place to set up global configurations.

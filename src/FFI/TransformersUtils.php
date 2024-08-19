@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\TransformersLibrariesDownloader\Library;
+use Codewithkyrian\TransformersLibsLoader\Library;
 use Exception;
 use FFI;
 use FFI\CData;
 use FFI\CType;
 use function Codewithkyrian\Transformers\Utils\basePath;
 
-class FastTransformersUtils
+class TransformersUtils
 {
     protected static FFI $ffi;
 
@@ -27,8 +27,8 @@ class FastTransformersUtils
     {
         if (!isset(self::$ffi)) {
             self::$ffi = FFI::cdef(
-                file_get_contents(Library::FastTransformersUtils->header(basePath('includes'))),
-                Library::FastTransformersUtils->library(basePath('libs'))
+                file_get_contents(Library::TransformersPHP->header(basePath('includes'))),
+                Library::TransformersPHP->library(basePath('libs'))
             );
         }
 

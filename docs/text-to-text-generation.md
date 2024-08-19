@@ -58,12 +58,12 @@ When running the `text2text-generation` pipeline, you can the following options:
   [Streamers](/utils/generation#streamers) documentation for more information on how to use streamers.
 
     ```php
-    use Codewithkyrian\Transformers\Generation\Streamers\StdOutStreamer;
+    use Codewithkyrian\Transformers\Generation\Streamers\TextStreamer;
     use function Codewithkyrian\Transformers\Pipelines\pipeline;
   
     $generator = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
   
-    $streamer = StdOutStreamer::make($generator->tokenizer);
+    $streamer = TextStreamer::make($generator->tokenizer);
   
     $output = $generator('What is the capital of Nigeria?', streamer: $streamer);
     ```
@@ -77,7 +77,7 @@ When running the `text2text-generation` pipeline, you can the following options:
   check out this article from HuggingFace on [how to generate](https://huggingface.co/blog/how-to-generate).
 
 - ### `numBeams` *(bool)*
-  Determines the beam search size. A setting of 1 disables beam search.
+  Determines the beam searclh size. A setting of 1 disables beam search.
 
 - ### `temperature` *(float)*
   Adjusts the probability distribution of the next token to make generation more deterministic or more random. A

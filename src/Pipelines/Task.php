@@ -54,6 +54,7 @@ enum Task: string
 
     case AudioClassification = 'audio-classification';
     case AutomaticSpeechRecognition = 'automatic-speech-recognition';
+    case ASR = 'asr';
 
 
     public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
@@ -98,6 +99,7 @@ enum Task: string
 
             self::AudioClassification => new AudioClassificationPipeline($this, $model, processor: $processor),
 
+            self::ASR,
             self::AutomaticSpeechRecognition => new AutomaticSpeechRecognitionPipeline($this, $model, $tokenizer, $processor),
         };
     }
@@ -142,6 +144,7 @@ enum Task: string
 
             self::AudioClassification => 'Xenova/wav2vec2-base-superb-ks', // Original: 'superb/wav2vec2-base-superb-ks',
 
+            self::ASR,
             self::AutomaticSpeechRecognition => 'Xenova/whisper-tiny.en', // Original: 'openai/whisper-tiny.en',
         };
     }
@@ -193,6 +196,7 @@ enum Task: string
 
             self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
 
+            self::ASR,
             self::AutomaticSpeechRecognition => (function () use ($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress) {
                 try {
                     return AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
@@ -235,7 +239,8 @@ enum Task: string
             self::ImageToText,
             self::ZeroShotImageClassification,
             self::ZeroShotObjectDetection,
-            self::AutomaticSpeechRecognition => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
+            self::ASR,
+            self::AutomaticSpeechRecognition  => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
         };
     }
 
@@ -257,7 +262,8 @@ enum Task: string
             self::ObjectDetection,
             self::ZeroShotObjectDetection,
             self::AudioClassification,
-            self::AutomaticSpeechRecognition => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
+            self::ASR,
+            self::AutomaticSpeechRecognition  => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
 
 
             self::SentimentAnalysis,

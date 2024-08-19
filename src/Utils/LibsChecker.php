@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\TransformersLibrariesDownloader\Library;
-use Composer\InstalledVersions;
+use Codewithkyrian\TransformersLibsLoader\Library;
 
 class LibsChecker
 {
-    public static function check(): void
+    public static function check($event = null): void
     {
-        $vendorDir = basePath('vendor');
+        $vendorDir = $event !== null ?
+            $event->getComposer()->getConfig()->get('vendor-dir')
+            : basePath('vendor');
+
         require $vendorDir.'/autoload.php';
 
         $libsDir = basePath('libs');
@@ -26,11 +28,11 @@ class LibsChecker
 
         if ($installationNeeded) {
             echo self::colorize("Installing TransformersPHP libraries...")."\n";
-            self::install($libsDir);
+            self::install();
         }
     }
 
-    private static function install(string $libsDir): void
+    private static function install(): void
     {
         $version = file_get_contents(basePath('VERSION'));
 
@@ -77,13 +79,13 @@ class LibsChecker
                     $archive = $archive->decompress();
                 }
 
-                $archive->extractTo($libsDir, overwrite: true);
+                $archive->extractTo(basePath(), overwrite: true);
                 @unlink($downloadPath);
 
                 echo "TransformersPHP libraries installed\n";
                 return;
             } else {
-                echo "  - Failed to download transformersphp-$version-$os-$arch, trying a lower version...\n";
+                echo "  - Failed to download ".self::colorize("transformersphp-$version-$os-$arch").", trying a lower version...\n";
                 $version = self::getLowerVersion($version);
             }
 

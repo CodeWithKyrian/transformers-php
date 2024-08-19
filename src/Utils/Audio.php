@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\FFI\FastTransformersUtils;
+use Codewithkyrian\Transformers\FFI\TransformersUtils;
 use Codewithkyrian\Transformers\FFI\Samplerate;
 use Codewithkyrian\Transformers\FFI\Sndfile;
 use Codewithkyrian\Transformers\Tensor\Tensor;
@@ -450,7 +450,7 @@ class Audio
             $halfWindow = (int)floor(($fftLength - 1) / 2) + 1;
             $paddedLength = $waveform->size() + (2 * $halfWindow);
 
-            $padded = FastTransformersUtils::padReflect(
+            $padded = TransformersUtils::padReflect(
                 $waveform->buffer()->addr($waveform->offset()),
                 $waveform->size(),
                 $paddedLength
@@ -480,13 +480,13 @@ class Audio
         $melFilters = Tensor::fromArray($melFilters, Tensor::float32);
         $spectrogramShape = $transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max];
         $logMel = match ($logMel) {
-            'log' => FastTransformersUtils::enum('LOG_MEL_LOG'),
-            'log10' => FastTransformersUtils::enum('LOG_MEL_LOG10'),
-            'dB' => FastTransformersUtils::enum('LOG_MEL_DB'),
-            default => FastTransformersUtils::enum('LOG_MEL_NONE'),
+            'log' => TransformersUtils::enum('LOG_MEL_LOG'),
+            'log10' => TransformersUtils::enum('LOG_MEL_LOG10'),
+            'dB' => TransformersUtils::enum('LOG_MEL_DB'),
+            default => TransformersUtils::enum('LOG_MEL_NONE'),
         };
 
-        $spectrogram = FastTransformersUtils::spectrogram(
+        $spectrogram = TransformersUtils::spectrogram(
             $waveform->buffer()->addr($waveform->offset()),
             $waveform->size(),
             array_product($spectrogramShape),

@@ -11,7 +11,7 @@ require_once './bootstrap.php';
 
 ini_set('memory_limit', '-1');
 
-$transcriber = pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en');
+$transcriber = pipeline('asr', 'Xenova/whisper-tiny.en');
 //$transcriber = pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
 //$transcriber = pipeline('automatic-speech-recognition', 'Xenova/whisper-base');
 //$transcriber = pipeline('automatic-speech-recognition', 'Xenova/wav2vec2-large-xlsr-53-english');
@@ -29,7 +29,7 @@ $audioUrl = __DIR__ . '/../sounds/preamble.wav';
 $output = $transcriber($audioUrl,
     maxNewTokens: 256,
     chunkLengthSecs: 24,
-//    returnTimestamps: true,
+//    returnTimestamps: 'word',
 );
 
 dd($output, timeUsage(), memoryUsage());
