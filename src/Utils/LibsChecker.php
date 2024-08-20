@@ -12,7 +12,7 @@ class LibsChecker
     {
         $vendorDir = $event !== null ?
             $event->getComposer()->getConfig()->get('vendor-dir')
-            : basePath('vendor');
+            : 'vendor';
 
         require $vendorDir.'/autoload.php';
 
