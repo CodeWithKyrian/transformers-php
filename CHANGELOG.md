@@ -2,6 +2,69 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## TransformersPHP v0.5.0 - 2024-08-21
+
+I'm excited to announce the latest version of TransformersPHP, packed with new features, improvements, and bug fixes. This release brings powerful enhancements to your machine-learning-driven PHP applications, enabling more efficient and versatile operations.
+
+### New Features
+
+- **New Pipeline: Audio Classification** - Easily classify audio clips with a pre-trained model.
+  
+    ```php
+    $classifier = pipeline('audio-classification', 'Xenova/ast-finetuned-audioset-10-10-0.4593');
+  $audioUrl = __DIR__ . '/../sounds/cat_meow.wav';
+  $output = $classifier($audioUrl);
+  // [
+  //   [
+  //     "label" => "Meow"
+  //     "score" => 0.6109990477562
+  //   ]
+  // ]
+  
+    ```
+- **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
+  
+  - Example:
+    ```php
+    $transcriber = pipeline('asr', 'Xenova/whisper-tiny.en');
+    $audioUrl = __DIR__ . '/../sounds/preamble.wav';
+    $output = $transcriber($audioUrl, maxNewTokens: 256);
+    // [
+    //   "text" => "We, the people of the United States, ..."
+    // ]
+    
+    ```
+  
+
+### Enhancements
+
+- **Shared Libraries Dependencies:** - A revamped workflow for downloading shared libraries dependencies ensures they are versioned correctly, reducing download sizes. These binaries are now thoroughly tested on Apple Silicon, Intel Macs, Linux x86_64, Linux aarch64, and Windows platforms.
+  
+- **`Transformers::setup` Simplified** - `Transformers::setup()` is now optional. Default settings are automatically applied if not called. The` apply()` method is no longer necessary, but still available for backward compatibility.
+  
+- **Immutable Image Utility** - The Image utility class is now immutable. Each operation returns a new instance, allowing for method chaining and a more predictable workflow.
+  
+    ```php
+    $image = Image::read($url);
+  $resizedImage = $image->resize(100, 100);
+  // $image remains unchanged
+  
+    ```
+- **New Tensor Operations** - New operations were added: `copyTo`, `log`, `exp`, `pow`, `sum`, `reciprocal`, `stdMean`. Additionally, overall performance improvements have been made to Tensor operations.
+  
+- **TextStreamer Improvements** - TextStreamer now prints to stdout by default. You can override this behavior using the `onStream(callable $callback)` method. Consequently, the `StdoutStreamer` class is now obsolete.
+  
+- **VIPS PHP Driver Update** - The VIPS PHP driver is no longer bundled by default in `composer.json`. Detailed documentation is provided for installing the Vips PHP driver and setting up Vips on your machine.
+  
+- **ONNX Runtime Upgrade** - Upgraded to version 1.19.0, bringing more performance and compatibility with newer models.
+  
+- Bug Fixes & Performance Improvements - Various bug fixes have been implemented to enhance stability and performance across the package.
+   
+
+I hope you enjoy these updates and improvements. If you encounter any issues or have any suggestions, please don’t hesitate to reach out through our [Issue Tracker](https://github.com/CodeWithKyrian/transformers-php/issues)
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.4.4...0.5.0
+
 ## v0.4.4 - 2024-08-14
 
 ### What's Changed
@@ -152,11 +215,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -179,6 +244,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
