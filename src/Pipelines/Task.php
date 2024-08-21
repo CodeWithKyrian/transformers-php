@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
+use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForAudioClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForCTC;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageFeatureExtraction;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForImageToImage;
@@ -14,6 +18,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForObjectDetection;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForQuestionAnswering;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSequenceClassification;
+use Codewithkyrian\Transformers\Models\Auto\AutoModelForSpeechSeq2Seq;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForVision2Seq;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForZeroShotObjectDetection;
@@ -48,6 +53,10 @@ enum Task: string
 
     case ObjectDetection = 'object-detection';
     case ZeroShotObjectDetection = 'zero-shot-object-detection';
+
+    case AudioClassification = 'audio-classification';
+    case AutomaticSpeechRecognition = 'automatic-speech-recognition';
+    case ASR = 'asr';
 
 
     public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
@@ -89,6 +98,11 @@ enum Task: string
             self::ObjectDetection => new ObjectDetectionPipeline($this, $model, $tokenizer, $processor),
 
             self::ZeroShotObjectDetection => new ZeroShotObjectDetectionPipeline($this, $model, $tokenizer, $processor),
+
+            self::AudioClassification => new AudioClassificationPipeline($this, $model, processor: $processor),
+
+            self::ASR,
+            self::AutomaticSpeechRecognition => new AutomaticSpeechRecognitionPipeline($this, $model, $tokenizer, $processor),
         };
     }
 
@@ -129,16 +143,21 @@ enum Task: string
             self::ObjectDetection => 'Xenova/detr-resnet-50', // Original: 'facebook/detr-resnet-50',
 
             self::ZeroShotObjectDetection => 'Xenova/owlvit-base-patch32', // Original: 'google/owlvit-base-patch32',
+
+            self::AudioClassification => 'Xenova/wav2vec2-base-superb-ks', // Original: 'superb/wav2vec2-base-superb-ks',
+
+            self::ASR,
+            self::AutomaticSpeechRecognition => 'Xenova/whisper-tiny.en', // Original: 'openai/whisper-tiny.en',
         };
     }
 
     public function autoModel(
-        string           $modelNameOrPath,
-        bool             $quantized = true,
-        ?array           $config = null,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        ?string          $modelFilename = null,
+        string    $modelNameOrPath,
+        bool      $quantized = true,
+        ?array    $config = null,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        ?string   $modelFilename = null,
         ?callable $onProgress = null
     ): PretrainedModel
     {
@@ -176,13 +195,24 @@ enum Task: string
             self::ObjectDetection => AutoModelForObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
 
             self::ZeroShotObjectDetection => AutoModelForZeroShotObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+
+            self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+
+            self::ASR,
+            self::AutomaticSpeechRecognition => (function () use ($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress) {
+                try {
+                    return AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+                } catch (UnsupportedModelTypeException) {
+                    return AutoModelForCTC::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+                }
+            })(),
         };
     }
 
     public function autoTokenizer(
-        string           $modelNameOrPath,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
+        string    $modelNameOrPath,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
         ?callable $onProgress = null
     ): ?PretrainedTokenizer
     {
@@ -191,7 +221,8 @@ enum Task: string
             self::ImageClassification,
             self::ImageToImage,
             self::ImageFeatureExtraction,
-            self::ObjectDetection => null,
+            self::ObjectDetection,
+            self::AudioClassification => null,
 
 
             self::SentimentAnalysis,
@@ -209,15 +240,17 @@ enum Task: string
             self::Ner,
             self::ImageToText,
             self::ZeroShotImageClassification,
-            self::ZeroShotObjectDetection => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
+            self::ZeroShotObjectDetection,
+            self::ASR,
+            self::AutomaticSpeechRecognition  => AutoTokenizer::fromPretrained($modelNameOrPath, $cacheDir, $revision, null, $onProgress),
         };
     }
 
     public function autoProcessor(
-        string           $modelNameOrPath,
-        ?array           $config = null,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
+        string    $modelNameOrPath,
+        ?array    $config = null,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
         ?callable $onProgress = null
     ): ?Processor
     {
@@ -229,7 +262,10 @@ enum Task: string
             self::ZeroShotImageClassification,
             self::ImageToImage,
             self::ObjectDetection,
-            self::ZeroShotObjectDetection => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
+            self::ZeroShotObjectDetection,
+            self::AudioClassification,
+            self::ASR,
+            self::AutomaticSpeechRecognition  => AutoProcessor::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress),
 
 
             self::SentimentAnalysis,

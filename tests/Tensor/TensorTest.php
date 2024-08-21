@@ -114,9 +114,13 @@ it('can round all elements of the tensor to the nearest integer', function () {
         ->and($result->toArray())->toBe([[1.0, 3.0], [4.0, 5.0]]);
 });
 
-it('can slice a tensor based on provided slices', function () {
+it('can slice a tensor based on provided bounds', function () {
+    $tensor = Tensor::fromArray([[1, 2, 3], [4, 5, 6], [7, 8, 9]], Tensor::int32);
+    $result = $tensor->sliceWithBounds([0, 1], [2, 2]);
 
-})->todo();
+    expect($result)->toBeInstanceOf(Tensor::class)
+        ->and($result->toArray())->toBe([[2, 3], [5, 6]]);
+});
 
 it('can compute the stride of a tensor', function () {
     $tensor = Tensor::fromArray([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]);

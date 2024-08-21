@@ -64,39 +64,52 @@ use Codewithkyrian\Transformers\Tensor\Tensor;
 $data = [1, 2, 3, 4, 5, 6];
 $shape = [2, 3];
 $dtype = Tensor::int16;
-$tensor = new Tensor($data, $dtype, $shape); // If dtype is not provided, it defaults to NDArray::float32
+$tensor = new Tensor($data, $dtype, $shape); // If dtype is not provided, it defaults to Tensor::float32
 ```
 
-### Using the fromArray Method
+### Using the `fromArray` Method
+
+Create a tensor from a provided array. The array can be either flat or nested, and the shape of the tensor is inferred
+from the array's structure. Ensure the array's shape is consistent, as an exception will be thrown if it is not.
 
 ```php
 use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
+// $tensor: [[1, 2, 3], [4, 5, 6]]
 ```
 
-### Using fill Method
+### Using the `fill` Method
+
+Create a tensor with a specified shape, filled with a given value. This is useful for initializing tensors with a
+default value.
 
 ```php
 use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $shape = [2, 3];
 $value = 5;
-$tensor = Tensor::fill($shape, $value); // Creates a tensor filled with the specified value
+$tensor = Tensor::fill($shape, $value); //  [[5, 5, 5], [5, 5, 5]]
 ```
 
-### Using zeros and ones methods
+### Using the `zeros` and `ones` Methods
+
+Create tensors filled with zeros or ones, respectively. The shape of the tensor is determined by the provided
+dimensions.
 
 ```php
 use Codewithkyrian\Transformers\Tensor\Tensor;
 
 $shape = [2, 3];
-$tensor = Tensor::zeros($shape); // Creates a tensor of zeros with the specified shape
-$tensor = Tensor::ones($shape); // Creates a tensor of ones with the specified shape
+$zerosTensor = Tensor::zeros($shape); // [[0, 0, 0], [0, 0, 0]]
+$onesTensor = Tensor::ones($shape); //  [[1, 1, 1], [1, 1, 1]]
 ```
 
-### Using zerosLike and onesLike methods
+### Using the `zerosLike` and `onesLike` Methods
+
+Create tensors of zeros or ones with the same shape as an existing tensor. This is helpful when you need tensors with
+the same dimensions as a reference tensor.
 
 ```php
 use Codewithkyrian\Transformers\Tensor\Tensor;
@@ -104,8 +117,26 @@ use Codewithkyrian\Transformers\Tensor\Tensor;
 $data = [[1, 2, 3], [4, 5, 6]];
 $tensor = Tensor::fromArray($data);
 
-$zeros = Tensor::zerosLike($tensor); // Creates a tensor of zeros with the same shape as the input tensor
-$ones = Tensor::onesLike($tensor); // Creates a tensor of ones with the same shape as the input tensor
+$zeros = Tensor::zerosLike($tensor); // [[0, 0, 0], [0, 0, 0]]
+$ones = Tensor::onesLike($tensor); // [[1, 1, 1], [1, 1, 1]]
+```
+
+### Using the `repeat` Method
+
+Repeat a tensor along a specified axis or dimensions. The `repeats` parameter indicates how many times to repeat the
+tensor along the given axis. If no axis is provided, the tensor is repeated across all dimensions.
+
+```php
+use Codewithkyrian\Transformers\Tensor\Tensor;
+
+$data = [[1, 2], [3, 4]];
+$tensor = Tensor::fromArray($data);
+
+$repeatedTensor = Tensor::repeat($tensor, 2, 0); // Repeat tensor along axis 0 (rows)
+// $repeatedTensor : [
+// [ [1, 2], [3, 4] ],
+// [ [1, 2], [3, 4] ]
+//]
 ```
 
 ## Accessing Tensor Properties
@@ -125,14 +156,12 @@ and buffer.
   Returns the strides of the tensor as a tuple of integers.
 - ### `ndim()`
   Returns the number of dimensions of the tensor.
-- ### `buffer()`
-  Returns the buffer containing the tensor's data as a one-dimensional array buffer. This is not a regular PHP array,
-  but it implements the `ArrayAccess`, `Countable`, and `Iterator` interfaces so you can loop over it or access elements
-  by index.
 - ### `toArray()`
   Returns the tensor's data as a multidimensional array.
 - ### `toBufferArray()`
   Returns the tensor's flat buffer as a regular PHP array.
+- ### `toString()`
+  Returns the tensor’s data as a raw binary string.
 
 ```php
 use Codewithkyrian\Transformers\Tensor\Tensor;
@@ -146,9 +175,9 @@ $dtype = $tensor->dtype(); // NDArray::float32
 $size = $tensor->size(); // 6
 $count = $tensor->count(); // 2
 $ndim = $tensor->ndim(); // 2
-$buffer = $tensor->buffer(); // SplFixedArray {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6}
 $array = $tensor->toArray(); // [[1, 2, 3], [4, 5, 6]]
 $bufferArray = $tensor->toBufferArray(); // [1, 2, 3, 4, 5, 6]
+$binString = $tensor->toString(); // b"\x00\x00€?\x00\x00\x00@\x00\x00@@\x00\x00€@\x00\x00 @\x00\x00À@"
 ```
 
 ## Tensor Operations
@@ -282,6 +311,25 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
   
   $sliced->toArray(); // [[5]]
   ```
+  
+- ### `sliceWithBounds(array $start, array $size)`
+  Slices the tensor with the given bounds.
+  
+  Parameters:
+  - `$start`: The starting indices of the slice.
+  - `$size`: The size of the slice.
+  
+  Returns:
+  - A new tensor with the specified slice.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+  
+  $slicedTensor = $tensor->sliceWithBounds([0, 1], [2, 2]); 
+  // [[2, 3],
+  //  [5, 6]]
+  ```
 
 - ### `softmax()`
   Computes the softmax function across the tensor. The softmax function is used to normalize the input values into a
@@ -302,7 +350,7 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
   
   $softmax->toArray(); // [[0.09003057317038, 0.2447284710548, 0.66524095577482], [0.09003057317038, 0.2447284710548, 0.66524095577482]]
   ```
-  
+
 - ### `topk(int $k = null, bool $sorted = true)`
   Returns the top k elements and their indices along the specified axis.
 
@@ -398,26 +446,6 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
     $argmin = $tensor->argMin(); // 0
     
     $argmin = $tensor->argMin(1); // [0, 0]
-    ```
-
-- ### `mean(int $axis = null, bool $keepdims = false)`
-  Computes the mean values along the specified axis.
-
-  Parameters:
-    - `$axis`: The axis along which to compute the mean values. If not provided, the flattened tensor is used.
-    - `$keepdims`: Whether to keep the dimensions of the input tensor in the output tensor.
-
-  Returns:
-    - A single value representing the mean value, or a tensor of mean values if an axis is specified.
-
-  Example:
-    ```php
-    $data = [[1, 2, 3], [4, 5, 6]];
-    $tensor = Tensor::fromArray($data);
-    
-    $mean = $tensor->mean(); // 3.5
-  
-    $mean = $tensor->mean(1); // [2, 5]
     ```
 
 - ### `meanPooling(Tensor $other)`
@@ -536,6 +564,41 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
     $result = $tensor1->cross($tensor2); // [[-2, 4, -2], [4, -8, 4], [-2, 4, -2]]
     ```
 
+- ### `sum(?int $axis = null)`
+
+  Calculates the sum of the tensor's elements, optionally along a specific axis.
+
+  Parameters:
+  - `$axis` (optional): The axis along which to calculate the sum. If not provided, the sum of all elements is returned.
+
+  Returns:
+  - A scalar value representing the sum if no axis is provided, or a tensor with the sums along the specified axis.
+
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([[1, 2, 3], [4, 5, 6]]);
+  
+  $sumTensor = $tensor->sum(); // 21
+  $sumTensorAxis0 = $tensor->sum(0); // [5, 7, 9]
+  ```
+
+- ### `pow(float|Tensor $exponent)`
+
+  Raises the tensor to the power of a scalar or element-wise power of another tensor.
+
+  Parameters:
+  - `$exponent`: The exponent to which to raise the tensor. This can be a scalar or another tensor.
+
+  Returns:
+  - A new tensor with each element raised to the specified power.
+
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1, 2, 3]);
+  
+  $powTensor = $tensor->pow(2); // [1, 4, 9]
+  ```
+
 - ### `norm(int $ord = 2, ?int $axis = null, bool $keepdims = false)`
   Computes the norm of the tensor along the specified axis.
 
@@ -556,6 +619,160 @@ matrix multiplication, reshaping, transposing, etc. Below are some common tensor
 
     $norm = $tensor->norm(1); // 10
     ```
+
+- ### `stack(array $tensors, int $axis = 0)`
+
+  Stacks an array of tensors along a specified axis.
+  
+  Parameters:
+  - `$tensors`: The array of tensors to stack.
+  - `$axis`: The axis to stack along. Default is `0`.
+  
+  Returns:
+  - A new tensor that is the result of stacking the input tensors along the specified axis.
+  
+  Example:
+  ```php
+  $tensor1 = Tensor::fromArray([1, 2]);
+  $tensor2 = Tensor::fromArray([3, 4]);
+  
+  $stacked = Tensor::stack([$tensor1, $tensor2], 0); // [[1, 2], [3, 4]]
+  ```
+
+- ### `concat(array $tensors, int $axis = 0)`
+  
+  Concatenates an array of tensors along a specified dimension.
+  
+  Parameters:
+  - `$tensors`: The array of tensors to concatenate.
+  - `$axis`: The dimension to concatenate along. Default is `0`.
+  
+  Returns:
+  - A new tensor that is the result of concatenating the input tensors along the specified dimension.
+  
+  Example:
+  ```php
+  $tensor1 = Tensor::fromArray([1, 2]);
+  $tensor2 = Tensor::fromArray([3, 4]);
+  
+  $concatenated = Tensor::concat([$tensor1, $tensor2], 0); // [1, 2, 3, 4]
+  ```
+
+- ### `log()`
+
+  Applies the natural logarithm to each element in the tensor.
+  
+  Returns:
+  - A new tensor with the logarithm of each element.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1, 2, 3]);
+  
+  $logTensor = $tensor->log(); // [0, 0.6931, 1.0986]
+  ```
+
+- ### `exp()`
+
+  Applies the exponential function to each element in the tensor.
+  
+  Returns:
+  - A new tensor with the exponential of each element.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1, 2, 3]);
+  
+  $expTensor = $tensor->exp(); // [2.7183, 7.3891, 20.0855]
+  ```
+
+- ### `reciprocal()`
+
+  Calculates the reciprocal (1/x) of each element in the tensor.
+  
+  Returns:
+  - A new tensor with the reciprocal of each element.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1, 2, 4]);
+  
+  $reciprocalTensor = $tensor->reciprocal(); // [1, 0.5, 0.25]
+  ```
+
+- ### `round(int $precision = 0)`
+
+  Rounds each element in the tensor to the specified number of decimal places.
+  
+  Parameters:
+  - `$precision`: The number of decimal places to round to. Default is `0`.
+  
+  Returns:
+  - A new tensor with the elements rounded to the specified precision.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1.123, 2.567, 3.891]);
+  
+  $roundedTensor = $tensor->round(1); // [1.1, 2.6, 3.9]
+  ```
+
+- ### `to(int $dtype)`
+
+  Casts the tensor to a specified data type.
+  
+  Parameters:
+  - `$dtype`: The data type to cast the tensor to.
+  
+  Returns:
+  - A new tensor with the specified data type.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([1.1, 2.2, 3.3]);
+  
+  $intTensor = $tensor->to(Tensor::int32); // [1, 2, 3]
+  ```
+
+- ### `mean(?int $axis = null, bool $keepShape = false)`
+
+  Returns the mean value of the tensor elements along a specified axis.
+  
+  Parameters:
+  - `$axis` (optional): The axis along which to calculate the mean. If not provided, the mean of all elements is returned.
+  - `$keepShape` (optional): Whether to keep the reduced dimension or not. Default is `false`.
+  
+  Returns:
+  - A scalar value representing the mean if no axis is provided, or a tensor with the means along the specified axis.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([[1, 2, 3], [4, 5, 6]]);
+  
+  $meanTensor = $tensor->mean(); // 3.5
+  $meanTensorAxis0 = $tensor->mean(0); // [2.5, 3.5, 4.5]
+  ```
+
+- ### `stdMean(?int $axis = null, int $correction = 1, bool $keepShape = false)`
+
+  Calculates the standard deviation and mean of the tensor elements along a specified axis.
+  
+  Parameters:
+  - `$axis` (optional): The axis along which to calculate the standard deviation and mean. If not provided, the calculation is done over all elements.
+  - `$correction`: The type of normalization. Default is `0`.
+  - `$keepShape` (optional): Whether to keep the reduced dimension or not. Default is `false`.
+  
+  Returns:
+  - An array with the standard deviation and mean of the tensor.
+  
+  Example:
+  ```php
+  $tensor = Tensor::fromArray([[1, 2, 3], [4, 5, 6]]);
+  
+  [$std, $mean] = $tensor->stdMean(0); 
+  // $std = [1.5, 1.5, 1.5]
+  // $mean = [2.5, 3.5, 4.5]
+  ```
   
 
 

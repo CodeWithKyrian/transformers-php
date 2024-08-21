@@ -8,6 +8,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\array_every;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
@@ -55,26 +57,14 @@ class TextGenerationPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $streamer = null;
-        if (array_key_exists('streamer', $args)) {
-            /** @var Streamer $streamer */
-            $streamer = $args['streamer'];
-            unset($args['streamer']);
-        }
+        /** @var Streamer $streamer */
+        $streamer = array_pop_key($args, 'streamer');
 
-        $returnFullText = true; // By default, return full text
-        if (array_key_exists('returnFullText', $args)) {
-            $returnFullText = $args['returnFullText'];
-            unset($args['returnFullText']);
-        }
+        $returnFullText = array_pop_key($args, 'returnFullText', true);
 
-        // Convert the rest of the arguments key names from camelCase to snake_case
-        $snakeCasedArgs = [];
-        foreach ($args as $key => $value) {
-            $snakeCasedArgs[camelCaseToSnakeCase($key)] = $value;
-        }
+        $kwargs = array_keys_to_snake_case($args);
 
-        $generationConfig = new GenerationConfig($snakeCasedArgs);
+        $generationConfig = new GenerationConfig($kwargs);
 
         $isBatched = false;
         $isChatInput = false;
@@ -114,10 +104,7 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
-
-        // Streamer can only handle one input at a time for now, so we only pass the first input
-        $streamer?->init($this->tokenizer, $inputIds[0]->toArray(), true);
-
+        $streamer?->setTokenizer($this->tokenizer)?->setPromptTokens($inputIds[0]->toArray());
 
         $outputTokenIds = $this->model->generate($inputIds,
             generationConfig: $generationConfig,

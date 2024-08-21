@@ -24,11 +24,11 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
-use Codewithkyrian\Transformers\OnnxRuntime\InferenceSession;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
+use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\array_some;
@@ -632,7 +632,6 @@ class PretrainedModel
 
                 $output = $this->runBeam($beam);
 
-
                 // add attentions/scores to beam only if user requested
                 if ($generationConfig->output_attentions) {
                     $this->addAttentionsToBeam($beam, $output);
@@ -769,7 +768,6 @@ class PretrainedModel
         if (property_exists($this, 'generationConfig')) {
             $genConfigArray = array_merge($genConfigArray, $this->generationConfig->toArray());
         }
-
 
         // Finally, use any generation config specified by the user
         // when calling `generate`

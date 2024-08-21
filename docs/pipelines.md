@@ -173,6 +173,15 @@ and for the translation task:
 | [Object Detection](/object-detection)                                 | `object-detection`     | Identify objects of certain defined classes within an image.                                                                                                                            | ✅          |
 | [Zero-Shot Object Detection](/zero-shot-object-detection)             | `zero-shot-object`     | Detecting objects in images that are unseen during training.                                                                                                                            | ✅          |
 
+#### Audio
+
+| Task                                                          | ID                                  | Description                                          | Supported? |
+|---------------------------------------------------------------|-------------------------------------|------------------------------------------------------|------------|
+| [Audio Classification](/audio-classification)                 | `audio-classification`              | Assigning a label or class to a given audio.         | ✅          |
+| [Audio-to-Audio](https://huggingface.co/tasks/audio-to-audio) | N/A                                 | Generating audio from an input audio source.         | ❌          |
+| [Automatic Speech Recognition](/automatic-speech-recognition) | `automatic-speech-recognition`      | Transcribing a given audio into text.                | ✅          |
+| [Text-to-Speech](https://huggingface.co/tasks/text-to-speech) | `text-to-speech` or `text-to-audio` | Generating natural-sounding speech given text input. | ❌          |
+
 #### Multimodal
 
 | Task                                                                                                                                      | ID                               | Description                                                                                                                   | Supported? |

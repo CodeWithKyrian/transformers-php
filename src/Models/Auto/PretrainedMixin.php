@@ -72,7 +72,7 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-            echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.\n";
+            trigger_error("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,
@@ -102,6 +102,9 @@ abstract class PretrainedMixin
             in_array($modelClass, AutoModelForMaskedLM::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
             in_array($modelClass, AutoModelForVision2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Vision2Seq,
             in_array($modelClass, AutoModelForImageClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForAudioClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForSpeechSeq2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Seq2SeqLM,
+            in_array($modelClass, AutoModelForCTC::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
 
             default => ModelArchitecture::EncoderOnly,
         };

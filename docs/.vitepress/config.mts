@@ -69,6 +69,14 @@ export default defineConfig({
                             {text: 'Image To Text', link: '/image-to-text'},
                             {text: 'Image To Image', link: '/image-to-image'},
                         ]
+                    },
+                    {
+                        text: 'Audio Tasks',
+                        collapsed: true,
+                        items: [
+                            {text: 'Audio Classification', link: '/audio-classification'},
+                            {text: 'Automatic Speech Recognition', link: '/automatic-speech-recognition'},
+                        ]
                     }
                 ]
             },

@@ -2,16 +2,19 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
+use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use Imagick;
 use Imagine\Image\AbstractImagine;
 use Imagine\Image\Box;
 use Imagine\Image\ImageInterface;
+use Imagine\Image\Metadata\MetadataBag;
 use Imagine\Image\Point;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Helper file for Image Processing.
@@ -83,7 +86,7 @@ class Image
         }
     }
 
-    public static function setDriver(ImageDriver $imageDriver) : void
+    public static function setDriver(ImageDriver $imageDriver): void
     {
         self::$imagine = match ($imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
@@ -92,9 +95,22 @@ class Image
         };
     }
 
+    public static function getImagine(): AbstractImagine
+    {
+        if (!isset(self::$imagine)) {
+            self::$imagine = match (Transformers::getImageDriver()) {
+                ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
+                ImageDriver::GD => new \Imagine\Gd\Imagine(),
+                ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
+            };
+        }
+
+        return self::$imagine;
+    }
+
     public static function read(string $input, array $options = []): static
     {
-        $image = self::$imagine->open($input, $options);
+        $image = self::getImagine()->open($input, $options);
 
         return new self($image);
     }
@@ -112,6 +128,7 @@ class Image
 
     /**
      * Returns the size of the image (width, height).
+     *
      * @return array{int, int}
      */
     public function size(): array
@@ -121,13 +138,19 @@ class Image
         return [$size->getWidth(), $size->getHeight()];
     }
 
+    public function metadata(): MetadataBag
+    {
+        return $this->image->metadata();
+    }
+
     /**
      * Clone the image.
+     *
      * @return Image The cloned image.
      */
     public function clone(): static
     {
-        return clone $this;
+        return new self($this->image->copy(), $this->channels);
     }
 
     /**
@@ -137,9 +160,9 @@ class Image
     {
         $resampleMethod = $resample instanceof Resample ? $resample : Resample::from($resample) ?? Resample::NEAREST;
 
-        $this->image = $this->image->resize(new Box($width, $height), $resampleMethod->toString());
+        $image = $this->image->copy()->resize(new Box($width, $height), $resampleMethod->toString());
 
-        return $this;
+        return new self($image, $this->channels);
     }
 
     /**
@@ -156,7 +179,7 @@ class Image
         $width = min($inputWidth, $width);
 
         if ($height === $inputHeight && $width === $inputWidth) {
-            return $this;
+            return $this->clone();
         }
 
         if ($inputHeight > $inputWidth) {
@@ -165,81 +188,70 @@ class Image
 	        $height = (int)floor($inputHeight * $width / $inputWidth);
         }
 
-        $this->resize($width, $height, $resample);
-
-        return $this;
+        return $this->resize($width, $height, $resample);
     }
 
     /**
      * Convert the image to grayscale format.
+     *
      * @return $this
      */
     public function grayscale(bool $force = false): static
     {
         if ($this->channels === 1 && !$force) {
-            return $this;
+            return $this->clone();
         }
 
-        $this->image->effects()->grayscale();
-        $this->channels = 1;
+        $image = $this->image->copy();
+        $image->effects()->grayscale();
 
-        return $this;
+        return new self($image, 1);
     }
 
     /**
      * Convert the image to RGB format.
+     *
      * @return $this
      */
     public function rgb(bool $force = false): static
     {
         // If the image is already in RGB format, return it as is
         if ($this->channels === 3 && !$force) {
-            return $this;
+            return $this->clone();
         }
-
-        $this->channels = 3;
 
         // If it's a Vips image, we can extract the RGB channels
         if ($this->image instanceof \Imagine\Vips\Image) {
-            $this->channels = 3;
-
-            $vipImage = $this->image->getVips()->extract_band(0, ['n' => 3]);
-
-            $this->image = $this->image->setVips($vipImage);
-
-            return $this;
+            $vipImage = $this->image->copy()->getVips()->extract_band(0, ['n' => 3]);
+            return new self($vipImage, 3);
         }
 
-        return $this;
+        return new self($this->image->copy(), 3);
     }
 
     /**
      * Convert the image to RGBA format.
+     *
      * @return $this
      */
     public function rgba(bool $force = false): static
     {
         // If the image is already in RGBA format, return it as is
         if ($this->channels === 4 && !$force) {
-            return $this;
+            return $this->clone();
         }
-
-        $this->channels = 4;
 
         // If it's a Vips image, we can handle the RGBA channels
         if ($this->image instanceof \Imagine\Vips\Image) {
-            $this->channels = 4;
 
-            $vipImage = $this->image->getVips();
+            $vipImage = $this->image->copy()->getVips();
 
             $vipImage = $vipImage->hasAlpha() ? $vipImage->extract_band(0, ['n' => 4]) : $vipImage->bandjoin([255]);
 
-            $this->image = $this->image->setVips($vipImage);
-
-            return $this;
+            return new self($vipImage, 4);
         }
 
-        return $this;
+        return new self($this->image->copy(), 4);
     }
 
     public function centerCrop(int $cropWidth, int $cropHeight): static
@@ -248,18 +260,16 @@ class Image
         $originalHeight = $this->image->getSize()->getHeight();
 
         if ($originalWidth === $cropWidth && $originalHeight === $cropHeight) {
-            return $this;
+            return $this->clone();
         }
 
         // Calculate the coordinates for center cropping
         $xOffset = max(0, ($originalWidth - $cropWidth) / 2);
         $yOffset = max(0, ($originalHeight - $cropHeight) / 2);
 
-        $croppedImage = $this->image->crop(new Point($xOffset, $yOffset), new Box($cropWidth, $cropHeight));
+        $croppedImage = $this->image->copy()->crop(new Point($xOffset, $yOffset), new Box($cropWidth, $cropHeight));
 
-        $this->image = $croppedImage;
-
-        return $this;
+        return new self($croppedImage, $this->channels);
     }
 
     public function crop(int $xMin, int $yMin, int $xMax, int $yMax): static
@@ -268,7 +278,7 @@ class Image
         $originalHeight = $this->image->getSize()->getHeight();
 
         if ($xMin === 0 && $yMin === 0 && $xMax === $originalWidth && $yMax === $originalHeight) {
-            return $this;
+            return $this->clone();
         }
         // Ensure crop bounds are within the image
         $xMin = max($xMin, 0);
@@ -279,11 +289,60 @@ class Image
         $cropWidth = $xMax - $xMin + 1;
         $cropHeight = $yMax - $yMin + 1;
 
-        $croppedImage = $this->image->crop(new Point($xMin, $yMin), new Box($cropWidth, $cropHeight));
+        $croppedImage = $this->image->copy()->crop(new Point($xMin, $yMin), new Box($cropWidth, $cropHeight));
 
-        $this->image = $croppedImage;
+        return new self($croppedImage, $this->channels);
+    }
 
-        return $this;
+    /**
+     * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
+     *
+     * @param int $grayThreshold Value below which pixels are considered to be gray.
+     *
+     * @return static The cropped image.
+     * @throws Exception
+     */
+    public function cropMargin(int $grayThreshold = 200): static
+    {
+        $grayImage = $this->grayscale();
+
+        // Get the min and max pixel values
+        $minValue = min($grayImage->toTensor()->buffer())[0];
+        $maxValue = max($grayImage->toTensor()->buffer())[0];
+
+        $diff = $maxValue - $minValue;
+
+        // If all pixels have the same value, no need to crop
+        if ($diff === 0) {
+            return $this->clone();
+        }
+
+        $threshold = $grayThreshold / 255;
+
+        [$xMin, $yMin] = $this->size();
+        $xMax = 0;
+        $yMax = 0;
+
+        [$width, $height] = $this->size();
+
+        // Iterate over each pixel in the image
+        for ($y = 0; $y < $height; ++$y) {
+            for ($x = 0; $x < $width; ++$x) {
+                $color = $grayImage->image->getColorAt(new Point($x, $y));
+                $pixelValue = $color->getRed(); // Assuming grayscale, so red channel is sufficient
+
+                if (($pixelValue - $minValue) / $diff < $threshold) {
+                    // We have a non-gray pixel, so update the min/max values accordingly
+                    $xMin = min($xMin, $x);
+                    $yMin = min($yMin, $y);
+                    $xMax = max($xMax, $x);
+                    $yMax = max($yMax, $y);
+                }
+            }
+        }
+
+        // Crop the image using the calculated bounds
+        return $this->crop($xMin, $yMin, $xMax, $yMax);
     }
 
     public function pad(int $left, int $right, int $top, int $bottom): static
@@ -292,37 +351,113 @@ class Image
             return $this;
         }
 
-        $originalWidth = $this->image->getSize()->getWidth();
-        $originalHeight = $this->image->getSize()->getHeight();
+        [$originalWidth, $originalHeight] = $this->size();
 
         $newWidth = $originalWidth + $left + $right;
         $newHeight = $originalHeight + $top + $bottom;
 
-        $canvas = self::$imagine->create(new Box($newWidth, $newHeight));
+        $paddedImage = self::getImagine()->create(new Box($newWidth, $newHeight));
 
-        $canvas->paste($this->image, new Point($left, $top));
+        $paddedImage->paste($this->image, new Point($left, $top));
 
-        $this->image = $canvas;
-
-        // Convert to the same format as the original image
-        if ($this->channels === 1) {
-            $this->grayscale(true);
-        } elseif ($this->channels === 3) {
-            $this->rgb(true);
-        } elseif ($this->channels === 4) {
-            $this->rgba(true);
-        }
-
-        return $this;
+        return new self($paddedImage, $this->channels);
     }
 
+    public function invert(): static
+    {
+        $image = $this->image->copy();
+        $image->effects()->negative();
+
+        return new self($image, $this->channels);
+    }
+
+    /**
+     * Applies a mask to the current image.
+     *
+     * @param Image $mask The mask to apply.
+     *
+     * @return static A new instance of the current image with the mask applied.
+     * @throws InvalidArgumentException If the given mask doesn't match the current image's size or if the image driver is unsupported.
+     * @throws RuntimeException If the apply mask operation fails.
+     */
+    public function applyMask(Image $mask): static
+    {
+        $size = $this->size();
+        $maskSize = $mask->size();
+
+        if ($size != $maskSize) {
+            throw new InvalidArgumentException(
+                sprintf("The given mask doesn't match current image's size, current mask's dimensions are %s, while image's dimensions are %s",
+                    json_encode($maskSize),
+                    json_encode($size)
+                )
+            );
+        }
+
+        $image = match (true) {
+            $this->image instanceof \Imagine\Vips\Image => $this->image->copy()->applyMask($mask->image),
+
+            $this->image instanceof \Imagine\Imagick\Image => (function () use ($mask) {
+                $maskImagick = $mask->image->copy()->mask()->getImagick();
+                $imageImagick = clone $this->image->getImagick();
+
+                $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
+                $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
+
+                $maskImagick->clear();
+                $maskImagick->destroy();
+
+                return new \Imagine\Imagick\Image($imageImagick, $this->image->palette(), $this->image->metadata());
+            })(),
+
+            $this->image instanceof \Imagine\Gd\Image => (function () use ($mask) {
+                $gdResource = $this->image->getGdResource();
+
+                for ($x = 0, $width = $this->width(); $x < $width; $x++) {
+                    for ($y = 0, $height = $this->height(); $y < $height; $y++) {
+                        $position = new Point($x, $y);
+                        $color = $this->image->getColorAt($position);
+                        $maskColor = $mask->image->getColorAt($position);
+                        $newAlpha = 127 - (int)floor($maskColor->getRed() / 2);
+
+                        $newColor = imagecolorallocatealpha(
+                            $this->image->getGdResource(),
+                            $color->getRed(),
+                            $color->getGreen(),
+                            $color->getBlue(),
+                            $newAlpha
+                        );
+
+                        if (imagesetpixel($gdResource, $x, $y, $newColor) === false) {
+                            throw new RuntimeException('Apply mask operation failed');
+                        }
+                    }
+                }
+
+                return new \Imagine\Gd\Image($gdResource, $this->image->palette(), $this->image->metadata());
+            })(),
+            default => throw new InvalidArgumentException('Unsupported image driver'),
+        };
+
+        return new self($image, $this->channels);
+    }
+
+    /**
+     * Creates an image from a tensor.
+     *
+     * @param Tensor $tensor The tensor containing the image data.
+     * @param string $channelFormat The format of the tensor channels. Defaults to 'CHW'.
+     *
+     * @return static The created image.
+     * @throws Exception If the number of channels in the tensor is unsupported.
+     */
     public static function fromTensor(Tensor $tensor, string $channelFormat = 'CHW'): static
     {
         $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
 
-        [$width, $height, $channels] = $tensor->shape();
+        [$height, $width, $channels] = $tensor->shape();
 
-        $image = self::$imagine->create(new Box($width, $height));
+        $image = self::getImagine()->create(new Box($width, $height));
 
         // Make sure the tensor is the right data type
         $tensor = $tensor->to(Tensor::uint8);
@@ -372,19 +507,28 @@ class Image
         // Iterate through each pixel's worth of string data
         for ($y = 0; $y < $height; $y++) {
             for ($x = 0; $x < $width; $x++) {
-                $argb = 0;
-
-                if ($channels >= 1) {
-                    $argb |= ($reverseCHR[$imageData[$j++]] << 16); // R
-                }
-                if ($channels >= 2) {
-                    $argb |= ($reverseCHR[$imageData[$j++]] << 8); // G
-                }
-                if ($channels >= 3) {
-                    $argb |= $reverseCHR[$imageData[$j++]]; // B
-                }
-                if ($channels >= 4) {
-                    $argb |= $reverseAlphaLookup[$imageData[$j++]]; // A
+                if ($channels === 1) {
+                    // Grayscale: get the single channel value and set it to R, G, B equally
+                    $gray = $reverseCHR[$imageData[$j++]];
+                    $argb = imagecolorallocate($gdImage, $gray, $gray, $gray);
+                } else {
+                    $argb = 0;
+                    if ($channels >= 1) {
+                        $argb |= ($reverseCHR[$imageData[$j++]] << 16); // R
+                    }
+                    if ($channels >= 2) {
+                        $argb |= ($reverseCHR[$imageData[$j++]] << 8); // G
+                    }
+                    if ($channels >= 3) {
+                        $argb |= $reverseCHR[$imageData[$j++]]; // B
+                    }
+                    if ($channels === 4) {
+                        // Ensure alpha value is handled
+                        $alpha = $reverseAlphaLookup[$imageData[$j++]];
+                        $argb |= $alpha << 24;
+                    } else {
+                        $argb |= 0xFF000000; // Set full opacity for RGB images
+                    }
                 }
 
                 // Set the pixel at (x, y) to the ARGB value
@@ -395,6 +539,14 @@ class Image
         return new self($image, $channels);
     }
 
+    /**
+     * Converts the image to a tensor.
+     *
+     * @param string $channelFormat The channel format of the tensor. Defaults to 'CHW'.
+     *
+     * @return Tensor The tensor representation of the image.
+     * @throws Exception If the channel format is unsupported.
+     */
     public function toTensor(string $channelFormat = 'CHW'): Tensor
     {
         $width = $this->image->getSize()->getWidth();
@@ -480,23 +632,56 @@ class Image
         $this->image->save($path);
     }
 
-    public function drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): void
+    /**
+     * Draws a rectangle on the image at the specified position with the given color and thickness.
+     *
+     * @param int|float $xMin The x-coordinate of the top-left corner of the rectangle.
+     * @param int $yMin The y-coordinate of the top-left corner of the rectangle.
+     * @param int|float $xMax The x-coordinate of the bottom-right corner of the rectangle.
+     * @param int|float $yMax The y-coordinate of the bottom-right corner of the rectangle.
+     * @param string $color The color of the rectangle in hexadecimal format. Default is 'FFF'.
+     * @param bool $fill Whether to fill the rectangle with the color. Default is false.
+     * @param float $thickness The thickness of the rectangle border. Default is 1.
+     *
+     * @return self A new instance of the Image class with the rectangle drawn.
+     */
+    public function drawRectangle(int|float $xMin, int|float $yMin, int|float $xMax, int|float $yMax, string $color = 'FFF', $fill = false, float $thickness = 1): self
     {
-        $this->image->draw()->rectangle(
+        $image = $this->image->copy();
+
+        $image->draw()->rectangle(
             new Point($xMin, $yMin),
             new Point($xMax, $yMax),
             $this->image->palette()->color($color),
             $fill,
             $thickness
         );
+
+        return new self($image, $this->channels);
     }
 
-    public function drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): void
+    /**
+     * Draws text on an image at the specified position using the given font and color.
+     *
+     * @param string $text The text to be drawn.
+     * @param int|float $xPos The x-coordinate of the text position.
+     * @param int|float $yPos The y-coordinate of the text position.
+     * @param string $fontFile The path to the font file.
+     * @param int $fontSize The size of the font in points. Default is 16.
+     * @param string $color The color of the text in hexadecimal format. Default is 'FFF'.
+     *
+     * @return self A new instance of Image with the drawn text.
+     */
+    public function drawText(string $text, int|float $xPos, int|float $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF'): self
     {
-        $font = self::$imagine->font($fontFile, $fontSize, $this->image->palette()->color($color));
+        $font = self::getImagine()->font($fontFile, $fontSize, $this->image->palette()->color($color));
 
         $position = new Point($xPos, $yPos);
 
-        $this->image->draw()->text($text, $font, $position);
+        $image = $this->image->copy();
+
+        $image->draw()->text($text, $font, $position);
+
+        return new self($image, $this->channels);
     }
 }

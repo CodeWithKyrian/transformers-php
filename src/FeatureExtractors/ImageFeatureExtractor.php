@@ -7,64 +7,36 @@ namespace Codewithkyrian\Transformers\FeatureExtractors;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
+use Exception;
 use Imagine\Image\Point;
 
 class ImageFeatureExtractor extends FeatureExtractor
 {
-    /**
-     * The mean values for image normalization.
-     *
-     * @var int|int[]
-     */
+    /** The mean values for image normalization. */
     protected int|array|null $imageMean;
 
-    /**
-     * The standard deviation values for image normalization.
-     *
-     * @var int|int[]
-     */
+    /** The standard deviation values for image normalization. */
     protected int|array|null $imageStd;
 
-    /*
-     * What method to use for resampling.
-     */
+    /* What method to use for resampling. */
     protected int $resample;
 
-    /**
-     * Whether to rescale the image pixel values to the [0,1] range.
-     *
-     * @var bool
-     */
+    /** Whether to rescale the image pixel values to the [0,1] range. */
     protected bool $doRescale;
 
-    /**
-     * The factor to use for rescaling the image pixel values.
-     *
-     * @var float
-     */
+    /** The factor to use for rescaling the image pixel values. */
     protected float $rescaleFactor;
 
-    /**
-     * Whether to normalize the image pixel values.
-     *
-     * @var ?bool
-     */
+    /** Whether to normalize the image pixel values. */
     protected ?bool $doNormalize;
 
-    /**
-     * Whether to resize the image.
-     *
-     * @var ?bool
-     */
+    /**  Whether to resize the image. */
     protected ?bool $doResize;
 
+    /**  The size to resize the image to. */
     protected ?bool $doThumbnail;
 
-    /**
-     * The size to resize the image to.
-     *
-     * @var ?array
-     */
+    /**  The size to resize the image to. */
     protected ?array $size;
     protected mixed $sizeDivisibility;
     protected ?bool $doCenterCrop;
@@ -76,6 +48,8 @@ class ImageFeatureExtractor extends FeatureExtractor
 
     public function __construct(public array $config)
     {
+        parent::__construct($config);
+
         $this->imageMean = $config['image_mean'] ?? $config['mean'] ?? null;
         $this->imageStd = $config['image_std'] ?? $config['std'] ?? null;
 
@@ -169,7 +143,7 @@ class ImageFeatureExtractor extends FeatureExtractor
      * @param int $constantValues The constant value to use for padding.
      *
      * @return Tensor The padded pixel data and image dimensions.
-     * @throws \Exception
+     * @throws Exception
      */
     public function padImage(
         Tensor    $imageTensor,
@@ -231,7 +205,7 @@ class ImageFeatureExtractor extends FeatureExtractor
 
             if ($mode === 'symmetric') {
                 if ($center) {
-                    throw new \Exception('`center` padding is not supported when `mode` is set to `symmetric`.');
+                    throw new Exception('`center` padding is not supported when `mode` is set to `symmetric`.');
                     // TODO: Implement this
                 }
                 $h1 = $imageHeight - 1;
@@ -276,6 +250,7 @@ class ImageFeatureExtractor extends FeatureExtractor
      * @param int|array|null $size The size to use for resizing the image.
      *
      * @return array The target (width, height) dimension of the output image after resizing.
+     * @throws Exception
      */
     public function getResizeOutputImageSize(Image $image, int|array|null $size): array
     {
@@ -349,7 +324,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         } elseif ($this->sizeDivisibility != null) {
             return $this->enforceSizeDivisibility([$srcWidth, $srcHeight], $this->sizeDivisibility);
         } else {
-            throw new \Exception("Could not resize image due to unsupported 'size' parameter passed: ".json_encode($size));
+            throw new Exception("Could not resize image due to unsupported 'size' parameter passed: ".json_encode($size));
         }
     }
 
@@ -358,13 +333,13 @@ class ImageFeatureExtractor extends FeatureExtractor
      * Preprocesses the given image.
      *
      * @param Image $image The image to preprocess.
-     * @param ?bool $doNormalize
-     * @param ?bool $doPad
-     * @param ?bool $doConvertRGB
-     * @param ?bool $doConvertGrayscale
+     * @param ?bool $doNormalize Whether to normalize the image.
+     * @param ?bool $doPad Whether to pad the image.
+     * @param ?bool $doConvertRGB Whether to convert the image to RGB.
+     * @param ?bool $doConvertGrayscale Whether to convert the image to grayscale.
      *
      * @return array The preprocessed image.
-     * @throws \Exception
+     * @throws Exception
      */
     public function preprocess(
         Image $image,
@@ -377,29 +352,28 @@ class ImageFeatureExtractor extends FeatureExtractor
         if ($this->doCropMargin) {
             // Specific to nougat processors. This is done before resizing,
             // and can be interpreted as a pre-preprocessing step.
-            $this->cropMargin($image);
+            $image = $image->cropMargin();
         }
-
 
         $originalInputSize = $image->size(); // original image size
 
         // Convert image to RGB if specified in config.
         if ($doConvertRGB ?? $this->doConvertRGB) {
-            $image->rgb();
+            $image = $image->rgb();
         } elseif ($doConvertGrayscale) {
-            $image->grayscale();
+            $image = $image->grayscale();
         }
 
         // Resize if specified in config.
         if ($this->doResize) {
             [$newWidth, $newHeight] = $this->getResizeOutputImageSize($image, $this->size);
 
-            $image->resize($newWidth, $newHeight, $this->resample);
+            $image = $image->resize($newWidth, $newHeight, $this->resample);
         }
 
         // Resize the image using thumbnail method.
         if ($this->doThumbnail) {
-            $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
+            $image = $image->thumbnail($this->size['width'], $this->size['height'], $this->resample);
         }
 
         if ($this->doCenterCrop) {
@@ -412,7 +386,7 @@ class ImageFeatureExtractor extends FeatureExtractor
                 $cropHeight = $this->cropSize['height'];
             }
 
-            $image->centerCrop($cropWidth, $cropHeight);
+            $image = $image->centerCrop($cropWidth, $cropHeight);
         }
 
         $reshapedInputSize = $image->size();
@@ -447,7 +421,7 @@ class ImageFeatureExtractor extends FeatureExtractor
             $imageStd = $imageStd->reshape($imageTensor->shape());
 
             if (count($imageMean) !== $image->channels || count($imageStd) !== $image->channels) {
-                throw new \Exception("When set to arrays, the length of `imageMean` (".count($imageMean).") and `imageStd` (".count($imageStd).") must match the number of channels in the image ({$image->channels}).");
+                throw new Exception("When set to arrays, the length of `imageMean` (".count($imageMean).") and `imageStd` (".count($imageStd).") must match the number of channels in the image ({$image->channels}).");
             }
 
             // Normalize pixel data
@@ -483,25 +457,18 @@ class ImageFeatureExtractor extends FeatureExtractor
      */
     public function __invoke(Image|array $images, ...$args): array
     {
-        // Ensure $images is an array
         if (!is_array($images)) {
             $images = [$images];
         }
 
-        // Preprocess each image
-        $imageData = [];
-        foreach ($images as $image) {
-            $imageData[] = $this->preprocess($image);
-        }
+        $imageData = array_map([$this, 'preprocess'], $images);
 
         $pixelValues = array_column($imageData, 'pixel_values');
         $originalSizes = array_column($imageData, 'original_size');
         $reshapedInputSizes = array_column($imageData, 'reshaped_input_size');
 
-        $stackedPixelValues = Tensor::stack($pixelValues, 0);
-
         return [
-            'pixel_values' => $stackedPixelValues,
+            'pixel_values' => Tensor::stack($pixelValues),
             'original_sizes' => $originalSizes,
             'reshaped_input_sizes' => $reshapedInputSizes
         ];

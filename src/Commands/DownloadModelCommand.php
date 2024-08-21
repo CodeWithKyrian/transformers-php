@@ -59,7 +59,7 @@ class DownloadModelCommand extends Command
             'The filename of the exact model weights version to download.',
             null
         );
-        
+
         $this->addOption(
             'host',
             null,
@@ -79,12 +79,12 @@ class DownloadModelCommand extends Command
         $quantized = filter_var($input->getOption('quantized'), FILTER_VALIDATE_BOOLEAN);
         $task = $input->getArgument('task');
         $modelFilename = $input->getOption('model-filename');
-        $host = $input->getOption('host') ?? Transformers::$remoteHost;
-        
-        Transformers::setup()
-            ->setCacheDir($cacheDir)
-            ->setRemoteHost(rtrim($host,'/'))
-            ->apply();
+        $host = $input->getOption('host');
+
+        $transformers = Transformers::setup();
+
+        if ($cacheDir != null) $transformers->setCacheDir($cacheDir);
+        if ($host != null) $transformers->setRemoteHost($host);
 
         try {
             $task = $task ? Task::tryFrom($task) : null;
@@ -115,7 +115,7 @@ class DownloadModelCommand extends Command
 
             return Command::SUCCESS;
         } catch (Exception $e) {
-            $output->writeln('✘ ' . $e->getMessage());
+            $output->writeln('✘ '.$e->getMessage());
             return Command::FAILURE;
         }
     }

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Transformers;
+
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
 }
 
 function memoryPeak(): string
@@ -17,7 +19,7 @@ function memoryPeak(): string
     $mem = memory_get_peak_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
 }
 
 
@@ -36,7 +38,7 @@ function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true, bool 
     $timeDiff = $milliseconds ? $timeDiff * 1000 : $timeDiff;
 
 //    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
-    return $returnString ? @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
+    return $returnString ? @round($timeDiff, 4).($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
 }
 
 function array_some(array $array, callable $callback): bool
@@ -61,6 +63,27 @@ function array_every(array $array, callable $callback): bool
     return true;
 }
 
+function array_pop_key(array &$array, string|int $key, mixed $default = null)
+{
+    if (isset($array[$key])) {
+        $value = $array[$key];
+        unset($array[$key]);
+        return $value;
+    }
+    return $default;
+}
+
+function array_keys_to_snake_case(array $array): array
+{
+    $snakeCasedArray = [];
+
+    foreach ($array as $key => $value) {
+        $snakeCasedArray[camelCaseToSnakeCase($key)] = $value;
+    }
+
+    return $snakeCasedArray;
+}
+
 function camelCaseToSnakeCase(string $input): string
 {
     return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
@@ -74,11 +97,11 @@ function joinPaths(string ...$args): string
         if ($path === '') {
             continue;
         } elseif ($key === 0) {
-            $paths[$key] = rtrim($path, '/');
+            $paths[$key] = rtrim($path, DIRECTORY_SEPARATOR);
         } elseif ($key === count($paths) - 1) {
-            $paths[$key] = ltrim($path, '/');
+            $paths[$key] = ltrim($path, DIRECTORY_SEPARATOR);
         } else {
-            $paths[$key] = trim($path, '/');
+            $paths[$key] = trim($path, DIRECTORY_SEPARATOR);
         }
     }
 
@@ -94,7 +117,9 @@ function ensureDirectory($filePath): void
 
 /**
  * Prepare images for further tasks.
+ *
  * @param mixed $images Images to prepare.
+ *
  * @return Image[] Returns processed images.
  */
 function prepareImages(mixed $images): array
@@ -115,19 +140,38 @@ function prepareImages(mixed $images): array
 
 /**
  * Helper function to convert list [xmin, xmax, ymin, ymax] into object { "xmin": xmin, ... }
+ *
  * @param array $box The bounding box as a list.
  * @param bool $asInteger Whether to cast to integers.
+ *
  * @return array The bounding box as an object.
  * @private
  */
 function getBoundingBox(array $box, bool $asInteger): array
 {
     if ($asInteger) {
-        $box = array_map(fn($x) => (int)$x, $box);
+        $box = array_map(fn ($x) => (int)$x, $box);
     }
 
     [$xmin, $ymin, $xmax, $ymax] = $box;
 
     return ['xmin' => $xmin, 'ymin' => $ymin, 'xmax' => $xmax, 'ymax' => $ymax];
+}
+
+
+/**
+ * Returns base path value of the project
+ *
+ * @param string $dir Directory to append to base path
+ *
+ * @return string
+ */
+function basePath(string $dir = ""): string
+{
+    $loader = require 'vendor/autoload.php';
+
+    $transformersClass = $loader->findFile(Transformers::class);
+
+    return joinPaths(dirname($transformersClass, 2), $dir);
 }
 

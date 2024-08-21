@@ -12,8 +12,8 @@ page provides an overview of the functionality and usage of the `Image` utility 
 
 The `Image` class is built to work with multiple image processing backends.
 
-- **IMAGICK:** The default image driver used by TransformersPHP. It provides a wide range of image processing functions
-  and is the recommended driver for most use cases.
+- **IMAGICK:** A comprehensive image processing library for PHP that supports a wide range of image formats. It provides
+  a wide range of image processing functions and is the recommended driver for most use cases.
     - Pros: Powerful and feature-rich, with support for a wide range of image formats and operations.
     - Cons: Requires the IMAGICK PHP extension to be installed, which may not be available in all environments.
 - **GD:** A simpler image processing driver that is available by default in most PHP installations. It is less powerful
@@ -25,18 +25,25 @@ The `Image` class is built to work with multiple image processing backends.
     - Pros: Known for its speed and efficiency, especially for large images.
     - Cons: May require additional installation steps but provides excellent performance.
 
+  **To use the VIPS driver:**
+    1. Install `libvips` on your machine by following the [libvips install guide](https://www.libvips.org/install.html).
+    2. Install the VIPS PHP driver using Composer:
+       ```bash
+       composer require rokka/imagine-vips
+       ```
+
+## Setting the image driver
+
 The image driver can be set using the `setImageDriver()` method in the `Transformers` class. The default driver is
 IMAGICK, but you can change it to GD or VIPS based on your requirements.
 
 ```php
 use Codewithkyrian\Transformers\Transformers;
 
-Transformers::setup()
-    ->setImageDriver(ImageDriver::GD)
-    ->apply();
+Transformers::setup()->setImageDriver(ImageDriver::GD);
 ```
 
-If you're using the `Image` class directly, you can set the image driver using the `setImageDriver()` method.
+If you're using the `Image` class directly, you can set the image driver using the `setDriver()` method.
 
 ```php
 use Codewithkyrian\Transformers\Utils\Image;
@@ -47,7 +54,9 @@ Image::setDriver(ImageDriver::GD);
 ## Image Processing Operations
 
 The `Image` utility class provides a range of image processing operations that can be performed on images. These
-operations include:
+operations are immutable, meaning that all operations essentially return a new instance of `Image` with the operation
+applied without affecting the current instance. This allows for method chaining and simplifies the process of applying
+multiple operations to an image.
 
 - ### `read(string $input, array $options = [])`
   Reads an image from a file path, URL, or resource and returns an image object.
@@ -94,8 +103,7 @@ operations include:
   ```
 
 - ### `resize(int $width, int $height, int|Resample $resample = 2)`
-  Resizes an image to the specified width and height, using the specified resampling method. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Resizes an image to the specified width and height, using the specified resampling method.
 
   Parameters:
     - `$width` (int) The target width of the resized image.
@@ -109,27 +117,25 @@ operations include:
   ```php
   $resizedImage = $image->resize(300, 200);
   ```
-  
+
 - ### `thumbnail(int $width, int $height, int|Resample $resample = 2)`
-    Creates a thumbnail of the image with the specified width and height, using the specified resampling method. This
-    operation affects the instance it's called on, but still returns that instance for method chaining.
-    
-    Parameters:
-        - `$width` (int) The target width of the thumbnail.
-        - `$height` (int) The target height of the thumbnail.
-        - `$resample` (int|Resample) The resampling method to use. Default is `Resample::BICUBIC`.
-    
-    Returns:
-        - An image object representing the thumbnail.
-    
-    Example:
+  Creates a thumbnail of the image with the specified width and height, using the specified resampling method.
+
+  Parameters:
+    - `$width` (int) The target width of the thumbnail.
+    - `$height` (int) The target height of the thumbnail.
+    - `$resample` (int|Resample) The resampling method to use. Default is `Resample::BICUBIC`.
+
+  Returns:
+    - An image object representing the thumbnail.
+
+  Example:
     ```php
     $thumbnailImage = $image->thumbnail(100, 100);
     ```
 
 - ### `crop(int $xMin, int $yMin, int $xMax, int $yMax)`
-  Crops the image to the specified bounding box defined by the top-left and bottom-right coordinates. This operation
-  affects the instance it's called on, but still returns that instance for method chaining.
+  Crops the image to the specified bounding box defined by the top-left and bottom-right coordinates.
 
   Parameters:
     - `$xMin` (int) The x-coordinate of the top-left corner of the bounding box.
@@ -146,8 +152,7 @@ operations include:
   ```
 
 - ### `centerCrop(int $width, int $height)`
-  Crops the image to the specified width and height by centering the crop around the image's center. This operation
-  affects the instance it's called on, but still returns that instance for method chaining.
+  Crops the image to the specified width and height by centering the crop around the image's center.
 
   Parameters:
     - `$width` (int) The target width of the cropped image.
@@ -162,8 +167,7 @@ operations include:
   ```
 
 - ### `pad(int $left, int $right, int $top, int $bottom)`
-  Pads the image with the specified number of pixels on each side. This operation affects the instance it's called on,
-  but still returns that instance for method chaining.
+  Pads the image with the specified number of pixels on each side.
 
   Parameters:
     - `$left` (int) The number of pixels to add to the left side.
@@ -180,8 +184,7 @@ operations include:
   ```
 
 - ### `grayscale()`
-  Converts the image to grayscale. This operation affects the instance it's called on, but still returns that instance
-  for method chaining.
+  Converts the image to grayscale.
 
   Returns:
     - An image object representing the grayscale image.
@@ -192,8 +195,7 @@ operations include:
   ```
 
 - ### `rgb()`
-  Converts the image to RGB color space. This operation affects the instance it's called on, but still returns that
-  instance for method chaining.
+  Converts the image to RGB color space.
 
   Returns:
     - An image object representing the RGB image.
@@ -204,8 +206,7 @@ operations include:
   ```
 
 - ### `rgba()`
-  Converts the image to RGBA color space. This operation affects the instance it's called on, but still returns that
-  instance for method chaining.
+  Converts the image to RGBA color space.
 
   Returns:
     - An image object representing the RGBA image.
@@ -215,9 +216,27 @@ operations include:
   $rgbaImage = $image->rgba();
   ```
 
+- ### `applyMask(Image $mask)`
+  Applies a mask to the current image.
+
+  Parameters:
+    - `$mask` (Image) The mask to apply.
+
+  Returns:
+    - An image object representing the image with the mask applied.
+
+  Throws:
+    - `InvalidArgumentException` if the given mask doesn't match the current image's size or if the image driver is
+      unsupported.
+    - `RuntimeException` if the apply mask operation fails.
+
+  Example:
+  ```php
+  $maskedImage = $image->applyMask($mask);
+  ```
+
 - ### `drawRectangle(int $xMin, int $yMin, int $xMax, int $yMax, string $color = 'FFF', $fill = false, float $thickness = 1)`
-  Draws a rectangle on the image with the specified coordinates, color, and thickness. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Draws a rectangle on the image with the specified coordinates, color, and thickness.
 
   Parameters:
     - `$xMin` (int) The x-coordinate of the top-left corner of the rectangle.
@@ -238,8 +257,7 @@ operations include:
 
 - ### `drawText(string $text, int $xPos, int $yPos, string $fontFile, int $fontSize = 16, string $color = 'FFF')`
 
-  Draws text on the image at the specified position with the specified font, size, and color. This operation affects the
-  instance it's called on, but still returns that instance for method chaining.
+  Draws text on the image at the specified position with the specified font, size, and color.
 
   Parameters:
     - `$text` (string) The text to draw on the image.

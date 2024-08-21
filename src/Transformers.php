@@ -4,55 +4,46 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers;
 
-use Codewithkyrian\Transformers\Utils\Image;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
+use RuntimeException;
 
 class Transformers
 {
-    public static string $cacheDir = '.transformers-cache';
+    protected static string $cacheDir = '.transformers-cache';
 
-    public static string $libsDir = __DIR__ . '/../libs';
+    protected static string $remoteHost = 'https://huggingface.co';
 
-    public static string $remoteHost = 'https://huggingface.co';
+    protected static string $remotePathTemplate = '{model}/resolve/{revision}/{file}';
 
-    public static string $remotePathTemplate = '{model}/resolve/{revision}/{file}';
+    protected static ?string $authToken = null;
 
-    public static ?string $authToken = null;
+    protected static ?string $userAgent = 'transformers-php/0.4.0';
 
-    public static ?string $userAgent = 'transformers-php/0.1.0';
+    protected static ImageDriver $imageDriver;
 
-    public static ImageDriver $imageDriver = ImageDriver::IMAGICK;
 
+    /**
+     * Returns a new instance of the static class.
+     *
+     * @return static The newly created instance of the static class.
+     */
     public static function setup(): static
     {
         return new static;
     }
 
-    public function apply(): void
-    {
-        Image::setDriver(self::$imageDriver);
-    }
+    public static function apply() {}
 
     /**
      * Set the default cache directory for transformers models and tokenizers
+     *
      * @param string $cacheDir
+     *
      * @return $this
      */
-    public function setCacheDir(?string $cacheDir): static
+    public function setCacheDir(string $cacheDir): static
     {
-        if ($cacheDir != null) self::$cacheDir = $cacheDir;
-
-        return $this;
-    }
-
-    /**
-     * Set the default directory for shared libraries
-     * @param string|null $libsDir
-     * @return $this
-     */
-    public function setLibsDir(?string $libsDir): static
-    {
-        if ($libsDir != null) self::$libsDir = $libsDir;
+        self::$cacheDir = $cacheDir;
 
         return $this;
     }
@@ -60,7 +51,9 @@ class Transformers
     /**
      * Set the remote host for downloading models and tokenizers. This is useful for using a custom mirror
      * or a local server for downloading models and tokenizers
+     *
      * @param string $remoteHost
+     *
      * @return $this
      */
     public function setRemoteHost(string $remoteHost): static
@@ -73,7 +66,9 @@ class Transformers
     /**
      * Set the remote path template for downloading models and tokenizers. This is useful for using a custom mirror
      * or a local server for downloading models and tokenizers
+     *
      * @param string $remotePathTemplate
+     *
      * @return $this
      */
     public function setRemotePathTemplate(string $remotePathTemplate): static
@@ -86,7 +81,9 @@ class Transformers
     /**
      * Set the authentication token for downloading models and tokenizers. This is useful for using a private model
      * repository in Hugging Face
+     *
      * @param string $authToken
+     *
      * @return $this
      */
     public function setAuthToken(string $authToken): static
@@ -99,7 +96,9 @@ class Transformers
     /**
      * Set the user agent for downloading models and tokenizers. This is useful for using a custom user agent
      * for downloading models and tokenizers
+     *
      * @param string $userAgent
+     *
      * @return $this
      */
     public function setUserAgent(string $userAgent): static
@@ -109,10 +108,51 @@ class Transformers
         return $this;
     }
 
+    /**
+     * Set the image driver for processing images.
+     *
+     * @param ImageDriver $imageDriver
+     *
+     * @return $this
+     */
     public function setImageDriver(ImageDriver $imageDriver): static
     {
         self::$imageDriver = $imageDriver;
 
         return $this;
+    }
+
+    public static function getCacheDir(): string
+    {
+        return self::$cacheDir;
+    }
+
+    public static function getRemoteHost(): string
+    {
+        return self::$remoteHost;
+    }
+
+    public static function getRemotePathTemplate(): string
+    {
+        return self::$remotePathTemplate;
+    }
+
+    public static function getAuthToken(): ?string
+    {
+        return self::$authToken;
+    }
+
+    public static function getUserAgent(): string
+    {
+        return self::$userAgent;
+    }
+
+    public static function getImageDriver(): ?ImageDriver
+    {
+        if (!isset(self::$imageDriver)) {
+            throw new RuntimeException('Image driver not set. Please set the image driver using `Transformers::setup()->setImageDriver()`');
+        }
+
+        return self::$imageDriver;
     }
 }
