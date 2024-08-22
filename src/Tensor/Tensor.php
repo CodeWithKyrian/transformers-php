@@ -641,6 +641,26 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     }
 
     /**
+     * Calculates the magnitude of the tensor
+     *
+     * @return float The magnitude of the tensor.
+     */
+    public function magnitude(): float
+    {
+        $mo = self::mo();
+
+        return $mo->la()->nrm2($this);
+    }
+
+
+    public function sqrt(): NDArray
+    {
+        $mo = self::mo();
+
+        return $mo->la()->sqrt($this);
+    }
+
+    /**
      * Return a new Tensor with every element multiplied by a constant.
      *
      * @param Tensor|float|int $value The constant to multiply by.
@@ -748,6 +768,20 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         $ndArray = $mo->la()->reciprocal($this);
 
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
+    }
+
+    /**
+     * Calculates the cosine similarity between this Tensor and another Tensor.
+     *
+     * @param Tensor $other The Tensor to calculate the cosine similarity with.
+     * @return float|int The cosine similarity between this Tensor and the other Tensor.
+     */
+    public function cosSimilarity(Tensor $other): float|int
+    {
+        $dotProduct = $this->dot($other);
+        $magnitude = $this->magnitude();
+        $otherMagnitude = $other->magnitude();
+        return $dotProduct / ($magnitude * $otherMagnitude);
     }
 
     /**
