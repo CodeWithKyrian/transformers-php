@@ -2,6 +2,23 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## TransformersPHP v0.5.1 - 2024-08-24
+
+### What's new
+
+- **Tensor Operations**: `magnitude`, `sqrt` and `cosSimilarity` added.
+- **Vips Binaries**: - Vips binaries are now bundled by default, eliminating need to modify anything on the system to use libvips.
+
+### Bug Fixes
+
+- **Error Handling**: - Adjusted error level to a warning for unknown model types, providing clearer feedback without interrupting the workflow.
+
+### Reversions
+
+- **Dependencies**: Reverted `rokka/vips` from dev back to normal dependencies. Since vips binaries are bundled by default, use of vips is now encouraged.
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.5.0...0.5.1
+
 ## TransformersPHP v0.5.0 - 2024-08-21
 
 I'm excited to announce the latest version of TransformersPHP, packed with new features, improvements, and bug fixes. This release brings powerful enhancements to your machine-learning-driven PHP applications, enabling more efficient and versatile operations.
@@ -21,6 +38,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   //   ]
   // ]
   
+  
     ```
 - **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
   
@@ -32,6 +50,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     // [
     //   "text" => "We, the people of the United States, ..."
     // ]
+    
     
     ```
   
@@ -49,6 +68,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   $resizedImage = $image->resize(100, 100);
   // $image remains unchanged
   
+  
     ```
 - **New Tensor Operations** - New operations were added: `copyTo`, `log`, `exp`, `pow`, `sum`, `reciprocal`, `stdMean`. Additionally, overall performance improvements have been made to Tensor operations.
   
@@ -59,7 +79,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
 - **ONNX Runtime Upgrade** - Upgraded to version 1.19.0, bringing more performance and compatibility with newer models.
   
 - Bug Fixes & Performance Improvements - Various bug fixes have been implemented to enhance stability and performance across the package.
-   
+  
 
 I hope you enjoy these updates and improvements. If you encounter any issues or have any suggestions, please don’t hesitate to reach out through our [Issue Tracker](https://github.com/CodeWithKyrian/transformers-php/issues)
 
@@ -216,11 +236,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -244,6 +266,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
