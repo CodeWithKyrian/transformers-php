@@ -72,7 +72,7 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-            trigger_error("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
+            trigger_error("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.", E_USER_WARNING);
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,
