@@ -22,15 +22,8 @@ The `Image` class is built to work with multiple image processing backends.
     - Cons: May lack advanced features and performance compared to Vips and Imagick.
 - **VIPS:** A high-performance image processing library that is not available by default in PHP installations. It is
   recommended for users who require high-speed image processing and have the VIPS extension installed.
-    - Pros: Known for its speed and efficiency, especially for large images.
-    - Cons: May require additional installation steps but provides excellent performance.
-
-  **To use the VIPS driver:**
-    1. Install `libvips` on your machine by following the [libvips install guide](https://www.libvips.org/install.html).
-    2. Install the VIPS PHP driver using Composer:
-       ```bash
-       composer require rokka/imagine-vips
-       ```
+    - Pros: Known for its speed and memory efficiency, especially for large images.
+    - Cons: May not have all methods bound in PHP yet.
 
 ## Setting the image driver
 
@@ -40,7 +33,7 @@ IMAGICK, but you can change it to GD or VIPS based on your requirements.
 ```php
 use Codewithkyrian\Transformers\Transformers;
 
-Transformers::setup()->setImageDriver(ImageDriver::GD);
+Transformers::setup()->setImageDriver(ImageDriver::VIPS);
 ```
 
 If you're using the `Image` class directly, you can set the image driver using the `setDriver()` method.
