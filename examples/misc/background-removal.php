@@ -5,11 +5,9 @@ declare(strict_types=1);
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Processors\AutoProcessor;
 use Codewithkyrian\Transformers\Utils\Image;
-use function Codewithkyrian\Transformers\Utils\{memoryUsage, timeUsage};
+use function Codewithkyrian\Transformers\Utils\{memoryPeak, memoryUsage, timeUsage};
 
 require_once './bootstrap.php';
-
-ini_set('memory_limit', '256M');
 
 $modelConfig = ['model_type' => 'custom'];
 $processorConfig = [
@@ -46,5 +44,5 @@ $maskedImage = $image->applyMask($mask);
 
 $maskedImage->save($fileName . '-masked.png');
 
-dd('Done Processing!', timeUsage(), memoryUsage());
+dd('Done Processing!', timeUsage(), memoryUsage(), memoryPeak());
 

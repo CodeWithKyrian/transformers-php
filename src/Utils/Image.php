@@ -13,6 +13,7 @@ use Imagine\Image\Box;
 use Imagine\Image\ImageInterface;
 use Imagine\Image\Metadata\MetadataBag;
 use Imagine\Image\Point;
+use Imagine\Vips\Imagine;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -91,18 +92,19 @@ class Image
         self::$imagine = match ($imageDriver) {
             ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
             ImageDriver::GD => new \Imagine\Gd\Imagine(),
-            ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
+            ImageDriver::VIPS => new Imagine(),
         };
+
+        if ($imageDriver === ImageDriver::VIPS) {
+            $libsDir = basePath('libs');
+            putenv("VIPSHOME=$libsDir");
+        }
     }
 
     public static function getImagine(): AbstractImagine
     {
         if (!isset(self::$imagine)) {
-            self::$imagine = match (Transformers::getImageDriver()) {
-                ImageDriver::IMAGICK => new \Imagine\Imagick\Imagine(),
-                ImageDriver::GD => new \Imagine\Gd\Imagine(),
-                ImageDriver::VIPS => new \Imagine\Vips\Imagine(),
-            };
+            self::setDriver(Transformers::getImageDriver());
         }
 
         return self::$imagine;
@@ -183,9 +185,9 @@ class Image
         }
 
         if ($inputHeight > $inputWidth) {
-	        $width = (int)floor($inputWidth * $height / $inputHeight);
+            $width = (int)floor($inputWidth * $height / $inputHeight);
         } elseif ($inputWidth > $inputHeight) {
-	        $height = (int)floor($inputHeight * $width / $inputWidth);
+            $height = (int)floor($inputHeight * $width / $inputWidth);
         }
 
         return $this->resize($width, $height, $resample);
