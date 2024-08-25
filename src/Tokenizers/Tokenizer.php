@@ -22,6 +22,7 @@ abstract class Tokenizer
         'mask_token',
         // additional_special_tokens (TODO)
     ];
+
     /**
      * An array of tokens.
      * @var string[]

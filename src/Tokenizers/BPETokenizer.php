@@ -84,7 +84,6 @@ class BPETokenizer extends Tokenizer
             return $this->cache[$token];
         }
 
-//        $word = str_split($token);
         $word = preg_split('//u', $token, -1, PREG_SPLIT_NO_EMPTY);
 
         if ($this->endOfWordSuffix) {
