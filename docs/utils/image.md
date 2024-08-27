@@ -27,8 +27,8 @@ The `Image` class is built to work with multiple image processing backends.
 
 ## Setting the image driver
 
-The image driver can be set using the `setImageDriver()` method in the `Transformers` class. The default driver is
-IMAGICK, but you can change it to GD or VIPS based on your requirements.
+The image driver can be set using the `setImageDriver()` method in the `Transformers` class. There is no default driver,
+so if you're performing any image related tasks, you must set an image driver.
 
 ```php
 use Codewithkyrian\Transformers\Transformers;
