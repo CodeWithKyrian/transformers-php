@@ -224,8 +224,11 @@ class Image
 
         // If it's a Vips image, we can extract the RGB channels
         if ($this->image instanceof \Imagine\Vips\Image) {
-            $vipImage = $this->image->copy()->getVips()->extract_band(0, ['n' => 3]);
-            return new self($vipImage, 3);
+            /** @var \Imagine\Vips\Image $image */
+            $image = $this->image->copy();
+            $vipImage = $image->getVips()->extract_band(0, ['n' => 3]);
+            $image->setVips($vipImage);
+            return new self($image, 3);
         }
 
         return new self($this->image->copy(), 3);
@@ -400,16 +403,21 @@ class Image
             $this->image instanceof \Imagine\Vips\Image => $this->image->copy()->applyMask($mask->image),
 
             $this->image instanceof \Imagine\Imagick\Image => (function () use ($mask) {
-                $maskImagick = $mask->image->copy()->mask()->getImagick();
-                $imageImagick = clone $this->image->getImagick();
-
-                $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
-                $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
-
-                $maskImagick->clear();
-                $maskImagick->destroy();
-
-                return new \Imagine\Imagick\Image($imageImagick, $this->image->palette(), $this->image->metadata());
+//                $maskImagick = $mask->image->copy()->mask()->getImagick();
+//                $imageImagick = clone $this->image->getImagick();
+//
+//                $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
+//                $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
+//
+//                $maskImagick->clear();
+//                $maskImagick->destroy();
+//
+//                return new \Imagine\Imagick\Image($imageImagick, $this->image->palette(), $this->image->metadata());
+                $image = $this->image->copy();
+                $maskImage = $mask->image->copy();
+                $maskImage->effects()->negative();
+                $image->applyMask($maskImage);
+                return $image;
             })(),
 
             $this->image instanceof \Imagine\Gd\Image => (function () use ($mask) {

@@ -8,8 +8,7 @@ use Codewithkyrian\Transformers\Utils\Image;
 use function Codewithkyrian\Transformers\Utils\{memoryPeak, memoryUsage, timeUsage};
 
 require_once './bootstrap.php';
-
-$modelConfig = ['model_type' => 'custom'];
+$modelConfig = ['model_type' => 'vit'];
 $processorConfig = [
     'do_normalize' => true,
     'do_pad' => false,
@@ -24,9 +23,9 @@ $processorConfig = [
 ];
 
 $model = AutoModel::fromPretrained(modelNameOrPath: 'briaai/RMBG-1.4', config: $modelConfig);
-$processor = AutoProcessor::fromPretrained(modelNameOrPath: 'briaai/RMBG-1.4', config: $processorConfig);
+$processor = AutoProcessor::fromPretrained(modelNameOrPath: 'briaai/RMBG-1.4');
 
-$url = __DIR__ . '/../images/woman-w-bag.jpeg';
+$url = __DIR__ . '/../images/multitask.png';
 
 $image = Image::read($url);
 
@@ -43,6 +42,3 @@ $mask->save($fileName . '-mask.png');
 $maskedImage = $image->applyMask($mask);
 
 $maskedImage->save($fileName . '-masked.png');
-
-dd('Done Processing!', timeUsage(), memoryUsage(), memoryPeak());
-

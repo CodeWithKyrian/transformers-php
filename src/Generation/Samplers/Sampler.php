@@ -55,7 +55,6 @@ abstract class Sampler
 //        array_splice($size, -2, replacement: [1, $vocabSize]);
 //
 //        $logs = $logits->sliceWithBounds($start, $size);
-
         $logits = $logits->slice($index);
 
         if ($this->generationConfig->temperature > 0) {

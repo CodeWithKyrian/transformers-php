@@ -106,7 +106,7 @@ class Audio
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
         if ($this->channels() > 1) {
-            $audioTensor = $audioTensor->mean(1);
+            $audioTensor = $audioTensor->mean(1)->multiply(sqrt(2));
         }
 
         return $audioTensor->squeeze();

@@ -41,8 +41,8 @@ class PretrainedModel
     public string $mainInputName = 'input_ids';
 
     /**
-     * @param array $config The model configuration.
-     * @param mixed $session The ONNX session.
+     * @param AutoConfig $config The model configuration.
+     * @param InferenceSession $session The ONNX session.
      */
     public function __construct(
         public AutoConfig        $config,

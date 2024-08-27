@@ -43,6 +43,7 @@ class InferenceSession
         $providers = []
     )
     {
+//        $providers = ['CoreMLExecutionProvider', 'CPUExecutionProvider'];
         // session options
         $sessionOptions = OnnxRuntime::CreateSessionOptions();
 
@@ -100,6 +101,7 @@ class InferenceSession
                 OnnxRuntime::AddSessionConfigEntry($sessionOptions, $k, $v);
             }
         }
+
         foreach ($providers as $provider) {
             if (!in_array($provider, $this->providers())) {
                 trigger_error('Provider not available: ' . $provider, E_USER_WARNING);
@@ -111,14 +113,13 @@ class InferenceSession
                 OnnxRuntime::SessionOptionsAppendExecutionProvider_CUDA_V2($sessionOptions, $cudaOptions);
                 OnnxRuntime::ReleaseCUDAProviderOptions($cudaOptions);
             } elseif ($provider == 'CoreMLExecutionProvider') {
-                OnnxRuntime::OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, 0);
+                OnnxRuntime::OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, 1);
             } elseif ($provider == 'CPUExecutionProvider') {
                 break;
             } else {
                 throw new \InvalidArgumentException('Provider not supported: ' . $provider);
             }
         }
-
         $this->session = $this->loadSession($path, $sessionOptions);
         $this->allocator = OnnxRuntime::GetAllocatorWithDefaultOptions();
         $this->inputs = $this->loadInputs();
@@ -260,7 +261,6 @@ class InferenceSession
         } else {
             $session = OnnxRuntime::CreateSession(self::env(), $this->ortString($path), $sessionOptions);
         }
-
         return $session;
     }
 
