@@ -168,10 +168,6 @@ function getBoundingBox(array $box, bool $asInteger): array
  */
 function basePath(string $dir = ""): string
 {
-    $loader = require 'vendor/autoload.php';
-
-    $transformersClass = $loader->findFile(Transformers::class);
-
-    return joinPaths(dirname($transformersClass, 2), $dir);
+    return joinPaths(__DIR__.'/../..', $dir);
 }
 
