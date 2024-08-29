@@ -168,6 +168,6 @@ function getBoundingBox(array $box, bool $asInteger): array
  */
 function basePath(string $dir = ""): string
 {
-    return joinPaths(__DIR__.'/../..', $dir);
+    return joinPaths(dirname(__DIR__,2), $dir);
 }
 
