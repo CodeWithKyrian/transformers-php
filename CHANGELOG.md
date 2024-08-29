@@ -2,6 +2,21 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## TransformersPHP v0.5.2 - 2024-08-29
+
+### What's Changed
+
+* Use a static list for byte-unicode and unicode-byte conversion by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/75f5d9cd671791f0542963f4541dfc6d8dad5dcb
+* Fix Vips RGBA -> RGBA conversion error by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/54bdee0a2b0542e57922ede1b633e462de80b0e1
+* Show output progress when downloading the shared libraries by @CodeWithKyrian  in https://github.com/CodeWithKyrian/transformers-php/commit/d613a0d1c2774ca83bb6743862c12c259cfddf71
+* Obviate the need for autoload.php in establishing library base path by @timwhitlock in https://github.com/CodeWithKyrian/transformers-php/pull/65
+
+### New Contributors
+
+* @timwhitlock made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/65
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.5.1...0.5.2
+
 ## TransformersPHP v0.5.1 - 2024-08-24
 
 ### What's new
@@ -39,6 +54,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   // ]
   
   
+  
     ```
 - **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
   
@@ -50,6 +66,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     // [
     //   "text" => "We, the people of the United States, ..."
     // ]
+    
     
     
     ```
@@ -67,6 +84,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     $image = Image::read($url);
   $resizedImage = $image->resize(100, 100);
   // $image remains unchanged
+  
   
   
     ```
@@ -237,11 +255,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -266,6 +286,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
