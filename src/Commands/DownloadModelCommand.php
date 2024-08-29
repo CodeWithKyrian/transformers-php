@@ -97,7 +97,8 @@ class DownloadModelCommand extends Command
                 } elseif ($type === 'complete_download') {
                     $progressBar = $this->getProgressBar($filename, $output);
                     $progressBar->finish();
-                    $output->writeln('');
+                    $progressBar->clear();
+                    $output->writeln("✔ Downloaded <info>$filename</info>");
                 }
             };
 
@@ -115,14 +116,14 @@ class DownloadModelCommand extends Command
 
             return Command::SUCCESS;
         } catch (Exception $e) {
-            $output->writeln('✘ '.$e->getMessage());
+            $output->writeln("<error>✘ {$e->getMessage()}</error>");
             return Command::FAILURE;
         }
     }
 
     protected function getProgressBar(string $filename, OutputInterface $output): ProgressBar
     {
-        ProgressBar::setFormatDefinition('hub', '%filename% : [%bar%] %percent:3s%%');
+        ProgressBar::setFormatDefinition('hub', '✔ Downloading <info>%message%</info> : [%bar%] %percent:3s%%');
 
         if (!isset($this->progressBars[$filename])) {
             $progressBar = new ProgressBar($output, 100);
@@ -130,7 +131,7 @@ class DownloadModelCommand extends Command
             $progressBar->setBarCharacter('<fg=green>•</>');
             $progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
             $progressBar->setProgressCharacter('<fg=green>➤</>');
-            $progressBar->setMessage("✔ Downloading $filename", 'filename');
+            $progressBar->setMessage($filename);
             $this->progressBars[$filename] = $progressBar;
         }
 

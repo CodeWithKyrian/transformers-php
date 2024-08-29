@@ -28,7 +28,7 @@ class InstallCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            LibsChecker::check();
+            LibsChecker::check(output: $output);
 
             $this->askToStar($input, $output);
 

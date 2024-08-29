@@ -5,11 +5,34 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Utils;
 
 use Codewithkyrian\TransformersLibsLoader\Library;
+use Symfony\Component\Console\Helper\ProgressBar;
+use Symfony\Component\Console\Output\ConsoleOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class LibsChecker
 {
-    public static function check($event = null): void
+    protected static ProgressBar $progressBar;
+
+    protected static function getProgressBar($filename, $output): ProgressBar
     {
+        ProgressBar::setFormatDefinition('hub', '  - Downloading <info>%message%</info> : [%bar%] %percent:3s%%');
+
+        if (!isset(self::$progressBar)) {
+            self::$progressBar = new ProgressBar($output, 100);
+            self::$progressBar->setFormat('hub');
+            self::$progressBar->setBarCharacter('<fg=green>•</>');
+            self::$progressBar->setEmptyBarCharacter("<fg=red>⚬</>");
+            self::$progressBar->setProgressCharacter('<fg=green>➤</>');
+            self::$progressBar->setMessage($filename);
+        }
+
+        return self::$progressBar;
+    }
+
+    public static function check($event = null, OutputInterface $output = null): void
+    {
+        $output ??= new ConsoleOutput();
+
         $vendorDir = $event !== null ?
             $event->getComposer()->getConfig()->get('vendor-dir')
             : 'vendor';
@@ -27,12 +50,12 @@ class LibsChecker
         }
 
         if ($installationNeeded) {
-            echo self::colorize("Installing TransformersPHP libraries...")."\n";
-            self::install();
+            $output->writeln("<info>Installing TransformersPHP libraries...</info>");
+            self::install($output);
         }
     }
 
-    private static function install(): void
+    private static function install(OutputInterface $output): void
     {
         $version = file_get_contents(basePath('VERSION'));
 
@@ -56,23 +79,35 @@ class LibsChecker
         $maxRetries = 10;
         $attempts = 0;
 
+
         do {
             $baseUrl = "https://github.com/CodeWithKyrian/transformers-php/releases/download/$version";
-            $downloadFile = "transformersphp-$version-$os-$arch.$extension";
-            $downloadUrl = "$baseUrl/$downloadFile";
+            $filename = "transformersphp-$version-$os-$arch";
+            $downloadUrl = "$baseUrl/$filename.$extension";
             $downloadPath = tempnam(sys_get_temp_dir(), 'transformers-php').".$extension";
 
-            echo "  - Downloading ".self::colorize("transformersphp-$version-$os-$arch")."\n";
+            $onProgress = function ($downloadSize, $downloaded, $uploadSize, $uploaded) use ($output, $filename) {
+                $progressBar = self::getProgressBar($filename, $output);
+                $percent = round(($downloaded / $downloadSize) * 100, 2);
+                $progressBar->setProgress((int)$percent);
+            };
 
             $downloadSuccess = false;
 
             try {
-                $downloadSuccess = Downloader::download($downloadUrl, $downloadPath);
+                $downloadSuccess = Downloader::download($downloadUrl, $downloadPath, onProgress: $onProgress);
+
+                $progressBar = self::getProgressBar($filename, $output);
+                $progressBar->finish();
+                $progressBar->clear();
+                $output->writeln("  - Downloading <info>$filename</info>");
             } catch (\Exception) {
+            } finally {
+                unset($progressBar);
             }
 
             if ($downloadSuccess) {
-                echo "  - Installing ".self::colorize("transformersphp-$version-$os-$arch")." : Extracting archive\n";
+                $output->writeln("  - Installing <info>$filename</info> : Extracting archive");
 
                 $archive = new \PharData($downloadPath);
                 if ($extension != 'zip') {
@@ -82,10 +117,10 @@ class LibsChecker
                 $archive->extractTo(basePath(), overwrite: true);
                 @unlink($downloadPath);
 
-                echo "TransformersPHP libraries installed\n";
+                $output->writeln("✔ TransformersPHP libraries installed successfully!");
                 return;
             } else {
-                echo "  - Failed to download ".self::colorize("transformersphp-$version-$os-$arch").", trying a lower version...\n";
+                $output->writeln("  - Failed to download <info>$filename</info> trying a lower version...");
                 $version = self::getLowerVersion($version);
             }
 
