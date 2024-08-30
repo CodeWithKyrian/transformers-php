@@ -18,6 +18,21 @@ class TextStreamer extends Streamer
     protected int $lastDecodedCheckpointForToken = 0;
     protected int $lastDecodedCheckpointForText = 0;
 
+    public static function make(): static
+    {
+        $streamer = parent::make();
+
+        $streamer->onStreamCallback ??= function ($value) {
+            echo $value;
+        };
+
+        $streamer->onStreamEndCallback ??= function () {
+            echo PHP_EOL;
+        };
+
+        return $streamer;
+    }
+
     public function put(mixed $value): void
     {
         if (count($value) > 1) {
@@ -43,8 +58,8 @@ class TextStreamer extends Streamer
         $punctuationMarks = ['.', ',', '!', '?', ';', ':'];
 
         $this->printedText = mb_substr($this->printedText, 0, $this->lastDecodedCheckpointForText)
-            . ($this->lastDecodedCheckpointForToken == 0 ? '' : ' ')
-            . $decodedText;
+            .($this->lastDecodedCheckpointForToken == 0 ? '' : ' ')
+            .$decodedText;
 
         $newText = mb_substr($this->printedText, $this->printedLength);
 

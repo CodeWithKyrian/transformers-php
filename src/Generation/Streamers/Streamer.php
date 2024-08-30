@@ -23,17 +23,7 @@ abstract class Streamer
 
     public static function make(): static
     {
-        $streamer =  new static();
-
-        $streamer->onStreamCallback ??= function ($value) {
-            echo $value;
-        };
-
-        $streamer->onStreamEndCallback ??= function () {
-            echo PHP_EOL;
-        };
-
-        return $streamer;
+        return new static();
     }
 
     public function setTokenizer(PretrainedTokenizer $tokenizer): static

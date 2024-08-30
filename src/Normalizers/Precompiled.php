@@ -22,7 +22,9 @@ class Precompiled extends Normalizer
 
     /**
      * Normalizes the given text by applying the precompiled charsmap.
+     *
      * @param string $text The text to normalize.
+     *
      * @return string The normalized text.
      */
     public function normalize(string $text): string
@@ -37,14 +39,13 @@ class Precompiled extends Normalizer
         //
         // For now, we only implement the default (nmt_nfkc).
         // See https://raw.githubusercontent.com/google/sentencepiece/master/data/nmt_nfkc.tsv for the full list of rules.
-        // TODO: detect when a different `this.charsmap` is used.
-
+        // TODO: detect when a different `$this->charsMap` is used.
 
         // Remove control characters
         $text = preg_replace('/[\x01-\x08\x0B\x0E-\x1F\x7F\x8F\x9F]/u', '', $text);
 
         // Replace certain characters with a space
-        $text = preg_replace('/[\x09\x0A\x0C\x0D\x1680\x200B\x200C\x200E\x200F\x2028\x2029\x2581\xFEFF\xFFFD]/u', ' ', $text);
+        $text = preg_replace('/[\x09\x0A\x0C\x0D\x{1680}\x{200B}\x{200C}\x{200E}\x{200F}\x{2028}\x{2029}\x{2581}\x{FEFF}\x{FFFD}]/u', ' ', $text);
 
         if (mb_strpos($text, '～') !== false) {
             // To match the sentencepiece implementation 100%, we must handle a very strange edge-case.
