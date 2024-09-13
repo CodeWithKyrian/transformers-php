@@ -25,7 +25,6 @@ class PretrainedTokenizer
     public ?int $maskTokenId = null;
     public ?int $sepTokenId = null;
     public string $paddingSide;
-    protected bool $returnTokenTypeIds = false;
     protected bool $warnedAboutChatTemplate = false;
     protected string $defaultChatTemplate = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\\n' + message['content'] + '<|im_end|>' + '\\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\\n' }}{% endif %}";
     protected ?Normalizer $normalizer;
@@ -53,7 +52,6 @@ class PretrainedTokenizer
 
     protected mixed $chatTemplate;
     protected array $compiledTemplateCache = [];
-    protected array $tokenizationCache = [];
 
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
@@ -97,10 +95,10 @@ class PretrainedTokenizer
             $addedTokensPatterns = array_map(function ($x) {
                 $lstrip = $x->lStrip ? '\s*' : '';
                 $rstrip = $x->rStrip ? '\s*' : '';
-                return $lstrip . '(' . preg_quote($x->content, '/') . ')' . $rstrip;
+                return $lstrip.'('.preg_quote($x->content, '/').')'.$rstrip;
             }, $this->addedTokens);
 
-            $this->addedTokensRegex = '/' . implode('|', $addedTokensPatterns) . '/';
+            $this->addedTokensRegex = '/'.implode('|', $addedTokensPatterns).'/';
         }
 
         // Set mask token if present
@@ -154,7 +152,7 @@ class PretrainedTokenizer
                 if ($item['__type'] == 'AddedToken') {
                     return $item['content'];
                 } else {
-                    throw new Exception("Unknown token: " . json_encode($item));
+                    throw new Exception("Unknown token: ".json_encode($item));
                 }
             } else {
                 return $item;
@@ -171,6 +169,7 @@ class PretrainedTokenizer
      * @param string|null $cacheDir
      * @param string $revision
      * @param null $legacy
+     *
      * @return PretrainedTokenizer
      */
     public static function fromPretrained(
@@ -219,8 +218,9 @@ class PretrainedTokenizer
      * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
      * @param bool $truncation Whether to truncate the input sequences.
      * @param int|null $maxLength Maximum length of the returned list and optionally padding length.
+     * @param bool $returnTensor Whether to return the result as a Tensor. If false, the result will be an array.
      *
-     * @return array{input_ids: Tensor, attention_mask: Tensor, token_type_ids: Tensor|null}
+     * @return array{input_ids: Tensor|array, attention_mask: Tensor|array, token_type_ids: Tensor|array|null}
      */
     public function __invoke(
         string|array      $text,
@@ -229,10 +229,10 @@ class PretrainedTokenizer
         bool              $addSpecialTokens = true,
         bool              $truncation = false,
         ?int              $maxLength = null,
+        bool              $returnTensor = true
     ): array
     {
         $isBatched = is_array($text);
-
 
         $encodedTokens = [];
 
@@ -249,17 +249,15 @@ class PretrainedTokenizer
                 }
 
                 $encodedTokens = array_map(
-                    fn($t, $i) => $this->encodePlus($t, $textPair[$i], addSpecialTokens: $addSpecialTokens),
+                    fn ($t, $i) => $this->encodePlus($t, $textPair[$i], $addSpecialTokens),
                     $text,
                     array_keys($text)
                 );
-
             } else {
                 $encodedTokens = array_map(
-                    fn($x) => $this->encodePlus($x, addSpecialTokens: $addSpecialTokens),
+                    fn ($x) => $this->encodePlus($x, addSpecialTokens: $addSpecialTokens),
                     $text
                 );
-
             }
         } else {
             if (is_array($textPair)) {
@@ -267,12 +265,7 @@ class PretrainedTokenizer
             }
 
             // For single input, we just wrap in an array, and then unwrap later.
-            $encodedTokens = [$this->encodePlus(
-                $text,
-                $textPair,
-                addSpecialTokens: $addSpecialTokens)
-            ];
-
+            $encodedTokens = [$this->encodePlus($text, $textPair, $addSpecialTokens)];
         }
 
         // At this point, tokens is batched: [batch_size, tokens]
@@ -283,7 +276,7 @@ class PretrainedTokenizer
                 $maxLength = $this->modelMaxLength;
             } else {
                 // Calculate max length from sequences
-                $maxLength = max(array_map(fn($x) => count($x['input_ids']), $encodedTokens));
+                $maxLength = max(array_map(fn ($x) => count($x['input_ids']), $encodedTokens));
             }
         } else {
             if (!$truncation) {
@@ -312,47 +305,62 @@ class PretrainedTokenizer
                         $this->padHelper(
                             $token,
                             $maxLength,
-                            fn($key) => $key === 'input_ids' ? $this->padTokenId : 0,
+                            fn ($key) => $key === 'input_ids' ? $this->padTokenId : 0,
                             $this->paddingSide
                         );
                     }
                 }
                 // Update the encodedTokens array with the modified token
-//                $encodedTokens[$i] = $token;
+                //    $encodedTokens[$i] = $token;
             }
         }
 
-        if (!($padding && $truncation)) {
-            // Not guaranteed that all items have the same length, so we perform additional check
-            if (
-                array_reduce($encodedTokens, function ($carry, $x) use ($encodedTokens) {
-                    foreach ($x as $key => $value) {
-                        if (count($value ?? []) !== count($encodedTokens[0][$key] ?? [])) {
-                            return true;
+        if ($returnTensor) {
+            if (!($padding && $truncation)) {
+                // Not guaranteed that all items have the same length, so we perform additional check
+                if (
+                    array_reduce($encodedTokens, function ($carry, $x) use ($encodedTokens) {
+                        foreach ($x as $key => $value) {
+                            if (count($value ?? []) !== count($encodedTokens[0][$key] ?? [])) {
+                                return true;
+                            }
                         }
-                    }
-                    return $carry;
-                }, false)
-            ) {
-                throw new Error("Unable to create tensor, you should probably activate truncation and/or padding with 'padding=true' and 'truncation=true' to have batched tensors with the same length.");
-            }
-        }
-
-        // Now we actually convert to Tensor
-        // NOTE: In the same way as the python library, we return a batched tensor, regardless of whether
-        // we have a single input or multiple inputs.
-        $shape = [count($encodedTokens), count($encodedTokens[0]['input_ids'])];
-        $result = [];
-
-
-        foreach ($encodedTokens[0] as $key => $value) {
-            if ($value === null) {
-                continue;
+                        return $carry;
+                    }, false)
+                ) {
+                    throw new Error("Unable to create tensor, you should probably activate truncation and/or padding with 'padding=true' and 'truncation=true' to have batched tensors with the same length.");
+                }
             }
 
-            $array = array_map(fn($x) => $x[$key], $encodedTokens);
+            // Now we actually convert to Tensor
+            // NOTE: In the same way as the python library, we return a batched tensor, regardless of whether
+            // we have a single input or multiple inputs.
+            $shape = [count($encodedTokens), count($encodedTokens[0]['input_ids'])];
+            $result = [];
 
-            $result[$key] = new Tensor($array, Tensor::int64, $shape);
+
+            foreach ($encodedTokens[0] as $key => $value) {
+                if ($value === null) {
+                    continue;
+                }
+
+                $array = array_map(fn ($x) => $x[$key], $encodedTokens);
+
+                $result[$key] = new Tensor($array, Tensor::int64, $shape);
+            }
+        } else {
+            $result = [];
+
+            foreach ($encodedTokens[0] as $key => $value) {
+                $result[$key] = array_map(fn ($x) => $x[$key], $encodedTokens);
+            }
+
+            // If not returning a tensor, we match the input type
+            if (!$isBatched) {
+                foreach ($result as $key => $value) {
+                    $result[$key] = $value[0];
+                }
+            }
         }
 
         return $result;
@@ -364,12 +372,13 @@ class PretrainedTokenizer
      * @param string|null $text The first sequence to encode.
      * @param string|null $textPair The second sequence to encode.
      * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
+     *
      * @return array{input_ids: int[], attention_mask: int[], token_type_ids: int[]|null}
      */
     public function encodePlus(
         string|null $text,
         string|null $textPair = null,
-        bool        $addSpecialTokens = true,
+        bool        $addSpecialTokens = true
     ): array
     {
         // Function called by users to encode possibly multiple texts
@@ -381,13 +390,12 @@ class PretrainedTokenizer
             ? $this->postProcessor->postProcess($tokens, $tokens2, addSpecialTokens: $addSpecialTokens)
             : new PostProcessedOutput(tokens: array_merge($tokens ?? [], $tokens2 ?? []));
 
-
         $inputIds = $this->tokenizer->convertTokensToIds($combinedTokens->tokens);
 
         return [
             "input_ids" => $inputIds,
             "attention_mask" => array_fill(0, count($inputIds), 1),
-            "token_type_ids" => $this->returnTokenTypeIds ? $combinedTokens->tokenTypeIds : null,
+            "token_type_ids" => $combinedTokens->tokenTypeIds,
         ];
     }
 
@@ -395,19 +403,13 @@ class PretrainedTokenizer
      * Encodes a single text using the preprocessor pipeline of the tokenizer.
      *
      * @param string|null $text The text to encode.
+     *
      * @return string[]|null The encoded tokens.
      */
     protected function encodeText(?string $text): ?array
     {
         if ($text === null) {
             return null;
-        }
-
-        // Hash the text and check if it is in the cache
-        $hash = hash('sha256', $text);
-
-        if (isset($this->tokenizationCache[$hash])) {
-            return $this->tokenizationCache[$hash];
         }
 
         // Actual function which does encoding, for a single text
@@ -428,7 +430,7 @@ class PretrainedTokenizer
                 // Ignore added tokens
                 return [$x];
             } else {
-                if ($this->removeSpace === true) {
+                if ($this->removeSpace) {
                     $x = preg_replace('/\s+/', ' ', trim($x));
                 }
 
@@ -440,7 +442,7 @@ class PretrainedTokenizer
                     $x = $this->normalizer->normalize($x);
                 }
 
-                $sectionTokens = ($this->preTokenizer !== null)
+                $sectionTokens = $this->preTokenizer !== null
                     ? $this->preTokenizer->preTokenize($x, ['section_index' => $sectionIndex])
                     : [$x];
 
@@ -448,12 +450,7 @@ class PretrainedTokenizer
             }
         }, $sections, array_keys($sections));
 
-        $result = array_merge(...$tokens);
-
-        // Cache the result
-        $this->tokenizationCache[$hash] = $result;
-
-        return $result;
+        return array_merge(...$tokens);
     }
 
     /**
@@ -497,15 +494,16 @@ class PretrainedTokenizer
             $item[$key] = ($side === 'right')
                 ? [...$item[$key], ...$padData]
                 : [...$padData, ...$item[$key]];
-
         }
     }
 
     /**
      * Encodes a single text or a pair of texts using the model's tokenizer.
+     *
      * @param string $text
      * @param string|null $textPair The optional second text to encode.
      * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
+     *
      * @return array
      */
     public function encode(string $text, string $textPair = null, bool $addSpecialTokens = true): array
@@ -519,6 +517,7 @@ class PretrainedTokenizer
      * @param int[]|int[][] $batch The batch of tokenized sequences to decode.
      * @param bool $skipSpecialTokens If true, special tokens are removed from the output string.
      * @param ?bool $cleanUpTokenizationSpaces If true, spaces before punctuations and abbreviated forms are removed.
+     *
      * @return string[]
      */
     public function batchDecode(array $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
@@ -534,6 +533,7 @@ class PretrainedTokenizer
      * @param array $tokenIds The token IDs to decode.
      * @param bool $skipSpecialTokens Whether to remove all the special tokens from the output string.
      * @param ?bool $cleanUpTokenizationSpaces If true, spaces before punctuations and abbreviated forms are removed.
+     *
      * @return string
      */
     public function decode(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
@@ -551,15 +551,15 @@ class PretrainedTokenizer
      * @param array $tokenIds The token IDs to decode.
      * @param bool $skipSpecialTokens Whether to remove all the special tokens from the output string.
      * @param bool $cleanUpTokenizationSpaces If true, spaces before punctuations and abbreviated forms are removed.
+     *
      * @return string
      */
     private function decodeSingle(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
         $tokens = $this->tokenizer->convertIdsToTokens($tokenIds);
 
-
         if ($skipSpecialTokens) {
-            $tokens = array_filter($tokens, fn($x) => !in_array($x, $this->specialTokens));
+            $tokens = array_values(array_filter($tokens, fn ($x) => !in_array($x, $this->specialTokens)));
         }
 
         // If `this.decoder` is null, we just join tokens with a space:
@@ -672,12 +672,11 @@ class PretrainedTokenizer
 
     protected function getDefaultChatTemplate(): string
     {
-//        if (!$this->warnedAboutChatTemplate) {
-//            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
-//            $this->warnedAboutChatTemplate = true;
-//        }
+        //        if (!$this->warnedAboutChatTemplate) {
+        //            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
+        //            $this->warnedAboutChatTemplate = true;
+        //        }
 
         return $this->defaultChatTemplate;
     }
-
 }

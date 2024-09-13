@@ -40,9 +40,10 @@ class CharTrie
     public function push(string $text): void
     {
         $node = $this->root;
+        $length = mb_strlen($text);
 
-        for ($i = 0, $length = strlen($text); $i < $length; $i++) {
-            $ch = $text[$i];
+        for ($i = 0; $i < $length; $i++) {
+            $ch = mb_substr($text, $i, 1);
             $node = $node->getChild($ch);
         }
 
@@ -59,10 +60,13 @@ class CharTrie
     {
         $node = $this->root;
         $prefix = "";
-        for ($i = 0; $i < strlen($text) && $node != null; $i++) {
-            $ch = $text[$i];
+        $length = mb_strlen($text);
+        
+        for ($i = 0; $i < $length && $node != null; $i++) {
+            $ch = mb_substr($text, $i, 1);
             $prefix .= $ch;
             $node = $node->getChild($ch);
+
             if ($node?->isLeaf) {
                 yield $prefix;
             }

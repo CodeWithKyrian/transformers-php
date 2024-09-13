@@ -36,7 +36,7 @@ class TokenLattice
         public ?int    $bosTokenId,
         public ?int    $eosTokenId)
     {
-        $this->len = strlen($sentence);
+        $this->len = mb_strlen($sentence);
         $this->beginNodes = array_fill(0, $this->len + 1, []);
         $this->endNodes = array_fill(0, $this->len + 1, []);
 
@@ -124,7 +124,7 @@ class TokenLattice
      */
     public function piece(TokenLatticeNode $node): string
     {
-        return substr($this->sentence, $node->pos, $node->length);
+        return mb_substr($this->sentence, $node->pos, $node->length);
     }
 
     /**

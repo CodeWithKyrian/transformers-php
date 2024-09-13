@@ -30,8 +30,8 @@ class UnigramTokenizer extends Tokenizer
 
     public function __construct(array $config, ...$args)
     {
-        $moreConfig = $args[0] ?? [];
         parent::__construct($config);
+        $moreConfig = $args[0] ?? [];
 
         foreach ($config['vocab'] as $piece) {
             $this->vocab[] = $piece[0];
@@ -40,7 +40,7 @@ class UnigramTokenizer extends Tokenizer
 
         $this->unkTokenId = $config['unk_id'];
         $this->unkToken = $this->vocab[$this->unkTokenId];
-        $this->tokenToIds = self::toMap(array_flip($this->vocab));
+        $this->tokenToIds = array_flip($this->vocab);
 
         $this->bosToken = ' '; // beginning of a sentence token
         $this->bosTokenId = $this->tokenToIds[$this->bosToken] ?? null;
@@ -55,14 +55,9 @@ class UnigramTokenizer extends Tokenizer
         $this->trie = new CharTrie();
         $this->trie->extend($this->vocab);
 
-
-    }
-
-    // NOTE: `fuse_unk` is hardcoded to true for Unigram models
-    // See: https://github.com/huggingface/tokenizers/blob/b58227c7f1ccf8b73ee2268354336da56d91e492/tokenizers/src/models/unigram/model.rs#L119
-    protected function fuseUnk(): bool
-    {
-        return true;
+        // NOTE: `fuse_unk` is hardcoded to true for Unigram models
+        // See: https://github.com/huggingface/tokenizers/blob/b58227c7f1ccf8b73ee2268354336da56d91e492/tokenizers/src/models/unigram/model.rs#L119
+        $this->fuseUnk = true;
     }
 
     /**
@@ -72,17 +67,18 @@ class UnigramTokenizer extends Tokenizer
     public function populateNodes(TokenLattice $lattice): void
     {
         $sentence = $lattice->sentence;
-        $len = strlen($sentence);
+        $len = mb_strlen($sentence);
+
         $beginPos = 0;
 
         while ($beginPos < $len) {
             $mblen = 1;
             $hasSingleNode = false;
 
-            foreach ($this->trie->commonPrefixSearch(substr($sentence, $beginPos)) as $token) {
+            foreach ($this->trie->commonPrefixSearch(mb_substr($sentence, $beginPos)) as $token) {
                 $tokenId = $this->tokenToIds[$token];
                 $tokenScore = $this->scores[$tokenId];
-                $n = strlen($token);
+                $n = mb_strlen($token);
                 $lattice->insert($beginPos, $n, $tokenScore, $tokenId);
                 if (!$hasSingleNode && $n === $mblen) {
                     $hasSingleNode = true;
