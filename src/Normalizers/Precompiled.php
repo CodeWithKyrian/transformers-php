@@ -2,22 +2,53 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Normalizers;
+
+use Codewithkyrian\Transformers\DataStructures\CharTrie;
+use Generator;
 
 class Precompiled extends Normalizer
 {
+    /**
+     * Normalized chars mapping.
+     */
+    private string $normalized;
 
     /**
-     * Precompiled chars mapping.
+     * Trie for fast prefix search.
      */
-    protected mixed $charsMap;
+    private CharTrie $trie;
 
     public function __construct(array $config)
     {
         parent::__construct($config);
+        
+        $this->parsePrecompiledCharsmap(base64_decode($config['precompiled_charsmap']));
+    }
 
-        $this->charsMap = $config['precompiled_charsmap'];
+    /**
+     * Parses the precompiled charsmap.
+     * 
+     * @param string $charsMap The precompiled charsmap.
+     */
+    private function parsePrecompiledCharsmap(string $charsMap): void
+    {
+        $data = unpack('V', $charsMap , 0);
+        $trieSize = $data[1];
+
+        $this->trie = new CharTrie();
+        $this->normalized = substr($charsMap, 4 + $trieSize);
+
+        $offset = 0;
+        while ($offset < strlen($this->normalized)) {
+            $end = strpos($this->normalized, "\0", $offset);
+            if ($end === false) {
+                break;
+            }
+            $replacement = substr($this->normalized, $offset, $end - $offset);
+            $this->trie->push(chr($offset) . $replacement);
+            $offset = $end + 1;
+        }
     }
 
     /**
@@ -29,37 +60,65 @@ class Precompiled extends Normalizer
      */
     public function normalize(string $text): string
     {
-        // As stated in the sentencepiece normalization docs (https://github.com/google/sentencepiece/blob/master/doc/normalization.md#use-pre-defined-normalization-rule),
-        // there are 5 pre-defined normalization rules:
-        //  1. nmt_nfkc: NFKC normalization with some additional normalization around spaces. (default)
-        //  2. nfkc: original NFKC normalization.
-        //  3. nmt_nfkc_cf: nmt_nfkc + Unicode case folding (mostly lower casing)
-        //  4. nfkc_cf: nfkc + Unicode case folding.
-        //  5. identity: no normalization
-        //
-        // For now, we only implement the default (nmt_nfkc).
-        // See https://raw.githubusercontent.com/google/sentencepiece/master/data/nmt_nfkc.tsv for the full list of rules.
-        // TODO: detect when a different `$this->charsMap` is used.
+        $normalized = '';
+        $graphemes = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
 
-        // Remove control characters
-        $text = preg_replace('/[\x01-\x08\x0B\x0E-\x1F\x7F\x8F\x9F]/u', '', $text);
+        foreach ($graphemes as $grapheme) {
+            if (mb_strlen($grapheme) < 6) {
+                $norm = $this->transform($grapheme);
+                if ($norm !== null) {
+                    $normalized .= $norm;
+                    continue;
+                }
+            }
 
-        // Replace certain characters with a space
-        $text = preg_replace('/[\x09\x0A\x0C\x0D\x{1680}\x{200B}\x{200C}\x{200E}\x{200F}\x{2028}\x{2029}\x{2581}\x{FEFF}\x{FFFD}]/u', ' ', $text);
-
-        if (mb_strpos($text, '～') !== false) {
-            // To match the sentencepiece implementation 100%, we must handle a very strange edge-case.
-            // For some reason, the "Fullwidth Tilde" character (～) should not be converted to the standard Tilde character (~).
-            // However, NFKC normalization does do this conversion. As a result, we split the string on the Fullwidth Tilde character,
-            // perform NFKC normalization on each substring, and then join them back together with the Fullwidth Tilde character.
-            $parts = explode('～', $text);
-            $text = implode('～', array_map(function ($part) {
-                return mb_convert_encoding(normalizer_normalize($part, \Normalizer::FORM_KC), 'UTF-8', 'UTF-8');
-            }, $parts));
-        } else {
-            $text = normalizer_normalize($text, \Normalizer::FORM_KC);
+            foreach (preg_split('//u', $grapheme, -1, PREG_SPLIT_NO_EMPTY) as $char) {
+                $norm = $this->transform($char);
+                if ($norm !== null) {
+                    $normalized .= $norm;
+                } else {
+                    $normalized .= $char;
+                }
+            }
         }
 
-        return $text;
+        return $normalized;
+    }
+
+    /**
+     * Transforms the given chunk by finding the longest match in the trie.
+     * 
+     * @param string $chunk The chunk to transform.
+     * 
+     * @return string|null The transformed chunk or null if no match is found.
+     */
+    private function transform(string $chunk): ?string
+    {
+        $results = $this->trie->commonPrefixSearch($chunk);
+        $longestMatch = $this->findLongestMatch($results);
+
+        if ($longestMatch === null) {
+            return null;
+        }
+
+        return substr($longestMatch, 1);
+    }
+
+    /**
+     * Finds the longest match in the given results.
+     * 
+     * @param Generator $results The results to find the longest match in.
+     * 
+     * @return string|null The longest match or null if no match is found.
+     */
+    private function findLongestMatch(Generator $results): ?string
+    {
+        $longestMatch = null;
+        foreach ($results as $result) {
+            if ($longestMatch === null || strlen($result) > strlen($longestMatch)) {
+                $longestMatch = $result;
+            }
+        }
+        return $longestMatch;
     }
 }
