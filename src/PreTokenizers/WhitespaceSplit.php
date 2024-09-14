@@ -14,8 +14,7 @@ class WhitespaceSplit extends PreTokenizer
 
     public function preTokenizeText(string|array $text, array $options): array
     {
-        preg_match_all('/\S+/', $text, $matches);
-
-        return $matches[0] ?? [];
+//        $words = preg_split('/\s+/', $text, flags: PREG_SPLIT_NO_EMPTY);
+        return preg_split('/[\s\x{FFFD}]+/u', $text, flags: PREG_SPLIT_NO_EMPTY);
     }
 }

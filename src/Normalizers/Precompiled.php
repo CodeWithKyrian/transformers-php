@@ -37,16 +37,16 @@ class Precompiled extends Normalizer
         $trieSize = $data[1];
 
         $this->trie = new CharTrie();
-        $this->normalized = substr($charsMap, 4 + $trieSize);
+        $this->normalized = mb_substr($charsMap, 4 + $trieSize);
 
         $offset = 0;
-        while ($offset < strlen($this->normalized)) {
-            $end = strpos($this->normalized, "\0", $offset);
+        while ($offset < mb_strlen($this->normalized)) {
+            $end = mb_strpos($this->normalized, "\0", $offset);
             if ($end === false) {
                 break;
             }
-            $replacement = substr($this->normalized, $offset, $end - $offset);
-            $this->trie->push(chr($offset) . $replacement);
+            $replacement = mb_substr($this->normalized, $offset, $end - $offset);
+            $this->trie->push(mb_chr($offset) . $replacement);
             $offset = $end + 1;
         }
     }
@@ -101,7 +101,7 @@ class Precompiled extends Normalizer
             return null;
         }
 
-        return substr($longestMatch, 1);
+        return mb_substr($longestMatch, 1);
     }
 
     /**
@@ -115,7 +115,7 @@ class Precompiled extends Normalizer
     {
         $longestMatch = null;
         foreach ($results as $result) {
-            if ($longestMatch === null || strlen($result) > strlen($longestMatch)) {
+            if ($longestMatch === null || mb_strlen($result) > mb_strlen($longestMatch)) {
                 $longestMatch = $result;
             }
         }
