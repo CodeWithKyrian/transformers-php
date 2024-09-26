@@ -7,6 +7,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Utils\Math;
+
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
@@ -54,7 +56,7 @@ class ImageClassificationPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $topK = $args["topK"] ?? 1;
+        $topK = array_pop_key($args, 'topK', 1);
 
         $isBatched = is_array($inputs);
 

@@ -6,6 +6,8 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
+
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\getBoundingBox;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
@@ -51,9 +53,9 @@ class ZeroShotObjectDetectionPipeline extends Pipeline
     public function __invoke(array|string $inputs, ...$args): array
     {
         $candidateLabels = $args[0];
-        $threshold = $args['threshold'] ?? 0.1;
-        $topK = $args['topK'] ?? null;
-        $percentage = $args['percentage'] ?? false;
+        $threshold = array_pop_key($args, 'threshold', 0.1);
+        $topK = array_pop_key($args, 'topK', -1);
+        $percentage = array_pop_key($args, 'percentage', false);
 
         $isBatched = is_array($inputs);
 

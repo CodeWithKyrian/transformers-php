@@ -16,8 +16,6 @@ use OutOfRangeException;
 use Rindow\Math\Matrix\Complex;
 use Rindow\Math\Matrix\ComplexUtils;
 use Rindow\Math\Matrix\Drivers\Service;
-
-//use Rindow\Math\Matrix\MatrixOperator;
 use Rindow\Math\Matrix\Range;
 use RuntimeException;
 use Serializable;
@@ -390,6 +388,16 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($buffer, $dtype, $shape, 0);
     }
 
+    public static function random(array $shape, ?int $dtype = null): static
+    {
+        $dtype ??= NDArray::float32;
+        $size = array_product($shape);
+        
+        $buffer = Tensor::newBuffer($size, $dtype);
+        $buffer->load(random_bytes($size * TensorBuffer::$valueSize[$dtype]));
+        return new static($buffer, shape: $shape, offset: 0);
+    }
+
     /**
      * Convert the tensor into an array.
      */
@@ -680,6 +688,15 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
         return new static($ndArray->buffer(), $ndArray->dtype(), $ndArray->shape(), $ndArray->offset());
     }
 
+    public function matmul(Tensor $other, ?bool $transposeA = null, ?bool $transposeB = null): Tensor
+    {
+        $mo = self::mo();
+
+        $result =  $mo->la()->matmul($this, $other, $transposeA, $transposeB);
+
+        return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
+    }
+
     public function log(): self
     {
         $mo = self::mo();
@@ -942,7 +959,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Returns the mean value of each row of the tensor in the given axis.
      */
-    public function mean(?int $axis = null, bool $keepShape = false): static|float|int
+    public function mean(?int $axis = null, bool $keepShape = false): static|float|int|Tensor
     {
         $mo = self::mo();
 
@@ -1017,7 +1034,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 $num = floor($num / $size);
             }
 
-            $result->buffer[$resultIndex] += pow($this->buffer[$i] - $mean->buffer()[$resultIndex], 2);
+            $result->buffer[$resultIndex] += pow($this->buffer[$i] - $mean->buffer[$resultIndex], 2);
         }
 
         for ($i = 0; $i < count($result->buffer); ++$i) {
@@ -1226,9 +1243,9 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      *
      * @return array The top k values and indices of the tensor.
      */
-    public function topk(int $k = null, bool $sorted = true): array
+    public function topk(int $k = -1, bool $sorted = true): array
     {
-        if ($k === null) {
+        if ($k === -1) {
             $k = $this->shape[0];
         }
 

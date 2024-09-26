@@ -8,6 +8,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+
 /**
  * Text classification pipeline
  *
@@ -59,7 +61,7 @@ class TextClassificationPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $topK = $args["topK"] ?? 1;
+        $topK = array_pop_key($args, 'topK', 1);
 
         $modelInputs = $this->tokenizer->tokenize($inputs, padding: true, truncation: true);
 

@@ -9,6 +9,8 @@ use Codewithkyrian\Transformers\Models\Output\MaskedLMOutput;
 use Codewithkyrian\Transformers\Pipelines\Pipeline;
 use Codewithkyrian\Transformers\Utils\Math;
 
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+
 /**
  * Masked language modeling prediction pipeline.
  *
@@ -34,7 +36,7 @@ class FillMaskPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $topK = $args["topK"] ?? 5;
+        $topK = array_pop_key($args, 'topK', 5);
 
         $modelInputs = $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 

@@ -7,6 +7,8 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Utils\Audio;
 
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
+
 /**
  * Audio classification pipeline using any `AutoModelForAudioClassification`.
  * This pipeline predicts the class of a raw waveform or an audio file.
@@ -39,7 +41,7 @@ class AudioClassificationPipeline extends Pipeline
 {
     public function __invoke(array|string $inputs, ...$args): array
     {
-        $topK = $args["topK"] ?? 1;
+        $topK = array_pop_key($args, 'topK', 1);
 
         $isBatched = is_array($inputs);
 
