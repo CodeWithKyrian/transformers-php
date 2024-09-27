@@ -28,6 +28,7 @@ abstract class PostProcessor
             'ByteLevel' => new ByteLevelPostProcessor($config),
             'TemplateProcessing' => new TemplateProcessing($config),
             'RobertaProcessing' => new RobertaProcessing($config),
+            'Sequence' => new PostProcessorSequence($config),
             default => throw new \InvalidArgumentException("Unknown post-processor type {$config['type']}"),
         };
     }

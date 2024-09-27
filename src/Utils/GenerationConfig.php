@@ -124,8 +124,8 @@ class GenerationConfig implements \ArrayAccess
     /** @var bool Whether or not to return a `ModelOutput` instead of a plain tuple. */
     public bool $return_dict_in_generate;
 
-    /** @var int|null The id of the *padding* token. */
-    public ?int $pad_token_id;
+    /** @var int|int[]|null The id of the *padding* token. */
+    public int|array|null $pad_token_id;
 
     /** @var int|null The id of the *beginning-of-sequence* token. */
     public ?int $bos_token_id;

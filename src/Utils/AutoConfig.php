@@ -16,7 +16,7 @@ class AutoConfig implements ArrayAccess
 
     protected array $architectures = [];
 
-    public int $padTokenId;
+    public int|array $padTokenId;
 
     protected int $vocabSize;
 
