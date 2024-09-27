@@ -2,6 +2,34 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## TransformersPHP v0.5.3 - 2024-09-27
+
+This release brings new features, critical bug fixes, and improvements to enhance the functionality and performance of the package. Below is a summary of the changes.
+
+### What's New
+
+- **feat**: Add support for PostProcessor Sequence by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/2cf18ccd83ad84ad8389a7f8c0198252d523f3f6
+- **feat**: New tensor method `random` by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/0564dd1609db203d4665a4c040cf1b55e4503ac9
+- **feat**: Correctly parse and use the Precompiled Normalizer by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/7e880dd9917b074d995feb98aed9bd41754429ff
+- **feat**: Update conversion notebook to include task by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/ca6fc3b72a688ba739a6d62c062b406e7d821d25
+
+### Bug Fixes
+
+- **fix**: Regex bug in Precompiled Normalizer by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/69089b124b299a7b7bef49b676ee5951ac7ef7fb
+- **fix**: Improve Unigram Tokenizer handling of multibyte strings by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/e8a8a9ab48e81692d77260197b42e15f768df086
+- **fix**: Correct WhitespaceSplit Pretokenizer handling of invisible space characters by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/6ec3e3e9016952913a951d838b237bfb425e07a9
+- **fix**: Correctly handle multibyte strings in Precompiled Normalizer by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/bee47e01858b4c69e34eb061c571498c9e0a4e14
+- **fix**: Fuse function not combining unknown token IDs correctly by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/300801334cce6f67651665957e776764584db8bc
+- **fix**: Tensor topK error when -1 is passed by @CodeWithKyrian in https://github.com/CodeWithKyrian/transformers-php/commit/0564dd1609db203d4665a4c040cf1b55e4503ac9
+
+### Improvements
+
+- **fix**: Precompiled Normalizer improvements by @CodeWithKyrian https://github.com/CodeWithKyrian/transformers-php/commit/b01240076ddd50637b1135d3c5e9e55dab08a592
+
+I encourage everyone to update to this latest version and explore the new features. As always, feel free to report any issues or contribute to the project.
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.5.2...0.5.3
+
 ## TransformersPHP v0.5.2 - 2024-08-29
 
 ### What's Changed
@@ -55,6 +83,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   
   
   
+  
     ```
 - **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
   
@@ -66,6 +95,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     // [
     //   "text" => "We, the people of the United States, ..."
     // ]
+    
     
     
     
@@ -84,6 +114,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     $image = Image::read($url);
   $resizedImage = $image->resize(100, 100);
   // $image remains unchanged
+  
   
   
   
@@ -256,11 +287,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -286,6 +319,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
