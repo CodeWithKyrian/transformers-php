@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
 use Codewithkyrian\Transformers\PreTokenizers\MetaspacePreTokenizer;
 
-class LlamaTokenizer extends PretrainedTokenizer
+class LlamaTokenizer extends PreTrainedTokenizer
 {
     const SPIECE_UNDERLINE = "▁";
 

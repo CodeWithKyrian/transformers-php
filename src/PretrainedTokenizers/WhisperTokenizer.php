@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\array_every;
 
-class WhisperTokenizer extends PretrainedTokenizer
+class WhisperTokenizer extends PreTrainedTokenizer
 {
     protected string $defaultChatTemplate = '{% for message in messages %}" "{{ message.content }}{{ eos_token }}" "{% endfor %}';
 

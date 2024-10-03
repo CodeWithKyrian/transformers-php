@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 
-class NllbTokenizer extends PretrainedTokenizer
+class NllbTokenizer extends PreTrainedTokenizer
 {
     protected string $languageRegex = '/^[a-z]{3}_[a-zA-Z]{3,4}$/';
 

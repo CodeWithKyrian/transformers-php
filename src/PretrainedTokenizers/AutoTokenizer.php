@@ -75,7 +75,7 @@ class AutoTokenizer
      * @param string $revision
      * @param mixed $legacy
      * @param OutputInterface|null $output
-     * @return PretrainedTokenizer|null
+     * @return PreTrainedTokenizer|null
      */
     public static function fromPretrained(
         string           $modelNameOrPath,
@@ -83,7 +83,7 @@ class AutoTokenizer
         string           $revision = 'main',
         mixed            $legacy = null,
         ?callable $onProgress = null
-    ): ?PretrainedTokenizer
+    ): ?PreTrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
             Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy, $onProgress);

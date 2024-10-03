@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Streamers;
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\PretrainedTokenizers\PreTrainedTokenizer;
 use InvalidArgumentException;
 
 /**

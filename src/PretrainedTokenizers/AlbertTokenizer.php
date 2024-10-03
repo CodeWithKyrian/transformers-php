@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 /**
  * Albert tokenizer
  */
-class AlbertTokenizer extends PretrainedTokenizer
+class AlbertTokenizer extends PreTrainedTokenizer
 {
     protected bool $returnTokenTypeIds = true;
 }

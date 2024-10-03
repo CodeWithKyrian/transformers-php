@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
-class ConvBertTokenizer extends PretrainedTokenizer
+class ConvBertTokenizer extends PreTrainedTokenizer
 {
     protected bool $returnTokenTypeIds = true;
 }

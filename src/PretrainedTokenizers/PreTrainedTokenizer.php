@@ -18,7 +18,7 @@ use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
 use Error;
 use Exception;
 
-class PretrainedTokenizer
+class PreTrainedTokenizer
 {
     public ?Tokenizer $tokenizer;
     public ?string $maskToken = null;
@@ -170,19 +170,19 @@ class PretrainedTokenizer
      * @param string $revision
      * @param null $legacy
      *
-     * @return PretrainedTokenizer
+     * @return PreTrainedTokenizer
      */
     public static function fromPretrained(
         string  $modelNameOrPath,
         ?string $cacheDir = null,
         string  $revision = 'main',
                 $legacy = null,
-    ): PretrainedTokenizer
+    ): PreTrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
             Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy);
 
-        return new PretrainedTokenizer($tokenizerJson, $tokenizerConfig);
+        return new PreTrainedTokenizer($tokenizerJson, $tokenizerConfig);
     }
 
     /**

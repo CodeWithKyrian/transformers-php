@@ -8,7 +8,7 @@ namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 
-class M2M100Tokenizer extends PretrainedTokenizer
+class M2M100Tokenizer extends PreTrainedTokenizer
 {
     protected string $languageRegex = '/^__[a-z]{2,3}__$/';
 

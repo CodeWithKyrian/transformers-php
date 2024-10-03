@@ -5,6 +5,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PretrainedTokenizers;
 
-class RobertaTokenizer extends PretrainedTokenizer
+class RobertaTokenizer extends PreTrainedTokenizer
 {
 }
