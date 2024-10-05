@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\AutoTokenizer;
 
 require_once './bootstrap.php';
 

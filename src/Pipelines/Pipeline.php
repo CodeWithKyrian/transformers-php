@@ -6,7 +6,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Exceptions\UnsupportedTaskException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
-use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 use Codewithkyrian\Transformers\Processors\Processor;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
@@ -16,7 +16,7 @@ class Pipeline
     public function __construct(
         protected string|Task       $task,
         protected PretrainedModel   $model,
-        public ?PretrainedTokenizer $tokenizer = null,
+        public ?PreTrainedTokenizer $tokenizer = null,
         protected ?Processor        $processor = null,
     )
     {

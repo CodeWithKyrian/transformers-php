@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Streamers;
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 
 /**
  * Base streamer from which all streamers inherit.
@@ -16,7 +16,7 @@ abstract class Streamer
     protected bool $skipPrompt = false;
     protected bool $nextTokensArePrompt;
 
-    protected PretrainedTokenizer $tokenizer;
+    protected PreTrainedTokenizer $tokenizer;
     protected mixed $onStreamCallback = null;
     protected mixed $onStreamEndCallback = null;
     protected StreamMode $streamMode = StreamMode::PARTIAL;
@@ -26,7 +26,7 @@ abstract class Streamer
         return new static();
     }
 
-    public function setTokenizer(PretrainedTokenizer $tokenizer): static
+    public function setTokenizer(PreTrainedTokenizer $tokenizer): static
     {
         $this->tokenizer = $tokenizer;
         return $this;

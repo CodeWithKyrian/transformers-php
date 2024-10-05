@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\Commands;
 
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Pipelines\Task;
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;

@@ -23,8 +23,8 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForTokenClassification;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForVision2Seq;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForZeroShotObjectDetection;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
-use Codewithkyrian\Transformers\PretrainedTokenizers\PretrainedTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\AutoTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 use Codewithkyrian\Transformers\Processors\AutoProcessor;
 use Codewithkyrian\Transformers\Processors\Processor;
 
@@ -59,7 +59,7 @@ enum Task: string
     case ASR = 'asr';
 
 
-    public function pipeline(PretrainedModel $model, ?PretrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
+    public function pipeline(PretrainedModel $model, ?PreTrainedTokenizer $tokenizer, ?Processor $processor): Pipeline
     {
         return match ($this) {
             self::SentimentAnalysis,
@@ -214,7 +214,7 @@ enum Task: string
         ?string   $cacheDir = null,
         string    $revision = 'main',
         ?callable $onProgress = null
-    ): ?PretrainedTokenizer
+    ): ?PreTrainedTokenizer
     {
         return match ($this) {
 

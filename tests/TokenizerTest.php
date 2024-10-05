@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\AutoTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 
 beforeAll(function () {

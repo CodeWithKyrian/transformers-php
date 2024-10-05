@@ -76,7 +76,7 @@ any tokenizer from the Hugging Face model hub. Here's how to create a tokenizer 
 class:
 
 ```php
-use Codewithkyrian\Transformers\PretrainedTokenizers\AutoTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\AutoTokenizer;
 
 $tokenizer = AutoTokenizer::fromPretrained('Xenova/toxic-bert');
 ```
@@ -135,11 +135,11 @@ class, you can still skip that step and use the specific tokenizer class directl
 have more control over the tokenization process. Here's an example of how to use the `BertTokenizer` class directly:
 
 ```php
-use Codewithkyrian\Transformers\PretrainedTokenizers\BertTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\BertTokenizer;
 
 $tokenizer = BertTokenizer::fromPretrained('Xenova/toxic-bert');
 ```
 
 The `fromPretrained` method of the `BertTokenizer` class accepts the same arguments as the `AutoTokenizer` class. You
 can
-see all available model specific tokenizers in the `Codewithkyrian\Transformers\PretrainedTokenizers` namespace.
+see all available model specific tokenizers in the `Codewithkyrian\Transformers\PreTrainedTokenizers` namespace.
