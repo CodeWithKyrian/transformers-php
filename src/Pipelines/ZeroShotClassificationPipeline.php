@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Output\SequenceClassifierOutput;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
-use Codewithkyrian\Transformers\PretrainedTokenizers\PreTrainedTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 use Codewithkyrian\Transformers\Utils\Math;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 

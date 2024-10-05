@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Streamers;
 
-use Codewithkyrian\Transformers\PretrainedTokenizers\PreTrainedTokenizer;
+use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 
 /**
  * Base streamer from which all streamers inherit.
