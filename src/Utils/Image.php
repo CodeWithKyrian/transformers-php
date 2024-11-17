@@ -288,8 +288,8 @@ class Image
         // Ensure crop bounds are within the image
         $xMin = max($xMin, 0);
         $yMin = max($yMin, 0);
-        $xMax = max($xMax, $originalWidth - 1);
-        $yMax = max($yMax, $originalHeight - 1);
+        $xMax = min($xMax, $originalWidth - 1);
+        $yMax = min($yMax, $originalHeight - 1);
 
         $cropWidth = $xMax - $xMin + 1;
         $cropHeight = $yMax - $yMin + 1;
