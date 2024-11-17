@@ -14,13 +14,14 @@ use Codewithkyrian\Transformers\PostProcessors\PostProcessor;
 use Codewithkyrian\Transformers\PreTokenizers\PreTokenizer;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use Error;
 use Exception;
+use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class PreTrainedTokenizer
 {
-    public ?Tokenizer $tokenizer;
+    public ?TokenizerModel $model;
     public ?string $maskToken = null;
     public ?int $maskTokenId = null;
     public ?int $sepTokenId = null;
@@ -55,15 +56,22 @@ class PreTrainedTokenizer
 
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
-     * @param array $tokenizerConfig The config of the tokenizer.
+     * @param ?array $tokenizerConfig The config of the tokenizer.
+     *
+     * @throws Exception
      */
-    public function __construct(protected array $tokenizerJSON, protected array $tokenizerConfig)
+    public function __construct(protected array $tokenizerJSON, protected ?array $tokenizerConfig)
     {
         // Construct parts of the tokenizer from the JSON
         $this->normalizer = Normalizer::fromConfig($this->tokenizerJSON['normalizer']);
         $this->preTokenizer = PreTokenizer::fromConfig($this->tokenizerJSON['pre_tokenizer']);
-        $this->tokenizer = Tokenizer::fromConfig($this->tokenizerJSON['model'], $this->tokenizerConfig);
-        $this->postProcessor = PostProcessor::fromConfig($this->tokenizerJSON['post_processor']);
+        $this->model = TokenizerModel::fromConfig(
+            config: $this->tokenizerJSON['model'],
+            tokenizerConfig: $this->tokenizerConfig,
+            pretokenizerConfig: $this->tokenizerJSON['pre_tokenizer'],
+            decoderConfig: $this->tokenizerJSON['decoder']
+        );
+        $this->postProcessor = PostProcessor::fromConfig($this->tokenizerJSON['post_processor'] ?? null);
         $this->decoder = Decoder::fromConfig($this->tokenizerJSON['decoder']);
 
 
@@ -71,8 +79,8 @@ class PreTrainedTokenizer
             $token = AddedToken::make($addedToken);
             $this->addedTokens[] = $token;
 
-            $this->tokenizer->tokenToIds[$token->content] = $token->id;
-            $this->tokenizer->vocab[$token->id] = $token->content;
+            $this->model->tokenToIds[$token->content] = $token->id;
+            $this->model->vocab[$token->id] = $token->content;
 
             if ($token->special) {
                 $this->specialTokens[] = $token->content;
@@ -88,7 +96,7 @@ class PreTrainedTokenizer
         if ($this->decoder != null) {
             // Slight hack, but it prevents code duplication:
             $this->decoder->addedTokens = $this->addedTokens;
-            $this->decoder->endOfWordSuffix = $this->tokenizer->endOfWordSuffix;
+            $this->decoder->endOfWordSuffix = $this->model->endOfWordSuffix;
         }
 
         if (count($this->addedTokens) > 0) {
@@ -103,16 +111,16 @@ class PreTrainedTokenizer
 
         // Set mask token if present
         $this->maskToken = $this->getToken('mask_token');
-        $this->maskTokenId = $this->tokenizer->tokenToIds[$this->maskToken] ?? null;
+        $this->maskTokenId = $this->model->tokenToIds[$this->maskToken] ?? null;
 
         $this->padToken = $this->getToken('pad_token', 'eos_token');
-        $this->padTokenId = $this->tokenizer->tokenToIds[$this->padToken] ?? null;
+        $this->padTokenId = $this->model->tokenToIds[$this->padToken] ?? null;
 
         $this->sepToken = $this->getToken('sep_token');
-        $this->sepTokenId = $this->tokenizer->tokenToIds[$this->sepToken] ?? null;
+        $this->sepTokenId = $this->model->tokenToIds[$this->sepToken] ?? null;
 
         $this->unkToken = $this->getToken('unk_token');
-        $this->unkTokenId = $this->tokenizer->tokenToIds[$this->unkToken] ?? null;
+        $this->unkTokenId = $this->model->tokenToIds[$this->unkToken] ?? null;
 
         $this->modelMaxLength = $tokenizerConfig['model_max_length'] ?? null;
 
@@ -180,7 +188,7 @@ class PreTrainedTokenizer
     ): PreTrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy);
+            TokenizerModel::load($modelNameOrPath, $cacheDir, $revision, $legacy);
 
         return new PreTrainedTokenizer($tokenizerJson, $tokenizerConfig);
     }
@@ -204,9 +212,10 @@ class PreTrainedTokenizer
         bool              $addSpecialTokens = true,
         bool              $truncation = false,
         ?int              $maxLength = null,
+        bool              $returnTensor = true
     ): array
     {
-        return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength);
+        return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength, $returnTensor);
     }
 
     /**
@@ -390,7 +399,7 @@ class PreTrainedTokenizer
             ? $this->postProcessor->postProcess($tokens, $tokens2, addSpecialTokens: $addSpecialTokens)
             : new PostProcessedOutput(tokens: array_merge($tokens ?? [], $tokens2 ?? []));
 
-        $inputIds = $this->tokenizer->convertTokensToIds($combinedTokens->tokens);
+        $inputIds = $this->model->convertTokensToIds($combinedTokens->tokens);
 
         return [
             "input_ids" => $inputIds,
@@ -434,19 +443,27 @@ class PreTrainedTokenizer
                     $x = preg_replace('/\s+/', ' ', trim($x));
                 }
 
+
                 if ($this->doLowerCaseAndRemoveAccent) {
-                    $x = Tokenizer::lowerCaseAndRemoveAccents($x);
+                    $x = TokenizerModel::lowerCaseAndRemoveAccents($x);
                 }
 
                 if ($this->normalizer !== null) {
                     $x = $this->normalizer->normalize($x);
                 }
 
+                // If, after normalization, this section is empty (e.g., trimming whitespace),
+                // we return an empty array
+                if (mb_strlen($x) === 0)
+                {
+                    return [];
+                }
+
                 $sectionTokens = $this->preTokenizer !== null
                     ? $this->preTokenizer->preTokenize($x, ['section_index' => $sectionIndex])
                     : [$x];
 
-                return $this->tokenizer->__invoke($sectionTokens);
+                return $this->model->__invoke($sectionTokens);
             }
         }, $sections, array_keys($sections));
 
@@ -522,9 +539,7 @@ class PreTrainedTokenizer
      */
     public function batchDecode(array $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
     {
-        return array_map(function ($x) use ($skipSpecialTokens, $cleanUpTokenizationSpaces) {
-            return $this->decode($x, $skipSpecialTokens, $cleanUpTokenizationSpaces);
-        }, $batch);
+        return array_map(fn ($x) => $this->decode($x, $skipSpecialTokens, $cleanUpTokenizationSpaces), $batch);
     }
 
     /**
@@ -556,7 +571,7 @@ class PreTrainedTokenizer
      */
     private function decodeSingle(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
-        $tokens = $this->tokenizer->convertIdsToTokens($tokenIds);
+        $tokens = $this->model->convertIdsToTokens($tokenIds);
 
         if ($skipSpecialTokens) {
             $tokens = array_values(array_filter($tokens, fn ($x) => !in_array($x, $this->specialTokens)));
@@ -568,20 +583,18 @@ class PreTrainedTokenizer
             ? $this->decoder->decode($tokens)
             : implode(' ', $tokens);
 
-
         // Slight hack, but prevents having to pass `skip_special_tokens` to
         // each call to `decode`, which would lead to code duplication.
-        if ($this->decoder?->endOfWordSuffix !== null) {
-
+        if ($this->decoder?->endOfWordSuffix) {
             $decoded = str_replace($this->decoder->endOfWordSuffix, ' ', $decoded);
             if ($skipSpecialTokens) {
-                $decoded = trim($decoded);
+                $decoded = rtrim($decoded);
             }
         }
 
 
         if ($cleanUpTokenizationSpaces ?? $this->cleanUpTokenizationSpaces) {
-            $decoded = Tokenizer::cleanUpTokenization($decoded);
+            $decoded = TokenizerModel::cleanUpTokenization($decoded);
         }
 
         return $decoded;
@@ -630,6 +643,7 @@ class PreTrainedTokenizer
         bool    $padding = false,
         bool    $truncation = false,
         ?int    $maxLength = null,
+        bool $returnTensor = true
     ): string|array
     {
         $chatTemplate ??= $this->chatTemplate ?? $this->getDefaultChatTemplate();
@@ -638,13 +652,12 @@ class PreTrainedTokenizer
         $compiledTemplate = $this->compiledTemplateCache[$chatTemplate] ?? null;
 
         if ($compiledTemplate === null) {
-            // TODO: Use Jinja to compile the template
             $compiledTemplate = new Template($chatTemplate);
             $this->compiledTemplateCache[$chatTemplate] = $compiledTemplate;
         }
 
         $specialTokensMap = [];
-        foreach (Tokenizer::SPECIAL_TOKEN_ATTRIBUTES as $key) {
+        foreach (TokenizerModel::SPECIAL_TOKEN_ATTRIBUTES as $key) {
             $value = $this->getToken($key);
             if ($value !== null) {
                 $specialTokensMap[$key] = $value;
@@ -663,8 +676,9 @@ class PreTrainedTokenizer
                 padding: $padding,
                 addSpecialTokens: false,
                 truncation: $truncation,
-                maxLength: $maxLength
-            )['input_ids']->toArray();
+                maxLength: $maxLength,
+                returnTensor: $returnTensor
+            )['input_ids'];
         }
 
         return stripcslashes($rendered);

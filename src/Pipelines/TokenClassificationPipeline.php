@@ -133,7 +133,7 @@ class TokenClassificationPipeline extends Pipeline
         foreach ($entities as $entity) {
             if ($wordGroup === null) {
                 $wordGroup = [$entity];
-            } elseif ($this->tokenizer->tokenizer->continuingSubwordPrefix != null && str_starts_with($entity['word'], $this->tokenizer->tokenizer->continuingSubwordPrefix)) {
+            } elseif ($this->tokenizer->model->continuingSubwordPrefix != null && str_starts_with($entity['word'], $this->tokenizer->model->continuingSubwordPrefix)) {
                 $wordGroup[] = $entity;
             } else {
                 $wordEntities[] = $this->aggregateWord($wordGroup, $aggregationStrategy);
@@ -171,8 +171,8 @@ class TokenClassificationPipeline extends Pipeline
 
 
         $words = array_map(function ($word) {
-            if ($this->tokenizer->tokenizer->continuingSubwordPrefix != null && str_starts_with($word, $this->tokenizer->tokenizer->continuingSubwordPrefix)) {
-                return substr($word, strlen($this->tokenizer->tokenizer->continuingSubwordPrefix));
+            if ($this->tokenizer->model->continuingSubwordPrefix != null && str_starts_with($word, $this->tokenizer->model->continuingSubwordPrefix)) {
+                return substr($word, strlen($this->tokenizer->model->continuingSubwordPrefix));
             }
             return $word;
         }, array_column($entities, 'word'));

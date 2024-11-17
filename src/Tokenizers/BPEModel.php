@@ -11,7 +11,7 @@ use SplPriorityQueue;
 /**
  * BPE class for encoding text into Byte-Pair-Encoding (BPE) tokens.
  */
-class BPETokenizer extends Tokenizer
+class BPEModel extends TokenizerModel
 {
     /**
      * Mapping of BPE merges to their rank.
@@ -60,7 +60,6 @@ class BPETokenizer extends Tokenizer
         $this->merges = array_map(fn($merge) => explode(' ', $merge), $config['merges']);
 
         $this->endOfWordSuffix = $config['end_of_word_suffix'] ?? null;
-
         $this->continuingSubwordSuffix = $config['continuing_subword_suffix'] ?? null;
 
         $this->byteFallback = $config['byte_fallback'] ?? false;
@@ -76,7 +75,7 @@ class BPETokenizer extends Tokenizer
      */
     protected function bpe(string $token): array
     {
-        if (strlen($token) === 0) {
+        if (mb_strlen($token) === 0) {
             return [];
         }
 
@@ -112,7 +111,6 @@ class BPETokenizer extends Tokenizer
                 $this->addNodeToQueue($queue, $previousNode);
                 $previousNode = $currentNode;
             }
-
 
             while (!$queue->isEmpty()) {
                 /**
@@ -224,15 +222,11 @@ class BPETokenizer extends Tokenizer
                 }
                 else {
                     if ($this->byteFallback) {
-                        $encodedBytes = mb_convert_encoding($bpeToken, 'UTF-8', 'ASCII'); // Assuming ASCII fallback
-                        $outputTokens = array_merge(
-                            $outputTokens,
-                            array_map(
-                            // Format bytes as hex codes
-                                fn($byte) => sprintf('<0x%02X>', ord($byte)),
-                                str_split($encodedBytes)
-                            )
-                        );
+                        $bytes = unpack('C*', $bpeToken);
+
+                        foreach ($bytes as $byte) {
+                            $outputTokens[] = sprintf("<0x%02X>", $byte);
+                        }
                     } else {
                         $outputTokens[] = $this->unkToken;
                     }

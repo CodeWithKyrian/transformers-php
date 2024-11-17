@@ -14,10 +14,9 @@ class DigitsPreTokenizer extends PreTokenizer
     {
         $individualDigits = $this->config['individual_digits'] ? '' : '+';
 
-        $digitPattern = "[^\\d]+|\\d$individualDigits";
+        $digitPattern = "[\D]+|\d$individualDigits";
 
         $this->pattern = "/$digitPattern/u";
-
     }
 
     public function preTokenizeText(string|array $text, array $options): array

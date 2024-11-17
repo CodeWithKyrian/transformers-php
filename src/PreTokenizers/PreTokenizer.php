@@ -21,6 +21,7 @@ abstract class PreTokenizer
         return match ($config['type']) {
             'BertPreTokenizer' => new BertPreTokenizer($config),
             'Sequence' => new PreTokenizerSequence($config),
+            'Whitespace' => new WhitespacePreTokenizer($config),
             'WhitespaceSplit' => new WhitespaceSplit($config),
             'Metaspace' => new MetaspacePreTokenizer($config),
             'ByteLevel' => new ByteLevelPreTokenizer($config),

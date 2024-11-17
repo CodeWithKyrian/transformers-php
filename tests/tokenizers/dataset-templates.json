@@ -1,0 +1,951 @@
+{
+    "Xenova/mistral-tokenizer-v1": [
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": true,
+            "target": [
+                1,
+                733,
+                16289,
+                28793,
+                22557,
+                28725,
+                910,
+                460,
+                368,
+                28804,
+                733,
+                28748,
+                16289,
+                28793,
+                28737,
+                28742,
+                28719,
+                2548,
+                1598,
+                28723,
+                1602,
+                541,
+                315,
+                1316,
+                368,
+                3154,
+                28804,
+                2,
+                28705,
+                733,
+                16289,
+                28793,
+                315,
+                28742,
+                28715,
+                737,
+                298,
+                1347,
+                805,
+                910,
+                10706,
+                5752,
+                1077,
+                3791,
+                28808,
+                733,
+                28748,
+                16289,
+                28793
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": false,
+            "target": "<s>[INST] Hello, how are you? [/INST]I'm doing great. How can I help you today?</s> [INST] I'd like to show off how chat templating works! [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": true,
+            "target": [
+                1,
+                733,
+                16289,
+                28793,
+                22557,
+                28725,
+                910,
+                460,
+                368,
+                28804,
+                733,
+                28748,
+                16289,
+                28793,
+                28737,
+                28742,
+                28719,
+                2548,
+                1598,
+                28723,
+                1602,
+                541,
+                315,
+                1316,
+                368,
+                3154,
+                28804,
+                2,
+                28705,
+                733,
+                16289,
+                28793,
+                315,
+                28742,
+                28715,
+                737,
+                298,
+                1347,
+                805,
+                910,
+                10706,
+                5752,
+                1077,
+                3791,
+                28808,
+                733,
+                28748,
+                16289,
+                28793
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": false,
+            "target": "<s>[INST] Hello, how are you? [/INST]I'm doing great. How can I help you today?</s> [INST] I'd like to show off how chat templating works! [/INST]"
+        }
+    ],
+    "HuggingFaceH4/zephyr-7b-beta": [
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": true,
+            "target": [
+                523,
+                28766,
+                6574,
+                28766,
+                28767,
+                13,
+                1976,
+                460,
+                264,
+                10131,
+                10706,
+                10093,
+                693,
+                1743,
+                2603,
+                3673,
+                297,
+                272,
+                3238,
+                302,
+                264,
+                17368,
+                380,
+                2,
+                28705,
+                13,
+                28789,
+                28766,
+                1838,
+                28766,
+                28767,
+                13,
+                5660,
+                1287,
+                19624,
+                410,
+                1532,
+                541,
+                264,
+                2930,
+                5310,
+                297,
+                624,
+                6398,
+                28804,
+                2,
+                28705,
+                13,
+                28789,
+                28766,
+                489,
+                11143,
+                28766,
+                28767,
+                13
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": false,
+            "target": "<|system|>\nYou are a friendly chatbot who always responds in the style of a pirate</s>\n<|user|>\nHow many helicopters can a human eat in one sitting?</s>\n<|assistant|>\n"
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": true,
+            "target": [
+                523,
+                28766,
+                6574,
+                28766,
+                28767,
+                13,
+                1976,
+                460,
+                264,
+                10131,
+                10706,
+                10093,
+                693,
+                1743,
+                2603,
+                3673,
+                297,
+                272,
+                3238,
+                302,
+                264,
+                17368,
+                380,
+                2,
+                28705,
+                13,
+                28789,
+                28766,
+                1838,
+                28766,
+                28767,
+                13,
+                5660,
+                1287,
+                19624,
+                410,
+                1532,
+                541,
+                264,
+                2930,
+                5310,
+                297,
+                624,
+                6398,
+                28804,
+                2,
+                28705,
+                13
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": false,
+            "target": "<|system|>\nYou are a friendly chatbot who always responds in the style of a pirate</s>\n<|user|>\nHow many helicopters can a human eat in one sitting?</s>\n"
+        }
+    ],
+    "Xenova/llama2-chat-tokenizer": [
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                15043,
+                29892,
+                920,
+                526,
+                366,
+                29973,
+                518,
+                29914,
+                25580,
+                29962,
+                306,
+                29915,
+                29885,
+                2599,
+                2107,
+                29889,
+                1128,
+                508,
+                306,
+                1371,
+                366,
+                9826,
+                29973,
+                29871,
+                2,
+                1,
+                29961,
+                25580,
+                29962,
+                306,
+                29915,
+                29881,
+                763,
+                304,
+                1510,
+                1283,
+                920,
+                13563,
+                1350,
+                572,
+                1218,
+                1736,
+                29991,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": false,
+            "target": "<s>[INST] Hello, how are you? [/INST] I'm doing great. How can I help you today? </s><s>[INST] I'd like to show off how chat templating works! [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                15043,
+                29892,
+                920,
+                526,
+                366,
+                29973,
+                518,
+                29914,
+                25580,
+                29962,
+                306,
+                29915,
+                29885,
+                2599,
+                2107,
+                29889,
+                1128,
+                508,
+                306,
+                1371,
+                366,
+                9826,
+                29973,
+                29871,
+                2,
+                1,
+                29961,
+                25580,
+                29962,
+                306,
+                29915,
+                29881,
+                763,
+                304,
+                1510,
+                1283,
+                920,
+                13563,
+                1350,
+                572,
+                1218,
+                1736,
+                29991,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": false,
+            "target": "<s>[INST] Hello, how are you? [/INST] I'm doing great. How can I help you today? </s><s>[INST] I'd like to show off how chat templating works! [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                3532,
+                14816,
+                29903,
+                6778,
+                13,
+                3492,
+                526,
+                263,
+                19780,
+                13563,
+                7451,
+                1058,
+                2337,
+                10049,
+                29879,
+                297,
+                278,
+                3114,
+                310,
+                263,
+                21625,
+                403,
+                13,
+                29966,
+                829,
+                14816,
+                29903,
+                6778,
+                13,
+                13,
+                5328,
+                1784,
+                1081,
+                293,
+                459,
+                2153,
+                508,
+                263,
+                5199,
+                17545,
+                297,
+                697,
+                16246,
+                29973,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": false,
+            "target": "<s>[INST] <<SYS>>\nYou are a friendly chatbot who always responds in the style of a pirate\n<</SYS>>\n\nHow many helicopters can a human eat in one sitting? [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                3532,
+                14816,
+                29903,
+                6778,
+                13,
+                3492,
+                526,
+                263,
+                19780,
+                13563,
+                7451,
+                1058,
+                2337,
+                10049,
+                29879,
+                297,
+                278,
+                3114,
+                310,
+                263,
+                21625,
+                403,
+                13,
+                29966,
+                829,
+                14816,
+                29903,
+                6778,
+                13,
+                13,
+                5328,
+                1784,
+                1081,
+                293,
+                459,
+                2153,
+                508,
+                263,
+                5199,
+                17545,
+                297,
+                697,
+                16246,
+                29973,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "How many helicopters can a human eat in one sitting?"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": false,
+            "target": "<s>[INST] <<SYS>>\nYou are a friendly chatbot who always responds in the style of a pirate\n<</SYS>>\n\nHow many helicopters can a human eat in one sitting? [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                3532,
+                14816,
+                29903,
+                6778,
+                13,
+                3492,
+                526,
+                263,
+                19780,
+                13563,
+                7451,
+                1058,
+                2337,
+                10049,
+                29879,
+                297,
+                278,
+                3114,
+                310,
+                263,
+                21625,
+                403,
+                13,
+                29966,
+                829,
+                14816,
+                29903,
+                6778,
+                13,
+                13,
+                10994,
+                29892,
+                920,
+                526,
+                366,
+                29973,
+                518,
+                29914,
+                25580,
+                29962,
+                306,
+                29915,
+                29885,
+                2599,
+                2107,
+                29889,
+                1128,
+                508,
+                306,
+                1371,
+                366,
+                9826,
+                29973,
+                29871,
+                2,
+                1,
+                29961,
+                25580,
+                29962,
+                306,
+                29915,
+                29881,
+                763,
+                304,
+                1510,
+                1283,
+                920,
+                13563,
+                1350,
+                572,
+                1218,
+                1736,
+                29991,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": true,
+            "tokenize": false,
+            "target": "<s>[INST] <<SYS>>\nYou are a friendly chatbot who always responds in the style of a pirate\n<</SYS>>\n\nHello, how are you? [/INST] I'm doing great. How can I help you today? </s><s>[INST] I'd like to show off how chat templating works! [/INST]"
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": true,
+            "target": [
+                1,
+                29961,
+                25580,
+                29962,
+                3532,
+                14816,
+                29903,
+                6778,
+                13,
+                3492,
+                526,
+                263,
+                19780,
+                13563,
+                7451,
+                1058,
+                2337,
+                10049,
+                29879,
+                297,
+                278,
+                3114,
+                310,
+                263,
+                21625,
+                403,
+                13,
+                29966,
+                829,
+                14816,
+                29903,
+                6778,
+                13,
+                13,
+                10994,
+                29892,
+                920,
+                526,
+                366,
+                29973,
+                518,
+                29914,
+                25580,
+                29962,
+                306,
+                29915,
+                29885,
+                2599,
+                2107,
+                29889,
+                1128,
+                508,
+                306,
+                1371,
+                366,
+                9826,
+                29973,
+                29871,
+                2,
+                1,
+                29961,
+                25580,
+                29962,
+                306,
+                29915,
+                29881,
+                763,
+                304,
+                1510,
+                1283,
+                920,
+                13563,
+                1350,
+                572,
+                1218,
+                1736,
+                29991,
+                518,
+                29914,
+                25580,
+                29962
+            ]
+        },
+        {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                },
+                {
+                    "role": "user",
+                    "content": "Hello, how are you?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'm doing great. How can I help you today?"
+                },
+                {
+                    "role": "user",
+                    "content": "I'd like to show off how chat templating works!"
+                }
+            ],
+            "add_generation_prompt": false,
+            "tokenize": false,
+            "target": "<s>[INST] <<SYS>>\nYou are a friendly chatbot who always responds in the style of a pirate\n<</SYS>>\n\nHello, how are you? [/INST] I'm doing great. How can I help you today? </s><s>[INST] I'd like to show off how chat templating works! [/INST]"
+        }
+    ]
+}

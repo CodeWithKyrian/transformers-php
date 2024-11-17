@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Decoders;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 class WordPieceDecoder extends Decoder
 {
@@ -31,7 +31,7 @@ class WordPieceDecoder extends Decoder
                 }
             }
             if ($this->cleanup) {
-                $token = Tokenizer::cleanUpTokenization($token);
+                $token = TokenizerModel::cleanUpTokenization($token);
             }
 
             $decodedTokens[] = $token;

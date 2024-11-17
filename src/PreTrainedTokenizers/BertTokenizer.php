@@ -10,5 +10,4 @@ namespace Codewithkyrian\Transformers\PreTrainedTokenizers;
  */
 class BertTokenizer extends PreTrainedTokenizer
 {
-    protected bool $returnTokenTypeIds = true;
 }

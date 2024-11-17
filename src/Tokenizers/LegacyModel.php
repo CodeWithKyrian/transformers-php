@@ -5,12 +5,12 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tokenizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 /**
  * Legacy tokenizer class for tokenizers with only a vocabulary.
  */
-class LegacyTokenizer extends Tokenizer
+class LegacyModel extends TokenizerModel
 {
 
     protected ?string $bosToken;
@@ -26,14 +26,20 @@ class LegacyTokenizer extends Tokenizer
     {
         parent::__construct($config);
 
-        $vocab = $moreConfig['vocab'] ?? $this->config['vocab'];
+//        $vocab = $moreConfig['vocab'] ?? $this->config['vocab'];
+//        $this->tokenToIds = self::toMap(
+//                $moreConfig['target_lang'] ?? false
+//                ? $vocab[$moreConfig['target_lang']]
+//                : $vocab
+//        );
 
-        $this->tokenToIds = self::toMap(
-            $moreConfig['target_lang'] ?? false
-                ? $vocab[$moreConfig['target_lang']]
-                : $vocab
-        );
+        $vocab = $moreConfig['target_lang'] ?? false
+            ? $config['vocab'][$moreConfig['target_lang']]
+            : $config['vocab'];
 
+        foreach ($vocab as $id => [$token, $logProb]) {
+            $this->tokenToIds[$token] = $id;
+        }
 
         $this->bosToken = $moreConfig['bos_token'] ?? null;
         $this->bosTokenId = $this->tokenToIds[$this->bosToken] ?? null;
@@ -47,6 +53,7 @@ class LegacyTokenizer extends Tokenizer
         $this->unkToken = $moreConfig['unk_token'] ?? null;
         $this->unkTokenId = $this->tokenToIds[$this->unkToken] ?? null;
 
+
         foreach ($this->tokenToIds as $token => $id) {
             $this->vocab[$id] = $token;
         }
@@ -54,6 +61,6 @@ class LegacyTokenizer extends Tokenizer
 
     protected function encode(array $tokens): array
     {
-       return $tokens;
+        return $tokens;
     }
 }

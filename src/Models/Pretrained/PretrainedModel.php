@@ -761,7 +761,6 @@ class PretrainedModel
         // We pass `$this->config` so that if `eos_token_id` or `bos_token_id` exist in the model's config, we will use them
         $genConfig = new GenerationConfig($this->config->config);
 
-
         $genConfigArray = $genConfig->toArray();
 
         // Apply model's generation config, if it exists

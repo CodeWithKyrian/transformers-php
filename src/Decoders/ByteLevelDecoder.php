@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Decoders;
 
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use SplFixedArray;
 
 class ByteLevelDecoder extends Decoder
@@ -287,7 +287,7 @@ class ByteLevelDecoder extends Decoder
 
         $binaryString = pack('C*', ...$byteArray);
 
-        return mb_convert_encoding($binaryString, 'ISO-8859-1');
+        return mb_convert_encoding($binaryString, 'UTF-8');
     }
 
     protected function decodeChain(array $tokens): array
@@ -298,9 +298,7 @@ class ByteLevelDecoder extends Decoder
         foreach ($tokens as $token) {
             // No need to check skip_special_tokens since the tokens are already filtered
 
-            $addedToken = array_filter($this->addedTokens, function (AddedToken $x) use ($token) {
-                return $x->content === $token;
-            });
+            $addedToken = array_filter($this->addedTokens, fn (AddedToken $x) => $x->content === $token);
 
             if (!empty($addedToken)) {
                 if (!empty($currentSubText)) {
@@ -319,7 +317,6 @@ class ByteLevelDecoder extends Decoder
         }
 
         // TODO: add spaces_between_special_tokens and clean_up_tokenization_spaces options
-
         return $subTexts;
     }
 }

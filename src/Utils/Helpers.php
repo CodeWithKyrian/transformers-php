@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
-use Codewithkyrian\Transformers\Transformers;
-
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
@@ -168,6 +166,29 @@ function getBoundingBox(array $box, bool $asInteger): array
  */
 function basePath(string $dir = ""): string
 {
-    return joinPaths(dirname(__DIR__,2), $dir);
+    return joinPaths(dirname(__DIR__, 2), $dir);
 }
 
+/**
+ * Helper method to construct a pattern from a config object.
+ *
+ * @param array $pattern The pattern object.
+ * @param bool $invert Whether to invert the pattern.
+ *
+ * @return string|null The compiled pattern or null if invalid.
+ */
+function createPattern(array $pattern, bool $invert = true): ?string
+{
+    if (isset($pattern['Regex'])) {
+        // Remove unnecessary escape sequences
+        return str_replace(['\\#', '\\&', '\\~'], ['#', '&', '~'], $pattern['Regex']);
+    } elseif (isset($pattern['String'])) {
+        $escaped = preg_quote($pattern['String'], '/');
+
+        // NOTE: if invert is true, we wrap the pattern in a group so that it is kept when performing split
+        return $invert ? $escaped : "($escaped)";
+    } else {
+        echo 'Unknown pattern type: '.print_r($pattern, true);
+        return null;
+    }
+}

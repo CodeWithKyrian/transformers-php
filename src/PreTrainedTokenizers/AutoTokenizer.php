@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PreTrainedTokenizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -14,50 +14,57 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class AutoTokenizer
 {
+    /**
+     * @template T of PretrainedTokenizer
+     * @var class-string<T>
+     */
     public const TOKENIZER_CLASS_MAPPING = [
-        'T5Tokenizer' => 'T5Tokenizer',
-        'DistilBertTokenizer' => 'DistilBertTokenizer',
-        'CamembertTokenizer' => 'CamembertTokenizer',
-        'DebertaTokenizer' => 'DebertaTokenizer',
-        'DebertaV2Tokenizer' => 'DebertaV2Tokenizer',
-        'BertTokenizer' => 'BertTokenizer',
-        'HerbertTokenizer' => 'HerbertTokenizer',
-        'ConvBertTokenizer' => 'ConvBertTokenizer',
-        'RoFormerTokenizer' => 'RoFormerTokenizer',
-        'XLMTokenizer' => 'XLMTokenizer',
-        'ElectraTokenizer' => 'ElectraTokenizer',
-        'MobileBertTokenizer' => 'MobileBertTokenizer',
-        'SqueezeBertTokenizer' => 'SqueezeBertTokenizer',
-        'AlbertTokenizer' => 'AlbertTokenizer',
-        'GPT2Tokenizer' => 'GPT2Tokenizer',
-        'BartTokenizer' => 'BartTokenizer',
-        'MBartTokenizer' => 'MBartTokenizer',
-        'MBart50Tokenizer' => 'MBart50Tokenizer',
-        'RobertaTokenizer' => 'RobertaTokenizer',
-        'WhisperTokenizer' => 'WhisperTokenizer',
-        'CodeGenTokenizer' => 'CodeGenTokenizer',
-        'CLIPTokenizer' => 'CLIPTokenizer',
-        'SiglipTokenizer' => 'SiglipTokenizer',
-        'MarianTokenizer' => 'MarianTokenizer',
-        'BloomTokenizer' => 'BloomTokenizer',
-        'NllbTokenizer' => 'NllbTokenizer',
-        'M2M100Tokenizer' => 'M2M100Tokenizer',
-        'LlamaTokenizer' => 'LlamaTokenizer',
-        'CodeLlamaTokenizer' => 'CodeLlamaTokenizer',
-        'XLMRobertaTokenizer' => 'XLMRobertaTokenizer',
-        'MPNetTokenizer' => 'MPNetTokenizer',
-        'FalconTokenizer' => 'FalconTokenizer',
-        'GPTNeoXTokenizer' => 'GPTNeoXTokenizer',
-        'EsmTokenizer' => 'EsmTokenizer',
-        'Wav2Vec2CTCTokenizer' => 'Wav2Vec2CTCTokenizer',
-        'BlenderbotTokenizer' => 'BlenderbotTokenizer',
-        'BlenderbotSmallTokenizer' => 'BlenderbotSmallTokenizer',
-        'SpeechT5Tokenizer' => 'SpeechT5Tokenizer',
-        'NougatTokenizer' => 'NougatTokenizer',
-        'VitsTokenizer' => 'VitsTokenizer',
-        'Qwen2Tokenizer' => 'Qwen2Tokenizer',
+        'T5Tokenizer' => T5Tokenizer::class,
+        'DistilBertTokenizer' => DistilBertTokenizer::class,
+        'CamembertTokenizer' => CamembertTokenizer::class,
+        'DebertaTokenizer' => DebertaTokenizer::class,
+        'DebertaV2Tokenizer' => DebertaV2Tokenizer::class,
+        'BertTokenizer' => BertTokenizer::class,
+        'HerbertTokenizer' => HerbertTokenizer::class,
+        'ConvBertTokenizer' => ConvBertTokenizer::class,
+        'RoFormerTokenizer' => RoFormerTokenizer::class,
+        'XLMTokenizer' => XLMTokenizer::class,
+        'ElectraTokenizer' => ElectraTokenizer::class,
+        'MobileBertTokenizer' => MobileBertTokenizer::class,
+        'SqueezeBertTokenizer' => SqueezeBertTokenizer::class,
+        'AlbertTokenizer' => AlbertTokenizer::class,
+        'GPT2Tokenizer' => GPT2Tokenizer::class,
+        'BartTokenizer' => BartTokenizer::class,
+        'MBartTokenizer' => MBartTokenizer::class,
+        'MBart50Tokenizer' => MBart50Tokenizer::class,
+        'RobertaTokenizer' => RobertaTokenizer::class,
+        'WhisperTokenizer' => WhisperTokenizer::class,
+        'CodeGenTokenizer' => CodeGenTokenizer::class,
+        'CLIPTokenizer' => CLIPTokenizer::class,
+         'SiglipTokenizer' => SiglipTokenizer::class,
+        // 'MarianTokenizer' => MarianTokenizer::class,
+        'BloomTokenizer' => BloomTokenizer::class,
+        'NllbTokenizer' => NllbTokenizer::class,
+        'M2M100Tokenizer' => M2M100Tokenizer::class,
+        'LlamaTokenizer' => LlamaTokenizer::class,
+        'CodeLlamaTokenizer' => CodeLlamaTokenizer::class,
+        'XLMRobertaTokenizer' => XLMRobertaTokenizer::class,
+        'MPNetTokenizer' => MPNetTokenizer::class,
+        'FalconTokenizer' => FalconTokenizer::class,
+        'GPTNeoXTokenizer' => GPTNeoXTokenizer::class,
+        'EsmTokenizer' => EsmTokenizer::class,
+        'Wav2Vec2CTCTokenizer' => Wav2Vec2CTCTokenizer::class,
+        'BlenderbotTokenizer' => BlenderbotTokenizer::class,
+        'BlenderbotSmallTokenizer' => BlenderbotSmallTokenizer::class,
+        'SpeechT5Tokenizer' => SpeechT5Tokenizer::class,
+        'NougatTokenizer' => NougatTokenizer::class,
+        'VitsTokenizer' => VitsTokenizer::class,
+        'Qwen2Tokenizer' => Qwen2Tokenizer::class,
+        'GemmaTokenizer' => GemmaTokenizer::class,
+        'Grok1Tokenizer' => Grok1Tokenizer::class,
+        'CohereTokenizer' => CohereTokenizer::class,
         // Base case:
-        'PreTrainedTokenizer' => 'PreTrainedTokenizer',
+        'PreTrainedTokenizer' => PreTrainedTokenizer::class,
     ];
 
 
@@ -78,15 +85,15 @@ class AutoTokenizer
      * @return PreTrainedTokenizer|null
      */
     public static function fromPretrained(
-        string           $modelNameOrPath,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        mixed            $legacy = null,
+        string    $modelNameOrPath,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        mixed     $legacy = null,
         ?callable $onProgress = null
     ): ?PreTrainedTokenizer
     {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
-            Tokenizer::load($modelNameOrPath, $cacheDir, $revision, $legacy, $onProgress);
+            TokenizerModel::load($modelNameOrPath, $cacheDir, $revision, $legacy, $onProgress);
 
         if ($tokenizerJson == null) return null;
 
@@ -99,11 +106,8 @@ class AutoTokenizer
         if ($cls == null) {
             echo "Unknown tokenizer class $tokenizerClassName. Using PreTrainedTokenizer. \n";
 
-            $cls = 'PreTrainedTokenizer';
+            $cls = PreTrainedTokenizer::class;
         }
-
-        // Build the fully qualified class name
-        $cls = __NAMESPACE__ . '\\' . $cls;
 
         return new $cls($tokenizerJson, $tokenizerConfig);
     }

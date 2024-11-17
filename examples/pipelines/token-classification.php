@@ -11,8 +11,8 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 ini_set('memory_limit', -1);
 
-//$classifier = pipeline('token-classification', 'Xenova/bert-base-NER');
-$classifier = pipeline('token-classification', 'codewithkyrian/bert-english-uncased-finetuned-pos');
+ $classifier = pipeline('token-classification', 'Xenova/bert-base-NER');
+//$classifier = pipeline('token-classification', 'codewithkyrian/bert-english-uncased-finetuned-pos');
 
 $output = $classifier(
     'My name is Kyrian and I live in Nigeria',

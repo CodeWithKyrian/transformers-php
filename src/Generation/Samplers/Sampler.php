@@ -46,22 +46,12 @@ abstract class Sampler
      */
     public function getLogits(Tensor $logits, int $index): Tensor
     {
-//        $vocabSize = $logits->shape()[$logits->ndim() - 1];
-
-//        $start = array_fill(0, $logits->ndim(), 0);
-//        $size = array_fill(0, $logits->ndim(), 1);
-//
-//        array_splice($start, -2, replacement: [$index, 0]);
-//        array_splice($size, -2, replacement: [1, $vocabSize]);
-//
-//        $logs = $logits->sliceWithBounds($start, $size);
         $logits = $logits->slice($index);
 
         if ($this->generationConfig->temperature > 0) {
             $logits = $logits->multiply(1 / $this->generationConfig->temperature);
         }
 
-        // Remove all dimensions of 1, leaving a flat 1D array of vocab_size
         return $logits->squeeze();
     }
 

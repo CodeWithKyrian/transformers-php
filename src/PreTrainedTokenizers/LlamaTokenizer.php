@@ -48,21 +48,21 @@ class LlamaTokenizer extends PreTrainedTokenizer
      * @param ?string $text
      * @param string|null $textPair
      * @param bool $addSpecialTokens
-     * @return array
+     * @return ?array
      */
-    public function encodeText(?string $text, string $textPair = null, bool $addSpecialTokens = true): array
+    public function encodeText(?string $text, string $textPair = null, bool $addSpecialTokens = true): ?array
     {
         if ($text === null) {
-            return [];
+            return null;
         }
 
-        if ($this->legacy || strlen($text) == 0) {
+        if ($this->legacy || mb_strlen($text) == 0) {
             return parent::encodeText($text, $textPair, $addSpecialTokens);
         }
 
         $tokens = parent::encodeText(self::SPIECE_UNDERLINE . str_replace(self::SPIECE_UNDERLINE, ' ', $text));
 
-        if (count($tokens) > 1 && $tokens[0] === '_' && in_array($tokens[1], $this->specialTokens)) {
+        if (count($tokens) > 1 && $tokens[0] === self::SPIECE_UNDERLINE && in_array($tokens[1], $this->specialTokens)) {
             $tokens = array_slice($tokens, 1);
         }
 

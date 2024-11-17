@@ -28,7 +28,8 @@ class StripDecoder extends Decoder
         return array_map(function ($token) {
             $startCut = 0;
             for ($i = 0; $i < $this->start; ++$i) {
-                if ($token[$i] ?? null === $this->content) {
+                $char = mb_substr($token, $i, 1);
+                if ($char === $this->content) {
                     $startCut = $i + 1;
                     continue;
                 } else {
@@ -36,9 +37,9 @@ class StripDecoder extends Decoder
                 }
             }
 
-            $stopCut = strlen($token);
+            $stopCut = mb_strlen($token);
             for ($i = 0; $i < $this->stop; ++$i) {
-                $index = strlen($token) - $i - 1;
+                $index = mb_strlen($token) - $i - 1;
                 if ($token[$index] ?? null === $this->content) {
                     $stopCut = $index;
                     continue;
@@ -47,7 +48,7 @@ class StripDecoder extends Decoder
                 }
             }
 
-            return substr($token, $startCut, $stopCut - $startCut);
+            return mb_substr($token, $startCut, $stopCut - $startCut);
         }, $tokens);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Generation\Streamers\WhisperTextStreamer;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Audio;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
@@ -110,11 +111,11 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
         $task = array_pop_key($args, 'task');
         $streamer = array_pop_key($args, 'streamer');
 
-//        if (!is_null($streamer) && !is_a($streamer, WhisperTextStreamer::class)) {
-//            throw new \InvalidArgumentException('`streamer` must be an instance of `WhisperTextStreamer`');
-//        }
+        if (!is_null($streamer) && !is_a($streamer, WhisperTextStreamer::class)) {
+            throw new \InvalidArgumentException('`streamer` must be an instance of `WhisperTextStreamer`');
+        }
 
-        if (!is_null($streamer)) trigger_error('`streamer` is not supported yet for Whisper', E_USER_WARNING);
+//        if (!is_null($streamer)) trigger_error('`streamer` is not supported yet for Whisper', E_USER_WARNING);
 
         $kwargs = array_keys_to_snake_case($args);
 
@@ -140,12 +141,13 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
         $timePrecision = $this->processor->featureExtractor->config['chunk_length'] / $this->model->config['max_source_positions'];
         $hopLength = $this->processor->featureExtractor->config['hop_length'];
         $samplingRate = $this->processor->featureExtractor->config['sampling_rate'];
+        $timestampBegin = $this->tokenizer->model->convertTokensToIds(["<|notimestamps|>"])[0] + 1;
 
         $toReturn = [];
 
-//        $streamer?->setTokenizer($this->tokenizer)
-//            ?->setTimePrecision($timePrecision)
-//            ?->setTimestampBegin($timestampBegin);
+        $streamer?->setTokenizer($this->tokenizer)
+            ?->setTimePrecision($timePrecision)
+            ?->setTimestampBegin($timestampBegin);
 
         foreach ($inputs as $input) {
             $audio = Audio::read($input);
@@ -205,7 +207,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             foreach ($chunks as &$chunk) {
                 $generationConfig['num_frames'] = (int)floor($chunk['stride'][0] / $hopLength);
 
-                $data = $this->model->generate($chunk['input_features'], generationConfig: $generationConfig);
+                $data = $this->model->generate($chunk['input_features'], generationConfig: $generationConfig, streamer: $streamer);
 
                 // TODO: Right now we only get top beam
                 if ($returnTimestamps === 'word') {
@@ -218,7 +220,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 // convert stride to seconds
                 $chunk['stride'] = array_map(fn($x) => $x / $samplingRate, $chunk['stride']);
 
-//                $streamer?->notifyChunkEnd($chunk['stride'][0]);
+                $streamer?->putChunk($chunk);
             }
 
             // Merge text chunks

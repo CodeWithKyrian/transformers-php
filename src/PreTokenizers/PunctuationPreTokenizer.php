@@ -10,11 +10,12 @@ class PunctuationPreTokenizer extends PreTokenizer
     protected string $pattern;
     public function __construct(protected array $config)
     {
-        $punctuationRegex = '\p{P}\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E';
-        $this->pattern = "/\s+|([$punctuationRegex])+/u";
+        $PUNCTUATION_REGEX = '\p{P}\x{0021}-\x{002F}\x{003A}-\x{0040}\x{005B}-\x{0060}\x{007B}-\x{007E}';
+        $this->pattern = "/[^{$PUNCTUATION_REGEX}]+|[{$PUNCTUATION_REGEX}]+/u";
     }
     public function preTokenizeText(string|array $text, array $options): array
     {
-        return preg_split($this->pattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) ?? [];
+        preg_match_all($this->pattern, $text, $matches);
+        return $matches[0];
     }
 }

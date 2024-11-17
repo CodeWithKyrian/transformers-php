@@ -42,7 +42,7 @@ class TensorBuffer implements LinearBuffer
         NDArray::complex128 => 'rindow_complex_double',
     ];
     /** @var array<int,int> $valueSize */
-    protected static array $valueSize = [
+    public static array $valueSize = [
         NDArray::bool => 1,
         NDArray::int8 => 1,
         NDArray::int16 => 2,
