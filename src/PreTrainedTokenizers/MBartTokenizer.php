@@ -77,7 +77,7 @@ class MBartTokenizer extends PreTrainedTokenizer
         }
 
         // Override the `forced_bos_token_id` to force the correct language
-        $generationConfig->forced_bos_token_id = $this->tokenizer->convertTokensToIds(
+        $generationConfig->forced_bos_token_id = $this->model->convertTokensToIds(
             [call_user_func($this->langToToken, $tgtLangToken)]
         )[0];
 

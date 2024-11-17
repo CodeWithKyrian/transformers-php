@@ -186,7 +186,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
         $chunks = [];
         $chunk = $newChunk();
         $timeOffset = 0.0;
-        $timestampBegin = $this->tokenizer->convertTokensToIds(["<|notimestamps|>"])[0] + 1;
+        $timestampBegin = $this->model->convertTokensToIds(["<|notimestamps|>"])[0] + 1;
 
         $previousTokens = [];
         $previousTokenTimestamps = [];
@@ -625,7 +625,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
             $subwordTokens = $subwordTokensList[$i];
             $subwordIndices = $subwordIndicesList[$i];
 
-            $special = $subwordTokens[0] >= $this->tokenizer->tokenToIds['<|endoftext|>'];
+            $special = $subwordTokens[0] >= $this->model->tokenToIds['<|endoftext|>'];
             $withSpace = str_starts_with($subword, ' ');
             $trimmed = trim($subword);
             $punctuation = preg_match($punctuationRegex, $trimmed);
@@ -762,7 +762,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
                 }
             }
 
-            $languageTokenId = $this->tokenizer->tokenToIds["<|$languageCode|>"] ?? null;
+            $languageTokenId = $this->model->tokenToIds["<|$languageCode|>"] ?? null;
             if ($languageTokenId === null) {
                 throw new Exception("Unable to find language \"$languageCode\" in model vocabulary. Please report this issue.");
             }
@@ -779,7 +779,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
                 throw new Exception("Task \"$task\" is not supported. Must be one of: [\"transcribe\", \"translate\"]");
             }
 
-            $taskTokenId = $this->tokenizer->tokenToIds["<|$task|>"] ?? null;
+            $taskTokenId = $this->model->tokenToIds["<|$task|>"] ?? null;
             if ($taskTokenId === null) {
                 throw new Exception("Unable to find task \"$task\" in model vocabulary. Please report this issue.");
             }
@@ -791,7 +791,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
         }
 
         if ($noTimestamps) {
-            $noTimestampsId = $this->tokenizer->tokenToIds["<|notimestamps|>"] ?? null;
+            $noTimestampsId = $this->model->tokenToIds["<|notimestamps|>"] ?? null;
             if ($noTimestampsId === null) {
                 throw new Exception('Unable to find "<|notimestamps|>" in model vocabulary. Please report this issue.');
             }

@@ -18,31 +18,42 @@ class ByteFallback extends Decoder
 
     protected function decodeChain(array $tokens): array
     {
-        $newTokens = [];
         $previousByteTokens = [];
+        $newTokens = [];
 
         foreach ($tokens as $token) {
             $bytes = null;
+
+            // Check if the token is of the form <0xXX>
             if (strlen($token) === 6 && str_starts_with($token, '<0x') && str_ends_with($token, '>')) {
+                // Extract the hexadecimal value from the token
                 $byte = hexdec(substr($token, 3, 2));
                 if (!is_nan($byte)) {
                     $bytes = $byte;
                 }
             }
+
             if ($bytes !== null) {
+                // Add byte to previousByteTokens
                 $previousByteTokens[] = $bytes;
             } else {
-                if (count($previousByteTokens) > 0) {
-                    $string = $this->bytesToString($previousByteTokens);
-                    $newTokens[] = $string;
-                    $previousByteTokens = [];
+                // If we have accumulated byte tokens, decode them to a string
+                if (!empty($previousByteTokens)) {
+                    $string = pack('C*', ...$previousByteTokens);  // Convert bytes back to string
+                    $newTokens[] = $string;  // Add decoded string to newTokens
+                    $previousByteTokens = [];  // Reset byte accumulator
                 }
+                // Add the non-byte token to newTokens
                 $newTokens[] = $token;
             }
         }
-        if (count($previousByteTokens) > 0) {
-            $string = $this->bytesToString($previousByteTokens);
+
+
+        // After the loop, if there are still byte tokens, decode them
+        if (!empty($previousByteTokens)) {
+            $string = pack('C*', ...$previousByteTokens);  // Convert remaining bytes to string
             $newTokens[] = $string;
+            $previousByteTokens = [];  // Reset byte accumulator
         }
 
         return $newTokens;

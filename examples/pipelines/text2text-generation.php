@@ -9,8 +9,8 @@ use function Codewithkyrian\Transformers\{Pipelines\pipeline, Utils\memoryUsage,
 
 ini_set('memory_limit', -1);
 
-$generator = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
-//$generator = pipeline('text2text-generation', 'Xenova/flan-t5-small', quantized: true);
+//$generator = pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
+$generator = pipeline('text2text-generation', 'Xenova/flan-t5-small', quantized: true);
 
 $streamer = TextStreamer::make();
 

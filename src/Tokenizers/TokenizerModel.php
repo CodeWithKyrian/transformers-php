@@ -8,8 +8,10 @@ use ArrayObject;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Exception;
+use function Codewithkyrian\Jinja\slice;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
 
-abstract class Tokenizer
+abstract class TokenizerModel
 {
     public const SPECIAL_TOKEN_ATTRIBUTES = [
         'bos_token',
@@ -24,11 +26,13 @@ abstract class Tokenizer
 
     /**
      * An array of tokens.
+     *
      * @var string[]
      */
     public array $vocab = [];
     /**
      * A mapping of tokens to ids.
+     *
      * @var array<string, int>
      */
     public array $tokenToIds = [];
@@ -64,17 +68,55 @@ abstract class Tokenizer
     public static function fromConfig(array $config, ...$args): self
     {
         return match ($config['type'] ?? null) {
-            'WordPiece' => new WordPieceTokenizer($config),
-            'Unigram' => new UnigramTokenizer($config, ...$args),
-            'BPE' => new BPETokenizer($config),
-            default => (function () use ($config, $args) {
-                if ($config['vocab'] ?? false) {
-                    return new LegacyTokenizer($config, ...$args);
-                }
-
-                throw new Exception("Unknown tokenizer type {$config['type']}");
-            })()
+            'WordPiece' => new WordPieceModel($config),
+            'Unigram' => new UnigramModel($config, ...$args),
+            'BPE' => new BPEModel($config),
+            default => self::inferTokenizerModel($config, $args),
         };
+    }
+
+    /**
+     * Infers the tokenizer model based on the pretokenizer configuration.
+     *
+     * This function is necessary for legacy tokenizer.json files that do not contain the model.type key.
+     *
+     * @param array $config The tokenizer configuration.
+     * @param array $args Additional arguments that may include pretokenizerConfig.
+     * @return TokenizerModel The inferred tokenizer model instance.
+     * @throws Exception If the tokenizer type is unknown.
+     */
+    private static function inferTokenizerModel(array $config, array &$args): TokenizerModel
+    {
+        $pretokenizerConfig = array_pop_key($args, 'pretokenizerConfig');
+        $decoderConfig = array_pop_key($args, 'decoderConfig');
+
+        if ($pretokenizerConfig) {
+            if ($pretokenizerConfig['type'] === 'ByteLevel') {
+                return new BPEModel($config);
+            } elseif ($pretokenizerConfig['type'] === 'MetaSpace') {
+                return new UnigramModel($config, ...$args);
+            } elseif ($pretokenizerConfig['type'] === 'Sequence') {
+                foreach ($pretokenizerConfig['pretokenizers'] as $pretokenizer) {
+                    if ($pretokenizer['type'] === 'ByteLevel') {
+                        return new BPEModel($config);
+                    } elseif ($pretokenizer['type'] === 'Metaspace') {
+                        return new UnigramModel($config, ...$args);
+                    }
+                }
+            }
+        }
+
+        if ($decoderConfig) {
+            if ($decoderConfig['type'] === 'WordPiece') {
+                return new WordPieceModel($config);
+            }
+        }
+
+        if ($config['vocab'] ?? false) {
+            return new LegacyModel($config, ...$args);
+        }
+
+        throw new Exception("Unknown tokenizer type {$config['type']}");
     }
 
     /**
@@ -85,14 +127,15 @@ abstract class Tokenizer
      * @param string $revision
      * @param mixed $legacy
      * @param callable|null $onProgress
+     *
      * @return array {tokenizerJson: array, tokenizerConfig: array}
      * @throws HubException
      */
     public static function load(
-        string           $modelNameOrPath,
-        ?string          $cacheDir,
-        string           $revision,
-        mixed            $legacy,
+        string    $modelNameOrPath,
+        ?string   $cacheDir,
+        string    $revision,
+        mixed     $legacy,
         ?callable $onProgress = null
     ): array {
         $tokenizerJson = Hub::getJson(
@@ -127,6 +170,7 @@ abstract class Tokenizer
      * Helper function to split a string on whitespace.
      *
      * @param string $text The text to split.
+     *
      * @return string[] The split text.
      */
     public static function whitespaceSplit(string $text): array
@@ -136,7 +180,9 @@ abstract class Tokenizer
 
     /**
      * Helper function to lowercase a string and remove accents.
+     *
      * @param string $text The text to lowercase and remove accents from.
+     *
      * @return string The text with accents removed and lowercased.
      */
     public static function lowerCaseAndRemoveAccents(string $text): string
@@ -146,7 +192,9 @@ abstract class Tokenizer
 
     /**
      * Helper function to remove accents from a string.
+     *
      * @param string $text The text to remove accents from.
+     *
      * @return string The text with accents removed.
      */
     public static function removeAccents(string $text): string
@@ -158,6 +206,7 @@ abstract class Tokenizer
      * Clean up a list of simple English tokenization artifacts like spaces before punctuations and abbreviated forms
      *
      * @param string $text The text to clean up.
+     *
      * @return string The cleaned up text.
      */
     public static function cleanUpTokenization(string|int $text): string
@@ -186,46 +235,11 @@ abstract class Tokenizer
         return $arrayObject->getArrayCopy();
     }
 
-    public static function unicodeToBytes(): array
-    {
-        return array_flip(self::bytesToUnicode());
-    }
-
-    /**
-     * Returns list of utf-8 byte and a mapping to unicode strings.
-     * Specifically avoids mapping to whitespace/control characters the BPE code barfs on.
-     * @returns array Object with utf-8 byte keys and unicode string values.
-     */
-    public static function bytesToUnicode(): array
-    {
-        $bs = array_merge(
-            range(mb_ord('!'), mb_ord('~')),
-            range(mb_ord('¡'), mb_ord('¬')),
-            range(mb_ord('®'), mb_ord('ÿ'))
-        );
-
-        $cs = $bs;
-
-        // Adjust to correctly add missing bytes and map them starting from extended ASCII
-        $n = 0;
-        for ($b = 0; $b < 256; ++$b) {
-            if (!in_array($b, $bs)) {
-                $bs[] = $b;
-                // Here we start mapping to code points beyond the standard ASCII range
-                $cs[] = 256 + $n;
-                $n += 1;
-            }
-        }
-
-        // Convert $cs array elements to their corresponding Unicode characters
-        $cs = array_map(fn($code) => mb_chr($code), $cs);
-
-        return array_combine($bs, $cs);
-    }
-
     /**
      * Internal function to call the TokenizerModel instance.
+     *
      * @param string[] $tokens The tokens to encode.
+     *
      * @return string[] The encoded token IDs.
      */
     public function __invoke(array $tokens): array
@@ -243,6 +257,7 @@ abstract class Tokenizer
      * Encodes a list of tokens into a list of token IDs.
      *
      * @param string[] $tokens The tokens to encode.
+     *
      * @return string[] The encoded token IDs.
      */
     protected abstract function encode(array $tokens): array;
@@ -253,9 +268,11 @@ abstract class Tokenizer
      * @param array $arr The input array.
      * @param mixed $value The value to fuse on.
      * @param array $mapping The mapping from input domain to value.
+     *
      * @return array The fused array.
      */
-    protected function fuse(array $arr, mixed $value, array $mapping): array {
+    protected function fuse(array $arr, mixed $value, array $mapping): array
+    {
         $fused = [];
         $i = 0;
         $length = count($arr);
@@ -282,6 +299,7 @@ abstract class Tokenizer
      * Adds whitespace around any CJK (Chinese, Japanese, or Korean) character in the input text.
      *
      * @param string $text The input text to tokenize.
+     *
      * @return string The tokenized text with whitespace added around CJK characters.
      */
     public static function tokenizeChineseChars(string $text): string
@@ -307,6 +325,7 @@ abstract class Tokenizer
      * A "chinese character" is defined as anything in the CJK Unicode block.
      *
      * @param int $cp The Unicode codepoint to check.
+     *
      * @return bool True if the codepoint represents a CJK character, false otherwise.
      */
     public static function isChineseChar(int $cp): bool
@@ -327,6 +346,7 @@ abstract class Tokenizer
      * Converts a list of tokens into a list of token IDs.
      *
      * @param string[] $tokens The tokens to convert.
+     *
      * @return int[] The converted token IDs.
      */
     public function convertTokensToIds(array $tokens): array
@@ -344,6 +364,7 @@ abstract class Tokenizer
      * Converts a list of token IDs into a list of tokens.
      *
      * @param string[] $ids The token IDs to convert.
+     *
      * @return string[] The converted tokens.
      */
     public function convertIdsToTokens(array $ids): array

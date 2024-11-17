@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Normalizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 /**
  * A class representing a normalizer used in BERT tokenization.
@@ -73,7 +73,7 @@ class BertNormalizer extends Normalizer
         }
 
         if ($this->config['handle_chinese_chars'] ?? false) {
-            $text = Tokenizer::tokenizeChineseChars($text);
+            $text = TokenizerModel::tokenizeChineseChars($text);
         }
 
         if ($this->config['lowercase'] ?? false) {

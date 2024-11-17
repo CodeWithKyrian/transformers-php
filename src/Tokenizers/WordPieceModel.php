@@ -5,12 +5,12 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tokenizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 /**
  * A subclass of TokenizerModel that uses WordPiece encoding to encode tokens.
  */
-class WordPieceTokenizer extends Tokenizer
+class WordPieceModel extends TokenizerModel
 {
     protected int $maxInputCharsPerWord;
 

@@ -41,10 +41,14 @@ class TextStreamer extends Streamer
 
         if ($this->skipPrompt && $this->nextTokensArePrompt) {
             $this->nextTokensArePrompt = false;
-            $this->printedText = $this->tokenizer->decode($this->promptTokens, skipSpecialTokens: true);
-            $this->printedLength = mb_strlen($this->printedText);
+//            $this->printedText = $this->tokenizer->decode($this->promptTokens, skipSpecialTokens: true);
+//            $this->printedLength = mb_strlen($this->printedText);
+//            $this->lastDecodedCheckpointForToken = count($this->promptTokens) - 1;
+//            $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
+//            return;
+            $prompt = $this->tokenizer->decode($this->promptTokens, skipSpecialTokens: true);
+            $this->printedLength = mb_strlen($prompt);
             $this->lastDecodedCheckpointForToken = count($this->promptTokens) - 1;
-            $this->lastDecodedCheckpointForText = mb_strlen($this->printedText);
             return;
         }
 
@@ -90,4 +94,3 @@ class TextStreamer extends Streamer
         $this->lastDecodedCheckpointForText = 0;
     }
 }
-

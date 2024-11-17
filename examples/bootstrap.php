@@ -7,5 +7,6 @@ use Codewithkyrian\Transformers\Utils\ImageDriver;
 
 require_once './vendor/autoload.php';
 
-Transformers::setup()->setImageDriver(ImageDriver::VIPS);
-
+Transformers::setup()
+    ->setCacheDir('/Users/Kyrian/.transformers')
+    ->setImageDriver(ImageDriver::VIPS);

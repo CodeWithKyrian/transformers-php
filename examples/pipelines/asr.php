@@ -22,14 +22,17 @@ $transcriber = pipeline('asr', 'Xenova/whisper-tiny.en');
 //$audioUrl = __DIR__ . '/../sounds/taunt.wav';
 //$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
 //$audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
-//$audioUrl = __DIR__ . '/../sounds/ted_60.wav';
-$audioUrl = __DIR__ . '/../sounds/sample-1.mp3';
+$audioUrl = __DIR__ . '/../sounds/ted_60.wav';
+//$audioUrl = __DIR__ . '/../sounds/sample-1.mp3';
 
+$streamer = WhisperTextStreamer::make()
+//->onTimestampStart(fn($timestamp) => dump($timestamp));
+->onStream(fn($text) => print($text));
 
 $output = $transcriber($audioUrl,
     maxNewTokens: 256,
     chunkLengthSecs: 24,
-//    returnTimestamps: 'word',
+    streamer: $streamer,
 );
 
 dd($output, timeUsage(), memoryUsage());

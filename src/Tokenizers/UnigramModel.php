@@ -7,11 +7,12 @@ namespace Codewithkyrian\Transformers\Tokenizers;
 
 use Codewithkyrian\Transformers\DataStructures\CharTrie;
 use Codewithkyrian\Transformers\DataStructures\TokenLattice;
+use function Codewithkyrian\Transformers\Utils\array_pop_key;
 
 /**
  * Class representing a Unigram tokenizer model.
  */
-class UnigramTokenizer extends Tokenizer
+class UnigramModel extends TokenizerModel
 {
     protected array $scores = [];
 
@@ -31,7 +32,7 @@ class UnigramTokenizer extends Tokenizer
     public function __construct(array $config, ...$args)
     {
         parent::__construct($config);
-        $moreConfig = $args[0] ?? [];
+        $moreConfig = array_pop_key($args, 'tokenizerConfig', []);
 
         foreach ($config['vocab'] as $piece) {
             $this->vocab[] = $piece[0];
@@ -45,7 +46,7 @@ class UnigramTokenizer extends Tokenizer
         $this->bosToken = ' '; // beginning of a sentence token
         $this->bosTokenId = $this->tokenToIds[$this->bosToken] ?? null;
 
-        $this->eosToken = $moreConfig['eos_token'] ?? '[SEP]'; // end of a sentence token
+        $this->eosToken = $moreConfig['eos_token'] ?? '</s>'; // end of a sentence token
         $this->eosTokenId = $this->tokenToIds[$this->eosToken] ?? null;
 
         $this->minScore = min($this->scores);

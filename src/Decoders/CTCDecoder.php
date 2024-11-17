@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Decoders;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 /**
  * The CTC (Connectionist Temporal Classification) decoder.
@@ -65,7 +65,7 @@ class CTCDecoder extends Decoder
         $text = implode('', $filteredTokens);
         if ($this->cleanup) {
             // Cleanup and replace delimiter token
-            $text = trim(str_replace($this->wordDelimiterToken, ' ', Tokenizer::cleanUpTokenization($text)));
+            $text = trim(str_replace($this->wordDelimiterToken, ' ', TokenizerModel::cleanUpTokenization($text)));
         }
 
         return $text;

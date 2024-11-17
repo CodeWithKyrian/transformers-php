@@ -128,6 +128,7 @@ class Hub
 
             return $filePath;
         } catch (Exception $e) {
+            unlink($partPath);
             self::handleException($e->getCode(), $remoteURL, $fatal);
         }
 

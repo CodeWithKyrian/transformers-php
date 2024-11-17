@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PreTokenizers;
 
-use Codewithkyrian\Transformers\Tokenizers\Tokenizer;
+use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 
 /**
  * A pre-tokenizer that splits text into Byte-Pair-Encoding (BPE) subwords.
@@ -300,6 +300,8 @@ class ByteLevelPreTokenizer extends PreTokenizer
         if ($this->useRegex) {
 //            $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu";
             $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/u";
+            $this->pattern = "/('s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+)/u";
+//            $this->pattern = "/'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+[^\s\p{L}\p{N}]|\s+(?!\S)|\s+/u";
         }
     }
 
@@ -312,12 +314,10 @@ class ByteLevelPreTokenizer extends PreTokenizer
 
         // Split on whitespace and punctuation
         if ($this->useRegex) {
-            preg_match_all($this->pattern, $text, $matches);
-            $tokens = $matches[0];
+            $tokens = preg_split($this->pattern, $text, -1, PREG_SPLIT_NO_EMPTY|PREG_SPLIT_DELIM_CAPTURE);
         } else {
             $tokens = [$text];
         }
-
 
         // Maps all our bytes to unicode strings, avoiding control tokens of the BPE (spaces in our case)
         return array_map(function ($token) {
@@ -326,7 +326,6 @@ class ByteLevelPreTokenizer extends PreTokenizer
 
             return implode('', $bytes);
         }, $tokens);
-
     }
 
 }
