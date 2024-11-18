@@ -7,11 +7,19 @@ namespace Codewithkyrian\Transformers\Utils;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LoggerTrait;
 
-class StdoutLogger implements LoggerInterface
+class StreamLogger implements LoggerInterface
 {
     use LoggerTrait;
+
     protected const LOG_FORMAT = "[%datetime%] %level_name%: %message% %context%\n";
     protected const DATE_FORMAT = "Y-m-d\TH:i:sP";
+
+
+    /**
+     * @param resource $stream
+     */
+    public function __construct(protected $stream = STDOUT) {}
+
 
     public function log($level, \Stringable|string $message, array $context = []): void
     {
@@ -27,6 +35,6 @@ class StdoutLogger implements LoggerInterface
             ),
         ];
 
-        fwrite(STDOUT, strtr(static::LOG_FORMAT, $params));
+        fwrite($this->stream, strtr(static::LOG_FORMAT, $params));
     }
 }
