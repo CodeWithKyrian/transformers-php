@@ -9,6 +9,7 @@ namespace Codewithkyrian\Transformers\Models\Pretrained;
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Models\Auto\AutoModelForCausalLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
@@ -32,6 +33,7 @@ class VisionEncoderDecoderModel extends PretrainedModel
 
     /**
      * Creates a new instance of the `VisionEncoderDecoderModel` class.
+     *
      * @param AutoConfig $config The configuration array specifying the hyperparameters and other model settings.
      * @param mixed $session The ONNX session containing the encoder model.
      * @param InferenceSession $decoderMergedSession The ONNX session containing the merged decoder model.
@@ -60,7 +62,7 @@ class VisionEncoderDecoderModel extends PretrainedModel
             ?? AutoModel::ENCODER_DECODER_MODEL_MAPPING[$encoderModelType];
 
         if (!$encoderModel) {
-            echo "Model type for encoder '{$encoderModelType}' not found, assuming encoder-only architecture. Please report this at https://github.com/CodeWithKyrian/transformers-php/issues/new/choose.";
+            Transformers::getLogger()?->warning("Model type for encoder '{$encoderModelType}' not found, assuming encoder-only architecture. Please report this at https://github.com/CodeWithKyrian/transformers-php/issues/new/choose.");
         }
 
         // Validate decoder

@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\PreTrainedTokenizers;
 
 use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
+use Codewithkyrian\Transformers\Transformers;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -41,7 +42,7 @@ class AutoTokenizer
         'WhisperTokenizer' => WhisperTokenizer::class,
         'CodeGenTokenizer' => CodeGenTokenizer::class,
         'CLIPTokenizer' => CLIPTokenizer::class,
-         'SiglipTokenizer' => SiglipTokenizer::class,
+        'SiglipTokenizer' => SiglipTokenizer::class,
         // 'MarianTokenizer' => MarianTokenizer::class,
         'BloomTokenizer' => BloomTokenizer::class,
         'NllbTokenizer' => NllbTokenizer::class,
@@ -82,6 +83,7 @@ class AutoTokenizer
      * @param string $revision
      * @param mixed $legacy
      * @param OutputInterface|null $output
+     *
      * @return PreTrainedTokenizer|null
      */
     public static function fromPretrained(
@@ -104,7 +106,7 @@ class AutoTokenizer
         $cls = self::TOKENIZER_CLASS_MAPPING[$tokenizerClassName] ?? null;
 
         if ($cls == null) {
-            echo "Unknown tokenizer class $tokenizerClassName. Using PreTrainedTokenizer. \n";
+            Transformers::getLogger()?->warning("Unknown tokenizer class $tokenizerClassName. Using PreTrainedTokenizer.");
 
             $cls = PreTrainedTokenizer::class;
         }

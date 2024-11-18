@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\ImageDriver;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 class Transformers
@@ -21,6 +22,7 @@ class Transformers
 
     protected static ImageDriver $imageDriver;
 
+    protected static ?LoggerInterface $logger = null;
 
     /**
      * Returns a new instance of the static class.
@@ -122,6 +124,20 @@ class Transformers
         return $this;
     }
 
+    /**
+     * Set the logger for debugging.
+     *
+     * @param LoggerInterface $logger
+     *
+     * @return $this
+     */
+    public function setLogger(LoggerInterface $logger) : static
+    {
+        self::$logger = $logger;
+
+        return $this;
+    }
+
     public static function getCacheDir(): string
     {
         return self::$cacheDir;
@@ -154,5 +170,10 @@ class Transformers
         }
 
         return self::$imageDriver;
+    }
+
+    public static function getLogger(): ?LoggerInterface
+    {
+        return self::$logger;
     }
 }
