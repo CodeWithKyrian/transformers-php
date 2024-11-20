@@ -28,7 +28,7 @@ class LogitsProcessorList implements \IteratorAggregate
      *
      * @param LogitsProcessor[] $items The logits processor functions to add.
      */
-    public function extend(traversable $items): void
+    public function extend(Traversable $items): void
     {
         foreach ($items as $item) {
             $this->processors[] = $item;
@@ -41,13 +41,15 @@ class LogitsProcessorList implements \IteratorAggregate
      * @param array $inputIds The input IDs for the language model.
      * @param Tensor $batchedLogits A 2D array of logits, where each row corresponds to a single input sequence.
      */
-    public function __invoke(array $inputIds, Tensor &$batchedLogits): void
+    public function __invoke(array $inputIds, Tensor &$batchedLogits): Tensor
     {
-        for ($i = 0; $i < count($batchedLogits); $i++) {
-            foreach ($this->processors as $processor) {
-                $processor($inputIds, $batchedLogits[$i]); // Apply processors in-place
-            }
+        $toReturn = $batchedLogits;
+
+        foreach ($this->processors as $processor) {
+            $toReturn = $processor($inputIds, $toReturn); // Some apply processors in-place
         }
+
+        return $toReturn;
     }
 
     /**

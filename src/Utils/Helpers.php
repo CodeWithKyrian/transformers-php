@@ -82,6 +82,11 @@ function array_keys_to_snake_case(array $array): array
     return $snakeCasedArray;
 }
 
+function array_pick(array $array, array $keys): array
+{
+    return array_intersect_key($array, array_flip($keys));
+}
+
 function camelCaseToSnakeCase(string $input): string
 {
     return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));

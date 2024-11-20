@@ -50,7 +50,7 @@ class WhisperTextStreamer extends Streamer
             throw new InvalidArgumentException("WhisperTextStreamer only supports batch size 1");
         }
 
-        $tokens = $value[0]['output_token_ids'];
+        $tokens = $value[0];
 
         if (empty($tokens)) return;
 
@@ -73,7 +73,7 @@ class WhisperTextStreamer extends Streamer
         }
 
         $lastChunk = &$this->chunksToProcess[count($this->chunksToProcess) - 1];
-        $lastChunk['tokens'] = [...$value[0]['output_token_ids']];
+        $lastChunk['tokens'] = [...$value[0]];
 
         [$decodedText, $optional] = $this->tokenizer->decodeASR($this->chunksToProcess, $this->timePrecision);
 

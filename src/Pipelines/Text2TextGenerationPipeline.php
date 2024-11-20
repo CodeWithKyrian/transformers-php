@@ -66,26 +66,25 @@ class Text2TextGenerationPipeline extends Pipeline
         // Tokenize texts
         $tokenizer = $this->tokenizer;
 
-        $inputIds = $this instanceof TranslationPipeline && method_exists($tokenizer, 'buildTranslationInputs')
-            ? $tokenizer->buildTranslationInputs($inputs, $generateKwargs, padding: true, truncation: true)['input_ids']
-            : $tokenizer->__invoke($inputs, padding: true, truncation: true)['input_ids'];
-
+        $inputs = $this instanceof TranslationPipeline && method_exists($tokenizer, 'buildTranslationInputs')
+            ? $tokenizer->buildTranslationInputs($inputs, $generateKwargs, padding: true, truncation: true)
+            : $tokenizer->__invoke($inputs, padding: true, truncation: true);
 
         // Streamer can only handle one input at a time for now, so we only pass the first input
         $streamer?->setTokenizer($this->tokenizer)?->shouldSkipPrompt(false);
 
         // Generate output token ids
-        $outputTokenIds = $this->model->generate($inputIds, generationConfig: $generateKwargs, streamer: $streamer);
+        $outputTokenIds = $this->model->generate(
+            $inputs['input_ids'],
+            generationConfig: $generateKwargs,
+            streamer: $streamer,
+            attentionMask: $inputs['attention_mask']
+        );
 
         // Decode token ids to text
         return array_map(
             fn($text) => [$this->key => $text],
-            $tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
+            $tokenizer->batchDecode($outputTokenIds->toArray(), skipSpecialTokens: true)
         );
-    }
-
-    protected function camelCaseToSnakeCase(string $input): string
-    {
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $input));
     }
 }

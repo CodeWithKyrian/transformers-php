@@ -392,7 +392,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $dtype ??= NDArray::float32;
         $size = array_product($shape);
-        
+
         $buffer = Tensor::newBuffer($size, $dtype);
         $buffer->load(random_bytes($size * TensorBuffer::$valueSize[$dtype]));
         return new static($buffer, shape: $shape, offset: 0);
@@ -692,7 +692,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     {
         $mo = self::mo();
 
-        $result =  $mo->la()->matmul($this, $other, $transposeA, $transposeB);
+        $result = $mo->la()->matmul($this, $other, $transposeA, $transposeB);
 
         return new static($result->buffer(), $result->dtype(), $result->shape(), $result->offset());
     }
@@ -791,6 +791,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
      * Calculates the cosine similarity between this Tensor and another Tensor.
      *
      * @param Tensor $other The Tensor to calculate the cosine similarity with.
+     *
      * @return float|int The cosine similarity between this Tensor and the other Tensor.
      */
     public function cosSimilarity(Tensor $other): float|int
@@ -1110,7 +1111,7 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     /**
      * Slices the tensor with the given slices.
      *
-     * @param array ...$slices The slices to apply.
+     * @param mixed ...$slices The slices to apply.
      *
      * @return Tensor The sliced tensor.
      */
@@ -1135,13 +1136,21 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
                 $size[] = 1;
 
             } elseif (is_array($slice) && count($slice) === 2) {
+                [$first, $second] = $slice;
+
+                $first = $first === null ? 0
+                    : $this->safeIndex($first, $this->shape[$sliceIndex], $sliceIndex);
+
+                $second = $second === null ? $this->shape[$sliceIndex]
+                    : $this->safeIndex($second, $this->shape[$sliceIndex], $sliceIndex);
+
                 // An array of length 2 means take a range of elements
-                if ($slice[0] > $slice[1]) {
+                if ($first > $second) {
                     throw new InvalidArgumentException("Invalid slice: ".json_encode($slice));
                 }
 
-                $start[] = max($slice[0], 0);
-                $size[] = min($slice[1], $this->shape()[$sliceIndex]);
+                $start[] = $first;
+                $size[] = $second - $first;
 
             } else {
                 throw new InvalidArgumentException("Invalid slice: ".json_encode($slice));

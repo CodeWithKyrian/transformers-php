@@ -19,6 +19,15 @@ use Codewithkyrian\Transformers\Utils\InferenceSession;
 class VisionEncoderDecoderModel extends PretrainedModel
 {
     public string $mainInputName = 'pixel_values';
+    protected array $forwardParams = [
+        // Encoder inputs
+        'pixel_values',
+
+        // Decoder inputs
+        'decoder_input_ids',
+        'encoder_hidden_states',
+        'past_key_values',
+    ];
     protected bool $addEncoderPkv;
     protected mixed $numDecoderLayers;
     protected mixed $numDecoderHeads;
@@ -32,6 +41,7 @@ class VisionEncoderDecoderModel extends PretrainedModel
 
     /**
      * Creates a new instance of the `VisionEncoderDecoderModel` class.
+     *
      * @param AutoConfig $config The configuration array specifying the hyperparameters and other model settings.
      * @param mixed $session The ONNX session containing the encoder model.
      * @param InferenceSession $decoderMergedSession The ONNX session containing the merged decoder model.

@@ -12,9 +12,7 @@ use Codewithkyrian\Transformers\Tensor\Tensor;
  */
 class RepetitionPenaltyLogitsProcessor extends LogitsProcessor
 {
-    public function __construct(protected float $penalty)
-    {
-    }
+    public function __construct(protected float $penalty) {}
 
     /**
      * Apply the repetition penalty to the logits.
@@ -24,13 +22,16 @@ class RepetitionPenaltyLogitsProcessor extends LogitsProcessor
         // Modify the logits corresponding to each element in `input_ids`.
         // As a consequence, the logits corresponding to tokens that appear
         // many times in the output will be penalised more.
-        foreach ($inputIds as $inputId) {
-            if ($logits->buffer()[$inputId] < 0) {
-                $logits->buffer()[$inputId] *= $this->penalty;
-            } else {
-                $logits->buffer()[$inputId] /= $this->penalty;
+        for ($i = 0; $i < count($inputIds); $i++) {
+            foreach ($inputIds[$i] as $inputId) {
+                if ($logits[$i]->buffer()[$inputId] < 0) {
+                    $logits[$i]->buffer()[$inputId] *= $this->penalty;
+                } else {
+                    $logits[$i]->buffer()[$inputId] /= $this->penalty;
+                }
             }
         }
+
         return $logits;
     }
 }

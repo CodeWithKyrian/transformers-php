@@ -21,5 +21,4 @@ $query = 'In 5 steps, give me a guide on how to make a simple cake.';
 
 $output = $generator($query, streamer: $streamer, maxNewTokens: 256, doSample: true, repetitionPenalty: 1.1, temperature: 0.7);
 
-//dd($output);
-dd('Done', timeUsage(), memoryUsage());
+dd('Done', $streamer->getTPS()." tps", timeUsage(), memoryUsage());

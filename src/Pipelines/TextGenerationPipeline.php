@@ -74,7 +74,7 @@ class TextGenerationPipeline extends Pipeline
 
         if (is_string($inputs)) {
             $texts = $inputs = [$inputs];
-        } elseif (is_array($inputs) && array_every($inputs, fn($x) => is_string($x))) {
+        } elseif (is_array($inputs) && array_every($inputs, fn ($x) => is_string($x))) {
             $isBatched = true;
             $texts = $inputs;
         } else {
@@ -88,7 +88,7 @@ class TextGenerationPipeline extends Pipeline
             $isChatInput = true;
 
             // If the input is a chat, apply the chat template
-            $texts = array_map(fn($x) => $this->tokenizer->applyChatTemplate($x, addGenerationPrompt: true, tokenize: false), $inputs);
+            $texts = array_map(fn ($x) => $this->tokenizer->applyChatTemplate($x, addGenerationPrompt: true, tokenize: false), $inputs);
         }
 
         // By default, do not add special tokens
@@ -104,19 +104,20 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
-        $streamer?->setTokenizer($this->tokenizer)?->setPromptTokens($inputIds[0]->toArray());
+        $streamer?->setTokenizer($this->tokenizer);
 
-        $outputTokenIds = $this->model->generate($inputIds,
+        $outputTokenIds = $this->model->generate(
+            inputs: $inputIds,
             generationConfig: $generationConfig,
-            inputsAttentionMask: $attentionMask,
-            streamer: $streamer
+            streamer: $streamer,
+            attentionMask: $attentionMask
         );
 
-        $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
+        $decoded = $this->tokenizer->batchDecode($outputTokenIds->toArray(), skipSpecialTokens: true);
 
         $promptLengths = null;
         if (!$returnFullText && $inputIds->shape()[count($inputIds->shape()) - 1] > 0) {
-            $promptLengths = array_map(fn($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds->toArray(), skipSpecialTokens: true));
+            $promptLengths = array_map(fn ($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds->toArray(), skipSpecialTokens: true));
         }
 
         $toReturn = array_fill(0, count($inputs), []);
@@ -148,7 +149,6 @@ class TextGenerationPipeline extends Pipeline
     // Detect chat mode
     function isChat($x): bool
     {
-        return is_array($x) && array_every($x, fn($item) => isset($item['role']) && isset($item['content']));
+        return is_array($x) && array_every($x, fn ($item) => isset($item['role']) && isset($item['content']));
     }
-
 }

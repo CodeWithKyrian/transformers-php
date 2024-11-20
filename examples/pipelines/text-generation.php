@@ -47,4 +47,4 @@ $output = $generator($input,
 //    returnFullText: true,
 //);
 
-dd($output[0]['generated_text'], timeUsage(), memoryUsage());
+dd($output[0]['generated_text'], $streamer->getTPS()." tps", timeUsage(), memoryUsage());
