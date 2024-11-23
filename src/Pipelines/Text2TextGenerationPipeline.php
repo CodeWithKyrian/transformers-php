@@ -35,8 +35,7 @@ class Text2TextGenerationPipeline extends Pipeline
 
         $kwargs = array_keys_to_snake_case($args);
 
-        $generateKwargs = new GenerationConfig($kwargs);
-
+        $generationConfig = new GenerationConfig($kwargs);
 
         if (!is_array($inputs)) {
             $inputs = [$inputs];
@@ -44,47 +43,36 @@ class Text2TextGenerationPipeline extends Pipeline
 
         // Add global prefix, if present
         $prefix = $this->model->config['prefix'] ?? null;
-        if ($prefix) {
-            $inputs = array_map(fn($x) => $prefix . $x, $inputs);
-        }
+        if ($prefix) $inputs = array_map(fn ($x) => $prefix.$x, $inputs);
 
         // Handle task specific params
         $taskSpecificParams = $this->model->config['task_specific_params'] ?? null;
 
-
         if ($taskSpecificParams && isset($taskSpecificParams[$this->task->value])) {
             // Add prefixes, if present
             $taskPrefix = $taskSpecificParams[$this->task->value]['prefix'] ?? null;
-
-            if ($taskPrefix) {
-                $inputs = array_map(fn($x) => $taskPrefix . $x, $inputs);
-            }
+            if ($taskPrefix) $inputs = array_map(fn ($x) => $taskPrefix.$x, $inputs);
 
             // TODO: update generation config
         }
 
-        // Tokenize texts
-        $tokenizer = $this->tokenizer;
+        $inputs = $this instanceof TranslationPipeline && method_exists($this->tokenizer, 'buildTranslationInputs')
+            ? $this->tokenizer->buildTranslationInputs($inputs, $generationConfig, padding: true, truncation: true)
+            : $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
 
-        $inputs = $this instanceof TranslationPipeline && method_exists($tokenizer, 'buildTranslationInputs')
-            ? $tokenizer->buildTranslationInputs($inputs, $generateKwargs, padding: true, truncation: true)
-            : $tokenizer->__invoke($inputs, padding: true, truncation: true);
-
-        // Streamer can only handle one input at a time for now, so we only pass the first input
         $streamer?->setTokenizer($this->tokenizer)?->shouldSkipPrompt(false);
 
-        // Generate output token ids
         $outputTokenIds = $this->model->generate(
             $inputs['input_ids'],
-            generationConfig: $generateKwargs,
+            generationConfig: $generationConfig,
             streamer: $streamer,
             attentionMask: $inputs['attention_mask']
         );
 
         // Decode token ids to text
         return array_map(
-            fn($text) => [$this->key => $text],
-            $tokenizer->batchDecode($outputTokenIds->toArray(), skipSpecialTokens: true)
+            fn ($text) => [$this->key => $text],
+            $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
         );
     }
 }

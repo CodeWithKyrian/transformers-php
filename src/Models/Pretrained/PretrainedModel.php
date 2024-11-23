@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
@@ -51,11 +52,13 @@ class PretrainedModel
     protected array $forwardParams = ['input_ids', 'attention_mask'];
 
     /**
-     * @param AutoConfig $config The model configuration.
+     * @param PretrainedConfig $config The model configuration.
      * @param InferenceSession $session The ONNX session.
+     * @param ModelArchitecture $modelArchitecture
+     * @param mixed ...$args
      */
     public function __construct(
-        public AutoConfig        $config,
+        public PretrainedConfig  $config,
         public InferenceSession  $session,
         public ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
                                  ...$args
@@ -79,26 +82,27 @@ class PretrainedModel
      *    user or organization name, like `dbmdz/bert-base-german-cased`.
      *  - A path to a *directory* containing model weights, e.g., `./my_model_directory/`.
      * @param bool $quantized Whether to load the quantized version of a model (as opposed to the original one).
-     * @param array|AutoConfig|null $config The configuration object used to instantiate the model.
+     * @param array|PretrainedConfig|null $config The configuration object used to instantiate the model.
      * @param string|null $cacheDir Path to a directory in which a downloaded pretrained model configuration should
      * @param string|null $token The token to use as an authorization to download from private model repos.
      * @param string $revision The specific model version to use. It can be a branch name, a tag name,
      * @param string|null $modelFilename The name of the model file to load. If not provided, will default to the
      * @param ModelArchitecture $modelArchitecture
+     * @param callable|null $onProgress
      *
      * @return self The model instantiated from the configuration.
      * @throws HubException
      */
     public static function fromPretrained(
-        string            $modelNameOrPath,
-        bool              $quantized = true,
-        array|AutoConfig  $config = null,
-        ?string           $cacheDir = null,
-        ?string           $token = null,
-        string            $revision = 'main',
-        ?string           $modelFilename = null,
-        ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ?callable         $onProgress = null
+        string                 $modelNameOrPath,
+        bool                   $quantized = true,
+        array|PretrainedConfig $config = null,
+        ?string                $cacheDir = null,
+        ?string                $token = null,
+        string                 $revision = 'main',
+        ?string                $modelFilename = null,
+        ModelArchitecture      $modelArchitecture = ModelArchitecture::EncoderOnly,
+        ?callable              $onProgress = null
     ): self
     {
         if (is_array($config)) {
@@ -402,7 +406,7 @@ class PretrainedModel
      * @param ?int $bosTokenId The beginning of sequence token ID.
      * @param array $modelKwargs Additional model-specific arguments.
      *
-     * @return array { inputs_tensor : Tensor, model_inputs: array, model_input_name: string}
+     * @return array{ inputs_tensor : Tensor, model_inputs: Tensor[], model_input_name: string}
      * @throws Exception If `inputs` and main input name are both passed.
      */
     function prepareModelInputs(?Tensor $inputs = null, ?int $bosTokenId = null, array $modelKwargs = []): array
@@ -586,52 +590,10 @@ class PretrainedModel
         if ($pastKeyValues !== null) {
             $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
         } else {
-            // TODO support batches (i.e., batch_size > 1)
-            $batchSize = 1;
+            $shapes = $this->config->getKeyValueShapes();
 
-            if ($this->config->isEncoderDecoder && ($this->addEncoderPkv ?? true)) {
-                $encoderShape = [$batchSize, $this->numEncoderHeads, 0, $this->encoderDimKv];
-                $decoderShape = [$batchSize, $this->numDecoderHeads, 0, $this->decoderDimKv];
-
-
-                for ($i = 0; $i < $this->numDecoderLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.encoder.key"]
-                        = $decoderFeeds["past_key_values.$i.encoder.value"]
-                        = new Tensor([], shape: $encoderShape);
-                    $decoderFeeds["past_key_values.$i.decoder.key"]
-                        = $decoderFeeds["past_key_values.$i.decoder.value"]
-                        = new Tensor([], shape: $decoderShape);
-                }
-            } else if ($this->config->modelType === 'falcon') {
-                // NOTE: Custom implementation for Falcon
-                $shape = [$batchSize * $this->numHeads, 0, $this->dimKv];
-
-                for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
-                }
-            } else if ($this->config['multi_query'] ?? null) { // e.g., for `gpt_bigcode`
-                $shape = [$batchSize * $this->numHeads, 0, 2 * $this->dimKv];
-
-                for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key_value"] = new Tensor([], shape: $shape);
-                }
-            } else if ($this->config['model_type'] === 'bloom') {
-                // NOTE: Custom implementation for Bloom
-                $keyShape = [$batchSize * $this->numHeads, $this->dimKv, 0];
-                $valueShape = [$batchSize * $this->numHeads, 0, $this->dimKv];
-
-                for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $keyShape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $valueShape);
-                }
-            } else { // Decoder-only
-                $shape = [$batchSize, $this->numHeads, 0, $this->dimKv];
-
-                for ($i = 0; $i < $this->numLayers; ++$i) {
-                    $decoderFeeds["past_key_values.$i.key"] = new Tensor([], shape: $shape);
-                    $decoderFeeds["past_key_values.$i.value"] = new Tensor([], shape: $shape);
-                }
+            foreach ($shapes as $name => $shape) {
+                $decoderFeeds[$name] = new Tensor([], shape: $shape);
             }
         }
     }
@@ -800,25 +762,30 @@ class PretrainedModel
      */
     protected function getGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
     {
-        // Create empty generation config (contains defaults)
-        // We pass `$this->config` so that if `eos_token_id` or `bos_token_id` exist in the model's config, we will use them
-        $genConfig = new GenerationConfig($this->config->config);
+        // 1. Get the model's config  so that if `eos_token_id` or `bos_token_id` exist in it, we will use them
+        $modelConfig = $this->config->config;
+        foreach (["decoder", "generator", "text_config"] as $key) {
+            // Special case: some models have generation attributes set in the key.
+            // Use them if still unset in the generation config.
+            if (array_key_exists($key, $modelConfig)) {
+                $modelConfig = array_merge($modelConfig, $modelConfig[$key]);
+            }
+        }
 
-        $genConfigArray = $genConfig->toArray();
+        // 2. Create empty generation config (contains defaults) and values from model config
+        $genConfig = (new GenerationConfig($modelConfig))->toArray();
 
         // Apply model's generation config, if it exists
         if (property_exists($this, 'generationConfig')) {
-            $genConfigArray = array_merge($genConfigArray, $this->generationConfig->toArray());
+            $genConfig = array_merge($genConfig, $this->generationConfig->toArray());
         }
 
-        // Finally, use any generation config specified by the user
-        // when calling `generate`
+        // Finally, use any generation config specified by the user when calling `generate`
         if ($generationConfig !== null) {
-            $genConfigArray = array_merge($genConfigArray, $generationConfig->toArray());
+            $genConfig = array_merge($genConfig, $generationConfig->toArray());
         }
 
-
-        return new GenerationConfig($genConfigArray);
+        return new GenerationConfig($genConfig);
     }
 
     protected function getLogitsProcessor(

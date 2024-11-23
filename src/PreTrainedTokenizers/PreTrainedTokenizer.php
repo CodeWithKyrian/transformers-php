@@ -454,8 +454,7 @@ class PreTrainedTokenizer
 
                 // If, after normalization, this section is empty (e.g., trimming whitespace),
                 // we return an empty array
-                if (mb_strlen($x) === 0)
-                {
+                if (mb_strlen($x) === 0) {
                     return [];
                 }
 
@@ -537,8 +536,9 @@ class PreTrainedTokenizer
      *
      * @return string[]
      */
-    public function batchDecode(array $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
+    public function batchDecode(array|Tensor $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
     {
+        if ($batch instanceof Tensor) $batch = $batch->toArray();
         return array_map(fn ($x) => $this->decode($x, $skipSpecialTokens, $cleanUpTokenizationSpaces), $batch);
     }
 
@@ -643,7 +643,7 @@ class PreTrainedTokenizer
         bool    $padding = false,
         bool    $truncation = false,
         ?int    $maxLength = null,
-        bool $returnTensor = true
+        bool    $returnTensor = true
     ): string|array
     {
         $chatTemplate ??= $this->chatTemplate ?? $this->getDefaultChatTemplate();

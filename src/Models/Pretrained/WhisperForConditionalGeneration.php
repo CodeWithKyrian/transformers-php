@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\WhisperTimeStampLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\StoppingCriteria\StoppingCriteria;
@@ -20,18 +21,10 @@ use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
-    public bool $requiresAttentionMask = false;
     public string $mainInputName = 'input_features';
 
-    protected mixed $numDecoderLayers;
-    protected mixed $numDecoderHeads;
-    protected mixed $decoderDimKv;
-    protected mixed $numEncoderLayers;
-    protected mixed $numEncoderHeads;
-    protected mixed $encoderDimKv;
-
     public function __construct(
-        AutoConfig               $config,
+        PretrainedConfig               $config,
         InferenceSession         $session,
         public InferenceSession  $decoderMergedSession,
         public ModelArchitecture $modelArchitecture,
@@ -39,14 +32,6 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
     )
     {
         parent::__construct($config, $session, $modelArchitecture);
-
-        $this->numDecoderLayers = $this->config['decoder_layers'];
-        $this->numDecoderHeads = $this->config['decoder_attention_heads'];
-        $this->decoderDimKv = $this->config['d_model'] / $this->numDecoderHeads;
-
-        $this->numEncoderLayers = $this->config['encoder_layers'];
-        $this->numEncoderHeads = $this->config['encoder_attention_heads'];
-        $this->encoderDimKv = $this->config['d_model'] / $this->numEncoderHeads;
     }
 
     public function generate(

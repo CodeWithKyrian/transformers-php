@@ -62,7 +62,7 @@ class ImageToTextPipeline extends Pipeline
             $output = $this->model->generate($batch, generationConfig: $generationConfig, streamer: $streamer);
 
             $decoded = array_map(
-                fn($x) => ['generated_text' => trim($x)],
+                fn ($x) => ['generated_text' => trim($x)],
                 $this->tokenizer->batchDecode($output, skipSpecialTokens: true)
             );
 

@@ -132,7 +132,7 @@ enum ModelArchitecture: string
         $pastKeyValues = array_pop_key($modelInputs, 'past_key_values');
 
         if (in_array('use_cache_branch', $inputNames)) {
-            $modelInputs['use_cache_branch'] = new Tensor([!empty($pastKeyValues)], Tensor::bool);
+            $modelInputs['use_cache_branch'] = new Tensor([!empty($pastKeyValues)], Tensor::bool, [1]);
         }
 
         if (
@@ -157,10 +157,11 @@ enum ModelArchitecture: string
         $inputIds = array_pop_key($decoderFeeds, 'input_ids');
         $decoderInputIds = array_pop_key($decoderFeeds, 'decoder_input_ids');
 
-        $inputNames = array_column($model->decoderMergedSession->inputs(), 'name');
+
 
         // Encode if needed
         if (!$encoderOutputs) {
+            $inputNames = array_column($model->session->inputs(), 'name');
             // Pick necessary encoder inputs
             $encoderInputs = array_pick($modelInputs, $inputNames);
             // Encoder outputs are not given, so we must compute them
@@ -170,6 +171,8 @@ enum ModelArchitecture: string
         // Set decoder input ids and encoder hidden states
         $decoderFeeds['input_ids'] = $decoderInputIds;
         $decoderFeeds['encoder_hidden_states'] = $encoderOutputs;
+
+        $inputNames = array_column($model->decoderMergedSession->inputs(), 'name');
 
         if (in_array('encoder_attention_mask', $inputNames)) {
             $decoderFeeds['encoder_attention_mask'] = $modelInputs['attention_mask'];

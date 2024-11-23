@@ -113,11 +113,11 @@ class TextGenerationPipeline extends Pipeline
             attentionMask: $attentionMask
         );
 
-        $decoded = $this->tokenizer->batchDecode($outputTokenIds->toArray(), skipSpecialTokens: true);
+        $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
         $promptLengths = null;
         if (!$returnFullText && $inputIds->shape()[count($inputIds->shape()) - 1] > 0) {
-            $promptLengths = array_map(fn ($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds->toArray(), skipSpecialTokens: true));
+            $promptLengths = array_map(fn ($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds, skipSpecialTokens: true));
         }
 
         $toReturn = array_fill(0, count($inputs), []);
@@ -143,7 +143,6 @@ class TextGenerationPipeline extends Pipeline
         }
 
         return (!$isBatched && count($toReturn) === 1) ? $toReturn[0] : $toReturn;
-
     }
 
     // Detect chat mode
