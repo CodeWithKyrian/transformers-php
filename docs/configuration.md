@@ -22,7 +22,8 @@ Transformers::setup()
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
         ->setUserAgent('your-user-agent')
-        ->setImageDriver(ImageDriver::IMAGICK);
+        ->setImageDriver(ImageDriver::IMAGICK)
+        ->setLogger(new StreamLogger('transformers-php'));
 ```
 
 ::: tip
@@ -104,6 +105,14 @@ Transformers::setup()
     ->setImageDriver(ImageDriver::GD)
     ->apply();
 ```
+
+### `setLogger(LoggerInterface $logger)`
+
+This setting allows you to set a custom logger for TransformersPHP. No logger is set by default, but you can set a
+logger to debug TransformersPHP's internal behavior. The logger should implement the `Psr\Log\LoggerInterface` interface. TransformersPHP
+comes with a `StreamLogger` class, similar to Monolog's `StreamHandler`, which can be used to log to a stream (STDOUT, STDERR,
+or a file) and can be customized to log at different levels (debug, info, warning, error, critical). You can also pass in a 
+logger that is already configured and ready to use e.g. a Laravel logger.
 
 ## Standalone PHP Projects
 
