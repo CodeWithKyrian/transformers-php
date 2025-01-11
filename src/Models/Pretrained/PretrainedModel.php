@@ -25,6 +25,7 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Tensor\Tensor;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
@@ -49,9 +50,7 @@ class PretrainedModel
         public InferenceSession  $session,
         public ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
                                  ...$args
-    )
-    {
-    }
+    ) {}
 
 
     /**
@@ -72,6 +71,7 @@ class PretrainedModel
      * @param string $revision The specific model version to use. It can be a branch name, a tag name,
      * @param string|null $modelFilename The name of the model file to load. If not provided, will default to the
      * @param ModelArchitecture $modelArchitecture
+     *
      * @return self The model instantiated from the configuration.
      * @throws HubException
      */
@@ -217,7 +217,7 @@ class PretrainedModel
             default:
             {
                 if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
-                    echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
+                    Transformers::getLogger()?->warning("{$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.");
                 }
 
 
@@ -251,6 +251,7 @@ class PretrainedModel
      * @param bool $fatal Whether to raise an error if the file could not be loaded.
      * @param callable|null $onProgress
      * @param mixed ...$sessionOptions
+     *
      * @return InferenceSession|null
      * @throws HubException
      */
@@ -283,7 +284,9 @@ class PretrainedModel
     /**
      * Forward method for a pretrained model. If not overridden by a subclass, the correct forward method
      *  will be chosen based on the model type.
+     *
      * @param array $modelInputs The input data to the model in the format specified in the ONNX model.
+     *
      * @return array{logits: Tensor, hidden_states: Tensor, attentions: Tensor} The output data from the model in the format specified in the ONNX model.
      */
     public function forward(array $modelInputs): array
@@ -315,6 +318,7 @@ class PretrainedModel
     /**
      * @param InferenceSession $session
      * @param Tensor[] $inputs
+     *
      * @return Tensor[]
      * @throws MissingModelInputException
      */
@@ -345,20 +349,27 @@ class PretrainedModel
 
 
         if ($numInputsProvided > $numInputsNeeded) {
-            // No missing inputs, but too many inputs were provided.
-            // Warn the user and ignore the extra inputs.
+            // No missing inputs, but too many inputs were provided so we warn the user and ignore the extra inputs.
             $ignored = array_diff(array_keys($inputs), $inputNames);
-            echo 'WARNING: Too many inputs were provided (' . $numInputsProvided . ' > ' . $numInputsNeeded . '). 
-            The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
+
+            $warning = sprintf(
+                'Too many inputs were provided (%d > %d). The following inputs will be ignored: "%s".',
+                $numInputsProvided,
+                $numInputsNeeded,
+                implode(', ', $ignored)
+            );
+
+            Transformers::getLogger()->warning($warning);
         }
 
-//        return array_map(fn($i) => $i->toArray(), $inputs);
         return $inputs;
     }
 
     /**
      * Prepares an attention mask for a sequence of tokens based on configuration options.
+     *
      * @param Tensor $tokens The input tokens.
+     *
      * @return Tensor The attention mask tensor.
      * @private
      */
@@ -379,7 +390,7 @@ class PretrainedModel
         if ($isPadTokenInInputs && $isPadTokenNotEqualToEosTokenId) {
             $mo = Tensor::mo();
 
-            $data = $mo->f(fn($x) => $x != $padTokenId, $tokens);
+            $data = $mo->f(fn ($x) => $x != $padTokenId, $tokens);
 
             return new Tensor($data, $tokens->dtype(), $tokens->shape());
         } else {
@@ -389,9 +400,11 @@ class PretrainedModel
 
     /**
      * Add position IDs to the feeds object.
+     *
      * @param array $inputNames The names of the inputs to the model.
      * @param array $feeds The input to the model.
      * @param bool $useCacheBranch Whether to use the cache branch of the model.
+     *
      * @return void
      */
     public function preparePositionIds(array $inputNames, array &$feeds, bool $useCacheBranch): void
@@ -430,6 +443,7 @@ class PretrainedModel
      *
      * @param array $decoderResults The decoder results object.
      * @param ?array $pastKeyValues The previous past key values.
+     *
      * @return array An object containing past key values.
      */
     public function getPastKeyValues(array $decoderResults, ?array $pastKeyValues): array
@@ -458,6 +472,7 @@ class PretrainedModel
      * Returns an object containing attentions from the given decoder results object.
      *
      * @param array $decoderResults The decoder results object.
+     *
      * @return array An object containing attentions.
      */
     public function getAttentions(array $decoderResults): array
@@ -540,11 +555,13 @@ class PretrainedModel
     }
 
     /** Generates text based on the given inputs and generation configuration using the model.
+     *
      * @param Tensor $inputs The input token ids.
      * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
      * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
      * @param Tensor|null $inputsAttentionMask An optional attention mask for the inputs.
      * @param Streamer|null $streamer
+     *
      * @return array An array of generated output sequences, where each sequence is an array of token IDs.
      * @throws Exception
      */
@@ -615,7 +632,7 @@ class PretrainedModel
 
         $beams = $this->getStartBeams($inputs, $generationConfig, $numOutputTokens, $inputsAttentionMask);
 
-        while (array_some($beams, fn($beam) => !$beam['done']) && $numOutputTokens < $maxOutputTokens) {
+        while (array_some($beams, fn ($beam) => !$beam['done']) && $numOutputTokens < $maxOutputTokens) {
             $newestBeams = [];
             foreach ($beams as $beam) {
                 if ($beam['done']) {
@@ -676,7 +693,7 @@ class PretrainedModel
             // Group and select best beams
             $newestBeams = array_merge(...array_map(
                 function ($group) use ($generationConfig) {
-                    usort($group, fn($a, $b) => $b['score'] <=> $a['score']);
+                    usort($group, fn ($a, $b) => $b['score'] <=> $a['score']);
                     return array_slice(
                         $group,
                         0,
@@ -702,7 +719,7 @@ class PretrainedModel
                 function ($batch) use ($key, $generationConfig) {
                     if ($generationConfig->num_return_sequences > 1) {
                         return array_slice(
-                            array_map(fn($beam) => $beam[$key], $batch),
+                            array_map(fn ($beam) => $beam[$key], $batch),
                             0,
                             $generationConfig->num_return_sequences
                         );
@@ -752,7 +769,9 @@ class PretrainedModel
     /**
      * This function merges multiple generation configs together to form a final generation config to be used by the model for text generation.
      * It first creates an empty `GenerationConfig` object, then it applies the model's own `generation_config` property to it. Finally, if a `generation_config` object was passed in the arguments, it overwrites the corresponding properties in the final config with those of the passed config object.
+     *
      * @param ?GenerationConfig $generationConfig A `GenerationConfig` object containing generation parameters.
+     *
      * @return GenerationConfig The final generation config object to be used by the model for text generation.
      */
     protected function getGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
@@ -854,6 +873,7 @@ class PretrainedModel
      * @param GenerationConfig $generationConfig The generation config.
      * @param int $numOutputTokens The number of tokens to generate.
      * @param Tensor|null $inputsAttentionMask The attention mask for the input token ids.
+     *
      * @return array{ inputs: Tensor, output_token_ids: Tensor, score: float, done: bool, id: int } The initial beam for text generation.
      *
      */
@@ -877,6 +897,7 @@ class PretrainedModel
      *  Runs the beam for text generation task
      *
      * @param array $beam The current beam being generated.
+     *
      * @return array The updated beam after a single generation step.
      *
      */
@@ -890,6 +911,7 @@ class PretrainedModel
      *
      * @param array $beam
      * @param array $output
+     *
      * @throws Exception
      */
     public function addAttentionsToBeam(array &$beam, array $output): void
@@ -897,7 +919,7 @@ class PretrainedModel
         if ($this->config->isEncoderDecoder) {
             if (empty($output['cross_attentions'])) {
                 throw new Exception(
-                    "`output_attentions` is true, but the model did not produce cross-attentions. " .
+                    "`output_attentions` is true, but the model did not produce cross-attentions. ".
                     "This is most likely because the model was not exported with `output_attentions=True`."
                 );
             }
@@ -909,7 +931,7 @@ class PretrainedModel
 
         if (empty($output['decoder_attentions'])) {
             throw new Exception(
-                "`output_attentions` is true, but the model did not produce decoder-attentions. " .
+                "`output_attentions` is true, but the model did not produce decoder-attentions. ".
                 "This is most likely because the model was not exported with `output_attentions=True`."
             );
         }
@@ -935,6 +957,7 @@ class PretrainedModel
      * Groups an array of beam objects by their ids.
      *
      * @param array $beams The array of beam objects to group.
+     *
      * @return array An array of arrays, where each inner array contains beam objects with the same id.
      */
     public function groupBeams(array $beams): array

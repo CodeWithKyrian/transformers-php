@@ -8,6 +8,7 @@ namespace Codewithkyrian\Transformers\Models\Auto;
 use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\AutoConfig;
 
 /**
@@ -18,6 +19,7 @@ abstract class PretrainedMixin
 {
     /**
      * Mapping from model type to model class.
+     *
      * @var array<string, array<string, string>> The model class mappings.
      */
     const MODEL_CLASS_MAPPINGS = [];
@@ -37,15 +39,16 @@ abstract class PretrainedMixin
      * @param string|null $cacheDir The cache directory to save the model in.
      * @param string $revision The revision of the model.
      * @param string|null $modelFilename The filename of the model.
+     *
      * @return PretrainedModel The instantiated pretrained model.
      */
     public static function fromPretrained(
-        string           $modelNameOrPath,
-        bool             $quantized = true,
-        ?array           $config = null,
-        ?string          $cacheDir = null,
-        string           $revision = 'main',
-        ?string          $modelFilename = null,
+        string    $modelNameOrPath,
+        bool      $quantized = true,
+        ?array    $config = null,
+        ?string   $cacheDir = null,
+        string    $revision = 'main',
+        ?string   $modelFilename = null,
         ?callable $onProgress = null
     ): PretrainedModel
     {
@@ -53,7 +56,6 @@ abstract class PretrainedMixin
 
         foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {
             $modelClass = $modelClassMapping[$config->modelType] ?? null;
-
 
             if ($modelClass === null) continue;
 
@@ -72,7 +74,7 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-//            echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.";
+            Transformers::getLogger()->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,

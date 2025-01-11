@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Transformers;
+
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
@@ -188,7 +190,7 @@ function createPattern(array $pattern, bool $invert = true): ?string
         // NOTE: if invert is true, we wrap the pattern in a group so that it is kept when performing split
         return $invert ? $escaped : "($escaped)";
     } else {
-        echo 'Unknown pattern type: '.print_r($pattern, true);
+        Transformers::getLogger()?->error('Unknown pattern type: '.print_r($pattern, true));
         return null;
     }
 }

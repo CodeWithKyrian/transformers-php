@@ -152,7 +152,7 @@ Transformers::setup()
     ->setAuthToken('...') // Set the auth token for downloading models. Defaults to `null`
     ->setUserAgent('...') // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
     ->setImageDriver('...') // Set the image driver for processing images. Defaults to `IMAGICK'
-    ->apply(); // Apply the configuration
+    ->setLogger('...'); // Set the logger for TransformersPHP. Defaults to `null`
 ```
 
 You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For
