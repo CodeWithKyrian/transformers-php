@@ -190,7 +190,7 @@ function createPattern(array $pattern, bool $invert = true): ?string
         // NOTE: if invert is true, we wrap the pattern in a group so that it is kept when performing split
         return $invert ? $escaped : "($escaped)";
     } else {
-        Transformers::getLogger()->error('Unknown pattern type: '.print_r($pattern, true));
+        Transformers::getLogger()?->error('Unknown pattern type: '.print_r($pattern, true));
         return null;
     }
 }
