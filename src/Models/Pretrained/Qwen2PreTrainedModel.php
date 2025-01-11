@@ -13,7 +13,7 @@ use Codewithkyrian\Transformers\Utils\InferenceSession;
 /**
  * The bare Qwen2 Model outputting raw hidden-states without any specific head on top.
  */
-class Qwen2PreTrainedModel extends PreTrainedModel
+class Qwen2PreTrainedModel extends PretrainedModel
 {
     protected int $numHeads;
     protected int $numLayers;
