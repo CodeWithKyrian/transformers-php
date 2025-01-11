@@ -11,4 +11,4 @@ require_once './vendor/autoload.php';
 Transformers::setup()
     ->setCacheDir('/Users/Kyrian/.transformers')
     ->setImageDriver(ImageDriver::VIPS)
-    ->setLogger(new StreamLogger());
+    ->setLogger(new StreamLogger(STDOUT));
