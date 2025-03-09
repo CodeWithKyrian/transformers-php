@@ -4,7 +4,7 @@ import {defineConfig} from 'vitepress'
 export default defineConfig({
     title: "TransformersPHP",
     description: "State-of-the-art Machine Learning for PHP. Run Transformers in PHP",
-    base: "/transformers-php/",
+    base: "/",
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         nav: [
