@@ -8,6 +8,9 @@ use Codewithkyrian\Transformers\FFI\Sndfile;
 
 include __DIR__.'/../vendor/autoload.php';
 
+OnnxRuntime::version();
+dd(\Codewithkyrian\Transformers\Utils\timeUsage(true));
+
 dd(
     Libc::version(),
     Sndfile::version(),
