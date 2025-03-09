@@ -131,6 +131,6 @@ export default defineConfig({
                 'data-domain': 'codewithkyrian.github.io/transformers-php',
                 'src': 'https://analytics.codewithkyrian.com/js/script.js'
             }
-        ]
+        ],
     ]
 })

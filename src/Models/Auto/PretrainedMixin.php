@@ -74,7 +74,7 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-            Transformers::getLogger()->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
+            Transformers::getLogger()?->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,

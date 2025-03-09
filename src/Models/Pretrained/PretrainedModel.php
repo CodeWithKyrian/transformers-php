@@ -359,7 +359,7 @@ class PretrainedModel
                 implode(', ', $ignored)
             );
 
-            Transformers::getLogger()->warning($warning);
+            Transformers::getLogger()?->warning($warning);
         }
 
         return $inputs;
