@@ -54,7 +54,7 @@ class AudioClassificationPipeline extends Pipeline
         $toReturn = [];
 
         foreach ($inputs as $input) {
-            $audio = Audio::read($input);
+            $audio = new Audio($input);
             $audioTensor = $audio->toTensor(samplerate: $sampleRate);
 
             $processedInputs = ($this->processor)($audioTensor);

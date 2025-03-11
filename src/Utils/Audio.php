@@ -56,7 +56,7 @@ class Audio
         $tensorData = '';
         $totalOutputFrames = 0;
 
-        $state = $this->src->src_new($this->src->enum('SRC_SINC_FASTEST'), $this->channels(), $error);
+        $state = $this->src->src_new($this->src->enum('SRC_SINC_FASTEST'), $this->channels());
 
         $inputSize = $chunkSize * $this->channels();
         $inputData = $this->src->new("float[$inputSize]");

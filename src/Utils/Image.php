@@ -1,9 +1,10 @@
-r<?php
+<?php
 
 declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\FFI\Libvips;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Transformers;
 use Exception;
@@ -96,8 +97,8 @@ class Image
         };
 
         if ($imageDriver === ImageDriver::VIPS) {
-            $libsDir = basePath('libs');
-            putenv("VIPSHOME=$libsDir");
+            $libvips = new Libvips();
+            putenv("VIPSHOME={$libvips->getPlatformPath()}");
         }
     }
 

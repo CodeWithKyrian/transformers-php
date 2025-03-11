@@ -103,14 +103,19 @@ abstract class NativeLibrary
         return joinPaths($this->getLibDirectory(), "{$this->getLibraryName()}.{$this->getLibraryExtension()}");
     }
 
+    public function getPlatformPath(): string
+    {
+        return joinPaths(dirname(__DIR__, 2), 'shared', $this->platformConfig['directory']);
+    }
+
     public function getIncludeDirectory(): string
     {
-        return joinPaths(dirname(__DIR__, 2), 'shared', $this->platformConfig['directory'], 'include');
+        return joinPaths($this->getPlatformPath(), 'include');
     }
 
     public function getLibDirectory(): string
     {
-        return joinPaths(dirname(__DIR__, 2), 'shared', $this->platformConfig['directory'], 'lib');
+        return joinPaths($this->getPlatformPath(), 'lib');
     }
 
     public function getLibraryExtension(): string

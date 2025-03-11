@@ -150,7 +150,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             ?->setTimestampBegin($timestampBegin);
 
         foreach ($inputs as $input) {
-            $audio = Audio::read($input);
+            $audio = new Audio($input);
             $audioTensor = $audio->toTensor(samplerate: $samplingRate);
 
             $chunks = [];

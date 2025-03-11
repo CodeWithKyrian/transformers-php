@@ -38,20 +38,21 @@ class Samplerate extends NativeLibrary
      *
      * @param int $converter_type The type of converter to create.
      * @param int $channels The number of channels.
-     * @param int $error A pointer to an error code.
      *
      * @return CData|null The sample rate converter, or null if creation failed.
      * @throws Exception
      */
-    public function src_new(int $converter_type, int $channels, int &$error): ?CData
+    public function src_new(int $converter_type, int $channels): ?CData
     {
-        $errorPtr = $this->new('int');
-        $errorPtr->cdata = $error;
+        $error = $this->new('int32_t');
         
-        $src = $this->ffi->{'src_new'}($converter_type, $channels, $errorPtr);
-        $error = $errorPtr->cdata;
+        $state = $this->ffi->{'src_new'}($converter_type, $channels, \FFI::addr($error));
+
+        if ($error->cdata !== 0) {
+            throw new RuntimeException($this->strerror($error->cdata));
+        }
         
-        return $src;
+        return $state;
     }
 
     /**
