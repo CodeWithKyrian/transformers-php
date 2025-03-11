@@ -4,108 +4,92 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\TransformersLibsLoader\Library;
-use Exception;
-use FFI;
 use FFI\CData;
-use FFI\CType;
-use function Codewithkyrian\Transformers\Utils\basePath;
 
-class TransformersUtils
+class TransformersUtils extends NativeLibrary
 {
-    protected static FFI $ffi;
-
-
     /**
-     * Returns an instance of the FFI class after checking if it has already been instantiated.
-     * If not, it creates a new instance by defining the header contents and library path.
-     *
-     * @return FFI The FFI instance.
-     * @throws Exception
+     * Get the header file name for this library
+     * 
+     * @return string The header file name
      */
-    protected static function ffi(): FFI
+    protected function getHeaderName(): string
     {
-        if (!isset(self::$ffi)) {
-            self::$ffi = FFI::cdef(
-                file_get_contents(Library::TransformersPHP->header(basePath('includes'))),
-                Library::TransformersPHP->library(basePath('libs'))
-            );
-        }
-
-        return self::$ffi;
+        return 'transformersphp';
     }
 
     /**
-     * Creates a new instance of the specified type.
-     *
-     * @param CType|string $type The type of the instance to create.
-     * @param bool $owned Whether the instance should be owned. Default is true.
-     * @param bool $persistent Whether the instance should be persistent. Default is false.
-     *
-     * @return CData|null The created instance, or null if the creation failed.
-     * @throws Exception
+     * Get the library file name (without extension) for this library
+     * 
+     * @return string The library file name
      */
-    public static function new(CType|string $type, bool $owned = true, bool $persistent = false): ?CData
+    protected function getLibraryName(): string
     {
-        return self::ffi()->new($type, $owned, $persistent);
+        return 'libtransformersphp';
     }
 
-    /**
-     * Casts a pointer to a different type.
-     *
-     * @param CType|string $type The type to cast to.
-     * @param CData|int|float|bool|null $ptr The pointer to cast.
-     *
-     * @return ?CData The cast pointer, or null if the cast failed.
-     * @throws Exception
-     */
-    public static function cast(CType|string$type, CData|int|float|bool|null$ptr): ?CData
-    {
-        return self::ffi()->cast($type, $ptr);
-    }
-
-    /**
-     * Retrieves the value of the enum constant with the given name.
-     *
-     * @param string $name The name of the enum constant.
-     *
-     * @return mixed The value of the enum constant.
-     * @throws Exception
-     */
-    public static function enum(string $name): mixed
-    {
-        return self::ffi()->{$name};
-    }
 
     /**
      * Returns the version of the library as a string.
      *
      * @return string The version of the library.
      */
-    public static function version(): string
+    public function version(): string
     {
-        self::ffi();
         return '1.0.0';
     }
 
-    public static function padReflect($input, int $length, int $paddedLength): CData
+    /**
+     * Pad an array using reflection
+     * 
+     * @param mixed $input The input array
+     * @param int $length The length of the input array
+     * @param int $paddedLength The length of the padded array
+     * @return CData The padded array
+     */
+    public function padReflect($input, int $length, int $paddedLength): CData
     {
-        $padded = self::new("float[$paddedLength]");
-        self::ffi()->pad_reflect($input, $length, $padded, $paddedLength);
+        $padded = $this->new("float[$paddedLength]");
+        $this->ffi->{'pad_reflect'}($input, $length, $padded, $paddedLength);
 
         return $padded;
     }
 
-    public static function spectrogram(
+    /**
+     * Generate a spectrogram from a waveform
+     * 
+     * @param mixed $waveform The input waveform
+     * @param int $waveformLength The length of the waveform
+     * @param int $spectrogramLength The length of the spectrogram
+     * @param int $hopLength The hop length
+     * @param int $fftLength The FFT length
+     * @param mixed $window The window function
+     * @param int $windowLength The window length
+     * @param int $d1 The first dimension
+     * @param int $d1Max The maximum first dimension
+     * @param float $power The power
+     * @param bool $center Whether to center the window
+     * @param float $preemphasis The preemphasis
+     * @param mixed $melFilters The mel filters
+     * @param int $nMelFilters The number of mel filters
+     * @param mixed $nFreqBins The number of frequency bins
+     * @param float $melFloor The mel floor
+     * @param int $logMel Whether to use log mel
+     * @param bool|null $removeDcOffset Whether to remove DC offset
+     * @param bool $doPad Whether to pad
+     * @param bool $transpose Whether to transpose
+     * @return CData The spectrogram
+     */
+    public function spectrogram(
         $waveform, int $waveformLength, int $spectrogramLength, int $hopLength, int $fftLength,
         $window, int $windowLength, int $d1, int $d1Max, float $power, bool $center, float $preemphasis,
         $melFilters, int $nMelFilters, $nFreqBins, float $melFloor, int $logMel, ?bool $removeDcOffset,
         bool $doPad, bool $transpose
     ): CData
     {
-        $spectrogram = self::new("float[$spectrogramLength]");
+        $spectrogram = $this->new("float[$spectrogramLength]");
 
-        self::ffi()->spectrogram(
+        $this->ffi->{'spectrogram'}(
             $waveform, $waveformLength, $spectrogram, $spectrogramLength, $hopLength, $fftLength, $window,
             $windowLength, $d1, $d1Max, $power, $center, $preemphasis, $melFilters, $nMelFilters, $nFreqBins,
             $melFloor, $logMel, $removeDcOffset, $doPad, $transpose,

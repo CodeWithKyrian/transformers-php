@@ -1,0 +1,44 @@
+linux-x86_64:
+  exclude:
+    - shared/linux-arm64
+    - shared/darwin-*
+    - shared/windows-*
+    - "*.exe"
+    - "*.dylib"
+    - "**/*.windows.*"
+
+linux-arm64:
+  exclude:
+    - shared/linux-x86_64
+    - shared/windows-*
+    - shared/darwin-*
+    - "*.exe"
+    - "*.dylib"
+    - "**/*.windows.*"
+
+darwin-x86_64:
+  exclude:
+    - shared/darwin-arm64
+    - shared/windows-*
+    - shared/linux-*
+    - "*.exe"
+    - "*.so"
+    - "**/*.linux.*"
+
+darwin-arm64:
+  exclude:
+    - shared/darwin-x86_64
+    - shared/windows-*
+    - shared/linux-*
+    - "*.exe"
+    - "*.so"
+    - "**/*.linux.*"
+
+windows-x86_64:
+  exclude:
+    - shared/linux-*
+    - shared/darwin-*
+    - "*.so"
+    - "*.dylib"
+    - "**/*.darwin.*"
+    - "**/*.linux.*"

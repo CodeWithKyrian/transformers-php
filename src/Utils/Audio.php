@@ -16,17 +16,20 @@ use SplFixedArray;
 
 class Audio
 {
-    public function __construct(protected $sndfile, protected $sfinfo) {}
+    protected Sndfile $snd;
+    protected Samplerate $src;
 
-    public static function read(string $filename): static
+    protected $sfinfo;
+    protected $sndfile;
+
+    public function __construct(string $filename)
     {
-        $sfinfo = Sndfile::new('SF_INFO');
+        $this->snd = new Sndfile();
+        $this->src = new Samplerate();
 
-        $sndfile = Sndfile::open($filename, Sndfile::enum('SFM_READ'), FFI::addr($sfinfo));
-
-        return new static($sndfile, $sfinfo);
+        $this->sfinfo = $this->snd->new('SF_INFO');
+        $this->sndfile = $this->snd->open($filename, $this->snd->enum('SFM_READ'), FFI::addr($this->sfinfo));
     }
-
 
     public function channels(): int
     {
@@ -53,22 +56,22 @@ class Audio
         $tensorData = '';
         $totalOutputFrames = 0;
 
-        $state = Samplerate::srcNew(Samplerate::enum('SRC_SINC_FASTEST'), $this->channels());
+        $state = $this->src->src_new($this->src->enum('SRC_SINC_FASTEST'), $this->channels(), $error);
 
         $inputSize = $chunkSize * $this->channels();
-        $inputData = Samplerate::new("float[$inputSize]");
+        $inputData = $this->src->new("float[$inputSize]");
         $outputSize = $chunkSize * $this->channels();
-        $outputData = Samplerate::new("float[$outputSize]");
+        $outputData = $this->src->new("float[$outputSize]");
 
-        $srcData = Samplerate::new('SRC_DATA');
-        $srcData->data_in = Samplerate::cast('float *', $inputData);
+        $srcData = $this->src->new('SRC_DATA');
+        $srcData->data_in = $this->src->cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
-        $srcData->data_out = Samplerate::cast('float *', $outputData);
+        $srcData->data_out = $this->src->cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
         while (true) {
             /* Read the chunk of data */
-            $srcData->input_frames = Sndfile::readFrames($this->sndfile, $inputData, $chunkSize);
+            $srcData->input_frames = $this->snd->readf_float($this->sndfile, $inputData, $chunkSize);
 
             /* Add to tensor data without resample if the sample rate is the same */
             if ($this->samplerate() === $samplerate) {
@@ -83,11 +86,11 @@ class Audio
 
             /* The last read will not be a full buffer, so snd_of_input. */
             if ($srcData->input_frames < $chunkSize) {
-                $srcData->end_of_input = Sndfile::enum('SF_TRUE');
+                $srcData->end_of_input = $this->snd->enum('SF_TRUE');
             }
 
             /* Process current block. */
-            Samplerate::srcProcess($state, FFI::addr($srcData));
+            $this->src->process($state, FFI::addr($srcData));
 
             /* Terminate if done. */
             if ($srcData->end_of_input && $srcData->output_frames_gen === 0) {
@@ -101,7 +104,7 @@ class Audio
             $totalOutputFrames += $srcData->output_frames_gen;
         }
 
-        Samplerate::srcDelete($state);
+        $this->src->delete($state);
 
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
@@ -115,11 +118,11 @@ class Audio
     public function fromTensor(Tensor $tensor): void
     {
         $size = $tensor->size();
-        $buffer = Sndfile::new("float[$size]");
+        $buffer = $this->snd->new("float[$size]");
         $bufferString = $tensor->toString();
-        $buffer->cdata = Sndfile::cast('float *', (int)$bufferString);
+        $buffer->cdata = $this->snd->cast('float *', (int)$bufferString);
 
-        $write = Sndfile::writeFrames($this->sndfile, $buffer, $size);
+        $write = $this->snd->writef_float($this->sndfile, $buffer, $size);
 
         if ($write !== $size) {
             throw new RuntimeException("Failed to write to file");
@@ -129,7 +132,7 @@ class Audio
 
     public function __destruct()
     {
-        Sndfile::close($this->sndfile);
+        $this->snd->close($this->sndfile);
     }
 
     /**
@@ -428,6 +431,8 @@ class Audio
         bool    $transpose = false
     ): Tensor
     {
+        $transformersLib = new TransformersUtils();
+
         $fftLength ??= $frameLength;
         if ($frameLength > $fftLength) {
             throw new InvalidArgumentException("frameLength ($frameLength) may not be larger than fftLength ($fftLength)");
@@ -450,7 +455,7 @@ class Audio
             $halfWindow = (int)floor(($fftLength - 1) / 2) + 1;
             $paddedLength = $waveform->size() + (2 * $halfWindow);
 
-            $padded = TransformersUtils::padReflect(
+            $padded = $transformersLib->padReflect(
                 $waveform->buffer()->addr($waveform->offset()),
                 $waveform->size(),
                 $paddedLength
@@ -480,13 +485,13 @@ class Audio
         $melFilters = Tensor::fromArray($melFilters, Tensor::float32);
         $spectrogramShape = $transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max];
         $logMel = match ($logMel) {
-            'log' => TransformersUtils::enum('LOG_MEL_LOG'),
-            'log10' => TransformersUtils::enum('LOG_MEL_LOG10'),
-            'dB' => TransformersUtils::enum('LOG_MEL_DB'),
-            default => TransformersUtils::enum('LOG_MEL_NONE'),
+            'log' => $transformersLib->enum('LOG_MEL_LOG'),
+            'log10' => $transformersLib->enum('LOG_MEL_LOG10'),
+            'dB' => $transformersLib->enum('LOG_MEL_DB'),
+            default => $transformersLib->enum('LOG_MEL_NONE'),
         };
 
-        $spectrogram = TransformersUtils::spectrogram(
+        $spectrogram = $transformersLib->spectrogram(
             $waveform->buffer()->addr($waveform->offset()),
             $waveform->size(),
             array_product($spectrogramShape),

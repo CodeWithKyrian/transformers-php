@@ -4,79 +4,41 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\FFI;
 
-use Codewithkyrian\TransformersLibsLoader\Library;
-use Exception;
 use FFI;
 use FFI\CData;
-use FFI\CType;
 use RuntimeException;
-use function Codewithkyrian\Transformers\Utils\basePath;
 
-class OnnxRuntime
+class OnnxRuntime extends NativeLibrary
 {
-    protected static FFI $ffi;
-    protected static mixed $api;
+    protected mixed $api;
 
-
-    /**
-     * Returns an instance of the FFI class after checking if it has already been instantiated.
-     * If not, it creates a new instance by defining the header contents and library path.
-     *
-     * @return FFI The FFI instance.
-     * @throws Exception
-     */
-    protected static function ffi(): FFI
+    public function __construct()
     {
-        if (!isset(self::$ffi)) {
-            self::$ffi = FFI::cdef(
-                file_get_contents(Library::OnnxRuntime->header(basePath('includes'))),
-                Library::OnnxRuntime->library(basePath('libs'))
-            );
-        }
+        parent::__construct();
+        $this->initApi();
+    }
 
-        return self::$ffi;
+
+    protected function getHeaderName(): string
+    {
+        return 'onnxruntime';
+    }
+
+
+    protected function getLibraryName(): string
+    {
+        return 'libonnxruntime';
     }
 
     /**
-     * Creates a new instance of the specified type.
-     *
-     * @param string $type The type of the instance to create.
-     * @param bool $owned Whether the instance should be owned. Default is true.
-     * @param bool $persistent Whether the instance should be persistent. Default is false.
-     *
-     * @return CData|null The created instance, or null if the creation failed.
-     * @throws Exception
+     * Initialize the API
+     * 
+     * @throws RuntimeException If the API cannot be initialized
      */
-    public static function new(string $type, bool $owned = true, bool $persistent = false): ?CData
+    protected function initApi(): void
     {
-        return self::ffi()->new($type, $owned, $persistent);
-    }
-
-    /**
-     * Casts a pointer to a different type.
-     *
-     * @param CType|string $type The type to cast to.
-     * @param CData|int|float|bool|null $ptr The pointer to cast.
-     *
-     * @return ?CData The cast pointer, or null if the cast failed.
-     * @throws Exception
-     */
-    public static function cast(CType|string$type, CData|int|float|bool|null$ptr): ?CData
-    {
-        return self::ffi()->cast($type, $ptr);
-    }
-
-    /**
-     * Retrieves the value of the enum constant with the given name.
-     *
-     * @param string $name The name of the enum constant.
-     *
-     * @return mixed The value of the enum constant.
-     * @throws Exception
-     */
-    public static function enum(string $name): mixed
-    {
-        return self::ffi()->{$name};
+        $apiBase = $this->ffi->{'OrtGetApiBase'}()[0];
+        $this->api = ($apiBase->GetApi)(11)[0];
     }
 
     /**
@@ -84,280 +46,272 @@ class OnnxRuntime
      *
      * @return string The version of the library.
      */
-    public static function version(): string
+    public function version(): string
     {
-        return (self::ffi()->OrtGetApiBase()[0]->GetVersionString)();
+        $apiBase = $this->ffi->{'OrtGetApiBase'}()[0];
+        return ($apiBase->GetVersionString)();
     }
 
-    public static function api(): mixed
-    {
-        if (!isset(self::$api)) {
-            self::$api = (self::ffi()->OrtGetApiBase()[0]->GetApi)(11)[0];
-        }
-
-        return self::$api;
-    }
-
-    private static function checkStatus($status): void
+    private function checkStatus($status): void
     {
         if (!is_null($status)) {
-            $message = (self::api()->GetErrorMessage)($status);
-            (self::api()->ReleaseStatus)($status);
+            $message = (($this->api)->GetErrorMessage)($status);
+            (($this->api)->ReleaseStatus)($status);
             throw new RuntimeException($message);
         }
     }
 
-    public static function CreateSession($env, $modelPath, $options): CData
+    public function CreateSession($env, $modelPath, $options): CData
     {
-        $session = self::new('OrtSession*');
+        $session = $this->new('OrtSession*');
 
-        self::checkStatus((self::api()->CreateSession)($env, $modelPath, $options, FFI::addr($session)));
+        $this->checkStatus((($this->api)->CreateSession)($env, $modelPath, $options, FFI::addr($session)));
 
         return $session;
     }
 
-    public static function CreateSessionFromArray($env, $modelData, $modelDataLength, $options): CData
+    public function CreateSessionFromArray($env, $modelData, $modelDataLength, $options): CData
     {
-        $session = self::new('OrtSession*');
+        $session = $this->new('OrtSession*');
 
-        self::checkStatus((self::api()->CreateSessionFromArray)($env, $modelData, $modelDataLength, $options, FFI::addr($session)));
+        $this->checkStatus((($this->api)->CreateSessionFromArray)($env, $modelData, $modelDataLength, $options, FFI::addr($session)));
 
         return $session;
     }
 
-    public static function ReleaseSession($session): void
+    public function ReleaseSession($session): void
     {
-        (self::api()->ReleaseSession)($session);
+        (($this->api)->ReleaseSession)($session);
     }
 
-    public static function CreateSessionOptions(): CData
+    public function CreateSessionOptions(): CData
     {
-        $sessionOptions = self::new('OrtSessionOptions*');
+        $sessionOptions = $this->new('OrtSessionOptions*');
 
-        self::checkStatus((self::api()->CreateSessionOptions)(FFI::addr($sessionOptions)));
+        $this->checkStatus((($this->api)->CreateSessionOptions)(FFI::addr($sessionOptions)));
 
         return $sessionOptions;
     }
 
-    public static function EnableCpuMemArena($sessionOptions): void
+    public function EnableCpuMemArena($sessionOptions): void
     {
-        self::checkStatus((self::api()->EnableCpuMemArena)($sessionOptions));
+        $this->checkStatus((($this->api)->EnableCpuMemArena)($sessionOptions));
     }
 
-    public static function DisableCpuMemArena($sessionOptions): void
+    public function DisableCpuMemArena($sessionOptions): void
     {
-        self::checkStatus((self::api()->DisableCpuMemArena)($sessionOptions));
+        $this->checkStatus((($this->api)->DisableCpuMemArena)($sessionOptions));
     }
 
-    public static function EnableMemPattern($sessionOptions): void
+    public function EnableMemPattern($sessionOptions): void
     {
-        self::checkStatus((self::api()->EnableMemPattern)($sessionOptions));
+        $this->checkStatus((($this->api)->EnableMemPattern)($sessionOptions));
     }
 
-    public static function DisableMemPattern($sessionOptions): void
+    public function DisableMemPattern($sessionOptions): void
     {
-        self::checkStatus((self::api()->DisableMemPattern)($sessionOptions));
+        $this->checkStatus((($this->api)->DisableMemPattern)($sessionOptions));
     }
 
-    public static function EnableProfiling($sessionOptions, $profileFilePrefix): void
+    public function EnableProfiling($sessionOptions, $profileFilePrefix): void
     {
-        self::checkStatus((self::api()->EnableProfiling)($sessionOptions, $profileFilePrefix));
+        $this->checkStatus((($this->api)->EnableProfiling)($sessionOptions, $profileFilePrefix));
     }
 
-    public static function DisableProfiling($sessionOptions): void
+    public function DisableProfiling($sessionOptions): void
     {
-        self::checkStatus((self::api()->DisableProfiling)($sessionOptions));
+        $this->checkStatus((($this->api)->DisableProfiling)($sessionOptions));
     }
 
-    public static function SetSessionExecutionMode($sessionOptions, $executionMode): void
+    public function SetSessionExecutionMode($sessionOptions, $executionMode): void
     {
-        self::checkStatus((self::api()->SetSessionExecutionMode)($sessionOptions, $executionMode));
+        $this->checkStatus((($this->api)->SetSessionExecutionMode)($sessionOptions, $executionMode));
     }
 
-    public static function AddFreeDimensionOverride($sessionOptions, $dimDenotation, int $dimValue): void
+    public function AddFreeDimensionOverride($sessionOptions, $dimDenotation, int $dimValue): void
     {
-        self::checkStatus((self::api()->AddFreeDimensionOverride)($sessionOptions, $dimDenotation, $dimValue));
+        $this->checkStatus((($this->api)->AddFreeDimensionOverride)($sessionOptions, $dimDenotation, $dimValue));
     }
 
-    public static function AddFreeDimensionOverrideByName($sessionOptions, $dimName, int $dimValue): void
+    public function AddFreeDimensionOverrideByName($sessionOptions, $dimName, int $dimValue): void
     {
-        self::checkStatus((self::api()->AddFreeDimensionOverrideByName)($sessionOptions, $dimName, $dimValue));
+        $this->checkStatus((($this->api)->AddFreeDimensionOverrideByName)($sessionOptions, $dimName, $dimValue));
     }
 
-    public static function SetSessionGraphOptimizationLevel($sessionOptions, $optimizationLevel): void
+    public function SetSessionGraphOptimizationLevel($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetSessionGraphOptimizationLevel)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetSessionGraphOptimizationLevel)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetInterOpNumThreads($sessionOptions, $optimizationLevel): void
+    public function SetInterOpNumThreads($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetInterOpNumThreads)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetInterOpNumThreads)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetIntraOpNumThreads($sessionOptions, $optimizationLevel): void
+    public function SetIntraOpNumThreads($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetIntraOpNumThreads)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetIntraOpNumThreads)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetSessionLogSeverityLevel($sessionOptions, $optimizationLevel): void
+    public function SetSessionLogSeverityLevel($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetSessionLogSeverityLevel)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetSessionLogSeverityLevel)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetSessionLogVerbosityLevel($sessionOptions, $optimizationLevel): void
+    public function SetSessionLogVerbosityLevel($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetSessionLogVerbosityLevel)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetSessionLogVerbosityLevel)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetSessionLogId($sessionOptions, $optimizationLevel): void
+    public function SetSessionLogId($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetSessionLogId)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetSessionLogId)($sessionOptions, $optimizationLevel));
     }
 
-    public static function SetOptimizedModelFilePath($sessionOptions, $optimizationLevel): void
+    public function SetOptimizedModelFilePath($sessionOptions, $optimizationLevel): void
     {
-        self::checkStatus((self::api()->SetOptimizedModelFilePath)($sessionOptions, $optimizationLevel));
+        $this->checkStatus((($this->api)->SetOptimizedModelFilePath)($sessionOptions, $optimizationLevel));
     }
 
-    public static function AddSessionConfigEntry($sessionOptions, $configKey, $configValue): void
+    public function AddSessionConfigEntry($sessionOptions, $configKey, $configValue): void
     {
-        self::checkStatus((self::api()->AddSessionConfigEntry)($sessionOptions, $configKey, $configValue));
+        $this->checkStatus((($this->api)->AddSessionConfigEntry)($sessionOptions, $configKey, $configValue));
     }
 
-    public static function CreateCUDAProviderOptions(): CData
+    public function CreateCUDAProviderOptions(): CData
     {
-        $cudaOptions = self::new('OrtCUDAProviderOptionsV2*');
+        $cudaOptions = $this->new('OrtCUDAProviderOptionsV2*');
 
-        self::checkStatus((self::api()->CreateCUDAProviderOptions)(FFI::addr($cudaOptions)));
+        $this->checkStatus((($this->api)->CreateCUDAProviderOptions)(FFI::addr($cudaOptions)));
 
         return $cudaOptions;
     }
 
-    public static function SessionOptionsAppendExecutionProvider_CUDA_V2($sessionOptions, $cudaOptions): void
+    public function SessionOptionsAppendExecutionProvider_CUDA_V2($sessionOptions, $cudaOptions): void
     {
-        self::checkStatus((self::api()->SessionOptionsAppendExecutionProvider_CUDA_V2)($sessionOptions, $cudaOptions));
+        $this->checkStatus((($this->api)->SessionOptionsAppendExecutionProvider_CUDA_V2)($sessionOptions, $cudaOptions));
     }
 
-    public static function ReleaseCUDAProviderOptions($cudaOptions): void
+    public function ReleaseCUDAProviderOptions($cudaOptions): void
     {
-        (self::api()->ReleaseCUDAProviderOptions)($cudaOptions);
+        (($this->api)->ReleaseCUDAProviderOptions)($cudaOptions);
     }
 
-    public static function OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, $coreMlFlags): void
+    public function OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, $coreMlFlags): void
     {
-        self::checkStatus((self::api()->OrtSessionOptionsAppendExecutionProvider_CoreML)($sessionOptions, $coreMlFlags));
+        $this->checkStatus((($this->api)->OrtSessionOptionsAppendExecutionProvider_CoreML)($sessionOptions, $coreMlFlags));
     }
 
-    public static function ReleaseSessionOptions($sessionOptions): void
+    public function ReleaseSessionOptions($sessionOptions): void
     {
-        (self::api()->ReleaseSessionOptions)($sessionOptions);
+        (($this->api)->ReleaseSessionOptions)($sessionOptions);
     }
 
-    public static function SessionGetInputCount($session): int
+    public function SessionGetInputCount($session): int
     {
-        $numInputNodes = self::new('size_t');
+        $numInputNodes = $this->new('size_t');
 
-        self::checkStatus((self::api()->SessionGetInputCount)($session, FFI::addr($numInputNodes)));
+        $this->checkStatus((($this->api)->SessionGetInputCount)($session, FFI::addr($numInputNodes)));
 
         return $numInputNodes->cdata;
     }
 
-    public static function SessionGetInputName($session, int $index, $allocator): string
+    public function SessionGetInputName($session, int $index, $allocator): string
     {
-        $namePtr = self::new('char*');
+        $namePtr = $this->new('char*');
 
-        self::checkStatus((self::api()->SessionGetInputName)($session, $index, $allocator, FFI::addr($namePtr)));
+        $this->checkStatus((($this->api)->SessionGetInputName)($session, $index, $allocator, FFI::addr($namePtr)));
 
         $name = FFI::string($namePtr);
 
-        self::AllocatorFree($allocator, $namePtr);
+        $this->AllocatorFree($allocator, $namePtr);
 
         return $name;
     }
 
-    public static function SessionGetInputTypeInfo($session, int $index): CData
+    public function SessionGetInputTypeInfo($session, int $index): CData
     {
-        $typeInfo = self::new('OrtTypeInfo*');
+        $typeInfo = $this->new('OrtTypeInfo*');
 
-        self::checkStatus((self::api()->SessionGetInputTypeInfo)($session, $index, FFI::addr($typeInfo)));
+        $this->checkStatus((($this->api)->SessionGetInputTypeInfo)($session, $index, FFI::addr($typeInfo)));
 
         return $typeInfo;
     }
 
-    public static function SessionGetOutputCount($session): int
+    public function SessionGetOutputCount($session): int
     {
-        $numOutputNodes = self::new('size_t');
+        $numOutputNodes = $this->new('size_t');
 
-        self::checkStatus((self::api()->SessionGetOutputCount)($session, FFI::addr($numOutputNodes)));
+        $this->checkStatus((($this->api)->SessionGetOutputCount)($session, FFI::addr($numOutputNodes)));
 
         return $numOutputNodes->cdata;
     }
 
-    public static function SessionGetOutputName($session, int $index, $allocator): string
+    public function SessionGetOutputName($session, int $index, $allocator): string
     {
-        $namePtr = self::new('char*');
+        $namePtr = $this->new('char*');
 
-        self::checkStatus((self::api()->SessionGetOutputName)($session, $index, $allocator, FFI::addr($namePtr)));
+        $this->checkStatus((($this->api)->SessionGetOutputName)($session, $index, $allocator, FFI::addr($namePtr)));
 
         $name = FFI::string($namePtr);
 
-        self::AllocatorFree($allocator, $namePtr);
+        $this->AllocatorFree($allocator, $namePtr);
 
         return $name;
     }
 
-    public static function SessionGetOutputTypeInfo($session, int $index): CData
+    public function SessionGetOutputTypeInfo($session, int $index): CData
     {
-        $typeInfo = self::new('OrtTypeInfo*');
+        $typeInfo = $this->new('OrtTypeInfo*');
 
-        self::checkStatus((self::api()->SessionGetOutputTypeInfo)($session, $index, FFI::addr($typeInfo)));
+        $this->checkStatus((($this->api)->SessionGetOutputTypeInfo)($session, $index, FFI::addr($typeInfo)));
 
         return $typeInfo;
     }
 
-    public static function GetAvailableProviders(): array
+    public function GetAvailableProviders(): array
     {
-        $outPtr = self::new('char**');
-        $lengthPtr = self::new('int');
+        $outPtr = $this->new('char**');
+        $lengthPtr = $this->new('int');
 
-        self::checkStatus((self::api()->GetAvailableProviders)(FFI::addr($outPtr), FFI::addr($lengthPtr)));
+        $this->checkStatus((($this->api)->GetAvailableProviders)(FFI::addr($outPtr), FFI::addr($lengthPtr)));
 
         return [$outPtr, $lengthPtr->cdata];
     }
 
-    public static function ReleaseAvailableProviders($ptr, int $length): void
+    public function ReleaseAvailableProviders($ptr, int $length): void
     {
-        (self::api()->ReleaseAvailableProviders)($ptr, $length);
+        (($this->api)->ReleaseAvailableProviders)($ptr, $length);
     }
 
-    public static function SessionEndProfiling($session, $allocator): string
+    public function SessionEndProfiling($session, $allocator): string
     {
-        $resultPtr = self::new('char*');
+        $resultPtr = $this->new('char*');
 
-        self::checkStatus((self::api()->SessionEndProfiling)($session, $allocator, FFI::addr($resultPtr)));
+        $this->checkStatus((($this->api)->SessionEndProfiling)($session, $allocator, FFI::addr($resultPtr)));
 
         $result = FFI::string($resultPtr);
 
-        self::AllocatorFree($allocator, $resultPtr);
+        $this->AllocatorFree($allocator, $resultPtr);
 
         return $result;
     }
 
-    public static function SessionGetModelMetadata($session): CData
+    public function SessionGetModelMetadata($session): CData
     {
-        $metadata = self::new('OrtModelMetadata*');
+        $metadata = $this->new('OrtModelMetadata*');
 
-        self::checkStatus((self::api()->SessionGetModelMetadata)($session, FFI::addr($metadata)));
+        $this->checkStatus((($this->api)->SessionGetModelMetadata)($session, FFI::addr($metadata)));
 
         return $metadata;
     }
 
-    public static function ModelMetadataGetCustomMetadataMapKeys($metadata, $allocator): array
+    public function ModelMetadataGetCustomMetadataMapKeys($metadata, $allocator): array
     {
-        $keyPtrs = self::new('char**');
-        $numKeys = self::new('int64_t');
+        $keyPtrs = $this->new('char**');
+        $numKeys = $this->new('int64_t');
 
-        self::checkStatus((self::api()->ModelMetadataGetCustomMetadataMapKeys)($metadata, $allocator, FFI::addr($keyPtrs), FFI::addr($numKeys)));
+        $this->checkStatus((($this->api)->ModelMetadataGetCustomMetadataMapKeys)($metadata, $allocator, FFI::addr($keyPtrs), FFI::addr($numKeys)));
 
         $keys = [];
 
@@ -365,173 +319,173 @@ class OnnxRuntime
             $keys[] = FFI::string($keyPtrs[$i]);
         }
 
-        self::AllocatorFree($allocator, $keyPtrs);
+        $this->AllocatorFree($allocator, $keyPtrs);
 
         return [$keys, $numKeys->cdata];
     }
 
-    public static function ModelMetadataLookupCustomMetadataMap($metadata, $allocator, $key): string
+    public function ModelMetadataLookupCustomMetadataMap($metadata, $allocator, $key): string
     {
-        $valuePtr = self::new('char*');
+        $valuePtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataLookupCustomMetadataMap)($metadata, $allocator, $key, FFI::addr($valuePtr)));
+        $this->checkStatus((($this->api)->ModelMetadataLookupCustomMetadataMap)($metadata, $allocator, $key, FFI::addr($valuePtr)));
 
         $value = FFI::string($valuePtr);
 
-        self::AllocatorFree($allocator, $valuePtr);
+        $this->AllocatorFree($allocator, $valuePtr);
 
         return $value;
     }
 
-    public static function ModelMetadataGetDescription($metadata, $allocator): string
+    public function ModelMetadataGetDescription($metadata, $allocator): string
     {
-        $descriptionPtr = self::new('char*');
+        $descriptionPtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataGetDescription)($metadata, $allocator, FFI::addr($descriptionPtr)));
+        $this->checkStatus((($this->api)->ModelMetadataGetDescription)($metadata, $allocator, FFI::addr($descriptionPtr)));
 
         $description = FFI::string($descriptionPtr);
 
-        self::AllocatorFree($allocator, $descriptionPtr);
+        $this->AllocatorFree($allocator, $descriptionPtr);
 
         return $description;
     }
 
-    public static function ModelMetadataGetDomain($metadata, $allocator): string
+    public function ModelMetadataGetDomain($metadata, $allocator): string
     {
-        $domainPtr = self::new('char*');
+        $domainPtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataGetDomain)($metadata, $allocator, FFI::addr($domainPtr)));
+        $this->checkStatus((($this->api)->ModelMetadataGetDomain)($metadata, $allocator, FFI::addr($domainPtr)));
 
         $domain = FFI::string($domainPtr);
 
-        self::AllocatorFree($allocator, $domainPtr);
+        $this->AllocatorFree($allocator, $domainPtr);
 
         return $domain;
     }
 
-    public static function ModelMetadataGetGraphName($metadata, $allocator): string
+    public function ModelMetadataGetGraphName($metadata, $allocator): string
     {
-        $graphNamePtr = self::new('char*');
+        $graphNamePtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataGetGraphName)($metadata, $allocator, FFI::addr($graphNamePtr)));
+        $this->checkStatus((($this->api)->ModelMetadataGetGraphName)($metadata, $allocator, FFI::addr($graphNamePtr)));
 
         $graphName = FFI::string($graphNamePtr);
 
-        self::AllocatorFree($allocator, $graphNamePtr);
+        $this->AllocatorFree($allocator, $graphNamePtr);
 
         return $graphName;
     }
 
-    public static function ModelMetadataGetGraphDescription($metadata, $allocator): string
+    public function ModelMetadataGetGraphDescription($metadata, $allocator): string
     {
-        $graphDescriptionPtr = self::new('char*');
+        $graphDescriptionPtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataGetGraphDescription)($metadata, $allocator, FFI::addr($graphDescriptionPtr)));
+        $this->checkStatus((($this->api)->ModelMetadataGetGraphDescription)($metadata, $allocator, FFI::addr($graphDescriptionPtr)));
 
         $graphDescription = FFI::string($graphDescriptionPtr);
 
-        self::AllocatorFree($allocator, $graphDescriptionPtr);
+        $this->AllocatorFree($allocator, $graphDescriptionPtr);
 
         return $graphDescription;
     }
 
-    public static function ModelMetadataGetProducerName($metadata, $allocator): string
+    public function ModelMetadataGetProducerName($metadata, $allocator): string
     {
-        $producerNamePtr = self::new('char*');
+        $producerNamePtr = $this->new('char*');
 
-        self::checkStatus((self::api()->ModelMetadataGetProducerName)($metadata, $allocator, FFI::addr($producerNamePtr)));
+        $this->checkStatus((($this->api)->ModelMetadataGetProducerName)($metadata, $allocator, FFI::addr($producerNamePtr)));
 
         $producerName = FFI::string($producerNamePtr);
 
-        self::AllocatorFree($allocator, $producerNamePtr);
+        $this->AllocatorFree($allocator, $producerNamePtr);
 
         return $producerName;
     }
 
-    public static function ModelMetadataGetVersion($metadata): int
+    public function ModelMetadataGetVersion($metadata): int
     {
-        $version = self::new('int64_t');
+        $version = $this->new('int64_t');
 
-        self::checkStatus((self::api()->ModelMetadataGetVersion)($metadata, FFI::addr($version)));
+        $this->checkStatus((($this->api)->ModelMetadataGetVersion)($metadata, FFI::addr($version)));
 
         return $version->cdata;
     }
 
-    public static function ReleaseModelMetadata($metadata): void
+    public function ReleaseModelMetadata($metadata): void
     {
-        (self::api()->ReleaseModelMetadata)($metadata);
+        (($this->api)->ReleaseModelMetadata)($metadata);
     }
 
-    public static function CreateRunOptions(): CData
+    public function CreateRunOptions(): CData
     {
-        $runOptions = self::new('OrtRunOptions*');
+        $runOptions = $this->new('OrtRunOptions*');
 
-        self::checkStatus((self::api()->CreateRunOptions)(FFI::addr($runOptions)));
+        $this->checkStatus((($this->api)->CreateRunOptions)(FFI::addr($runOptions)));
 
         return $runOptions;
     }
 
-    public static function RunOptionsSetRunLogSeverityLevel($runOptions, int $logSeverityLevel): void
+    public function RunOptionsSetRunLogSeverityLevel($runOptions, int $logSeverityLevel): void
     {
-        self::checkStatus((self::api()->RunOptionsSetRunLogSeverityLevel)($runOptions, $logSeverityLevel));
+        $this->checkStatus((($this->api)->RunOptionsSetRunLogSeverityLevel)($runOptions, $logSeverityLevel));
     }
 
-    public static function RunOptionsSetRunLogVerbosityLevel($runOptions, int $logVerbosityLevel): void
+    public function RunOptionsSetRunLogVerbosityLevel($runOptions, int $logVerbosityLevel): void
     {
-        self::checkStatus((self::api()->RunOptionsSetRunLogVerbosityLevel)($runOptions, $logVerbosityLevel));
+        $this->checkStatus((($this->api)->RunOptionsSetRunLogVerbosityLevel)($runOptions, $logVerbosityLevel));
     }
 
-    public static function RunOptionsSetRunTag($runOptions, string $logId): void
+    public function RunOptionsSetRunTag($runOptions, string $logId): void
     {
-        self::checkStatus((self::api()->RunOptionsSetRunTag)($runOptions, $logId));
+        $this->checkStatus((($this->api)->RunOptionsSetRunTag)($runOptions, $logId));
     }
 
-    public static function RunOptionsSetTerminate($runOptions): void
+    public function RunOptionsSetTerminate($runOptions): void
     {
-        self::checkStatus((self::api()->RunOptionsSetTerminate)($runOptions));
+        $this->checkStatus((($this->api)->RunOptionsSetTerminate)($runOptions));
     }
 
-    public static function RunOptionsUnsetTerminate($runOptions): void
+    public function RunOptionsUnsetTerminate($runOptions): void
     {
-        self::checkStatus((self::api()->RunOptionsUnsetTerminate)($runOptions));
+        $this->checkStatus((($this->api)->RunOptionsUnsetTerminate)($runOptions));
     }
 
-    public static function Run($session, $runOptions, $inputNames, $inputs, int $inputLength, $outputNames, int $outputLength): CData
+    public function Run($session, $runOptions, $inputNames, $inputs, int $inputLength, $outputNames, int $outputLength): CData
     {
-        $outputTensor = self::new("OrtValue*[$outputLength]");
+        $outputTensor = $this->new("OrtValue*[$outputLength]");
 
-        self::checkStatus((self::api()->Run)($session, $runOptions, $inputNames, $inputs, $inputLength, $outputNames, $outputLength, $outputTensor));
+        $this->checkStatus((($this->api)->Run)($session, $runOptions, $inputNames, $inputs, $inputLength, $outputNames, $outputLength, $outputTensor));
 
         return $outputTensor;
     }
 
-    public static function ReleaseRunOptions($runOptions): void
+    public function ReleaseRunOptions($runOptions): void
     {
-        (self::api()->ReleaseRunOptions)($runOptions);
+        (($this->api)->ReleaseRunOptions)($runOptions);
     }
 
-    public static function GetTensorElementType($info): ?CData
+    public function GetTensorElementType($info): ?CData
     {
-        $type = self::new('ONNXTensorElementDataType');
+        $type = $this->new('ONNXTensorElementDataType');
 
-        self::checkStatus((self::api()->GetTensorElementType)($info, FFI::addr($type)));
+        $this->checkStatus((($this->api)->GetTensorElementType)($info, FFI::addr($type)));
 
         return $type;
     }
 
-    public static function GetDimensionsCount($info): int
+    public function GetDimensionsCount($info): int
     {
-        $numDims = self::new('size_t');
-        self::checkStatus((self::api()->GetDimensionsCount)($info, FFI::addr($numDims)));
+        $numDims = $this->new('size_t');
+        $this->checkStatus((($this->api)->GetDimensionsCount)($info, FFI::addr($numDims)));
 
         return $numDims->cdata;
     }
 
-    public static function GetDimensions($info, int $numDims): array
+    public function GetDimensions($info, int $numDims): array
     {
-        $nodeDims = self::new("int64_t[$numDims]");
+        $nodeDims = $this->new("int64_t[$numDims]");
 
-        self::checkStatus((self::api()->GetDimensions)($info, $nodeDims, $numDims));
+        $this->checkStatus((($this->api)->GetDimensions)($info, $nodeDims, $numDims));
 
         $dims = [];
 
@@ -543,216 +497,216 @@ class OnnxRuntime
         return $dims;
     }
 
-    public static function GetSymbolicDimensions($info, int $numDims): CData
+    public function GetSymbolicDimensions($info, int $numDims): CData
     {
-        $symbolicDims = self::new("char*[$numDims]");
+        $symbolicDims = $this->new("char*[$numDims]");
 
-        self::checkStatus((self::api()->GetSymbolicDimensions)($info, $symbolicDims, $numDims));
+        $this->checkStatus((($this->api)->GetSymbolicDimensions)($info, $symbolicDims, $numDims));
 
         return $symbolicDims;
     }
 
-    public static function GetOnnxTypeFromTypeInfo($typeInfo): CData
+    public function GetOnnxTypeFromTypeInfo($typeInfo): CData
     {
-        $onnxType = self::new('ONNXType');
+        $onnxType = $this->new('ONNXType');
 
-        self::checkStatus((self::api()->GetOnnxTypeFromTypeInfo)($typeInfo, FFI::addr($onnxType)));
+        $this->checkStatus((($this->api)->GetOnnxTypeFromTypeInfo)($typeInfo, FFI::addr($onnxType)));
 
         return $onnxType;
     }
 
-    public static function CastTypeInfoToTensorInfo($typeInfo): CData
+    public function CastTypeInfoToTensorInfo($typeInfo): CData
     {
-        $tensorInfo = self::new('OrtTensorTypeAndShapeInfo*');
+        $tensorInfo = $this->new('OrtTensorTypeAndShapeInfo*');
 
-        self::checkStatus((self::api()->CastTypeInfoToTensorInfo)($typeInfo, FFI::addr($tensorInfo)));
+        $this->checkStatus((($this->api)->CastTypeInfoToTensorInfo)($typeInfo, FFI::addr($tensorInfo)));
 
         return $tensorInfo;
     }
 
-    public static function CastTypeInfoToSequenceTypeInfo($typeInfo): CData
+    public function CastTypeInfoToSequenceTypeInfo($typeInfo): CData
     {
-        $sequenceTypeInfo = self::new('OrtSequenceTypeInfo*');
+        $sequenceTypeInfo = $this->new('OrtSequenceTypeInfo*');
 
-        self::checkStatus((self::api()->CastTypeInfoToSequenceTypeInfo)($typeInfo, FFI::addr($sequenceTypeInfo)));
+        $this->checkStatus((($this->api)->CastTypeInfoToSequenceTypeInfo)($typeInfo, FFI::addr($sequenceTypeInfo)));
 
         return $sequenceTypeInfo;
     }
 
-    public static function CastTypeInfoToMapTypeInfo($typeInfo): CData
+    public function CastTypeInfoToMapTypeInfo($typeInfo): CData
     {
-        $mapTypeInfo = self::new('OrtMapTypeInfo*');
+        $mapTypeInfo = $this->new('OrtMapTypeInfo*');
 
-        self::checkStatus((self::api()->CastTypeInfoToMapTypeInfo)($typeInfo, FFI::addr($mapTypeInfo)));
+        $this->checkStatus((($this->api)->CastTypeInfoToMapTypeInfo)($typeInfo, FFI::addr($mapTypeInfo)));
 
         return $mapTypeInfo;
     }
 
-    public static function GetSequenceElementType($sequenceTypeInfo): CData
+    public function GetSequenceElementType($sequenceTypeInfo): CData
     {
-        $nestedTypeInfo = self::new('OrtTypeInfo*');
+        $nestedTypeInfo = $this->new('OrtTypeInfo*');
 
-        self::checkStatus((self::api()->GetSequenceElementType)($sequenceTypeInfo, FFI::addr($nestedTypeInfo)));
+        $this->checkStatus((($this->api)->GetSequenceElementType)($sequenceTypeInfo, FFI::addr($nestedTypeInfo)));
 
         return $nestedTypeInfo;
     }
 
-    public static function GetMapKeyType($mapTypeInfo): CData
+    public function GetMapKeyType($mapTypeInfo): CData
     {
-        $keyType = self::new('ONNXTensorElementDataType');
+        $keyType = $this->new('ONNXTensorElementDataType');
 
-        self::checkStatus((self::api()->GetMapKeyType)($mapTypeInfo, FFI::addr($keyType)));
+        $this->checkStatus((($this->api)->GetMapKeyType)($mapTypeInfo, FFI::addr($keyType)));
 
         return $keyType;
     }
 
-    public static function GetMapValueType($mapTypeInfo): CData
+    public function GetMapValueType($mapTypeInfo): CData
     {
-        $keyType = self::new('OrtTypeInfo');
+        $keyType = $this->new('OrtTypeInfo');
 
-        self::checkStatus((self::api()->GetMapValueType)($mapTypeInfo, FFI::addr($keyType)));
+        $this->checkStatus((($this->api)->GetMapValueType)($mapTypeInfo, FFI::addr($keyType)));
 
         return $keyType;
     }
 
-    public static function GetStringTensorDataLength($value): int
+    public function GetStringTensorDataLength($value): int
     {
-        $len = self::new('size_t');
+        $len = $this->new('size_t');
 
-        self::checkStatus((self::api()->GetStringTensorDataLength)($value, FFI::addr($len)));
+        $this->checkStatus((($this->api)->GetStringTensorDataLength)($value, FFI::addr($len)));
 
         return $len->cdata;
     }
 
-    public static function GetStringTensorContent($value, int $len, int $offsetsLength): array
+    public function GetStringTensorContent($value, int $len, int $offsetsLength): array
     {
-        $s = self::new("char[$len]");
-        $offsets = self::new("size_t[$offsetsLength]");
+        $s = $this->new("char[$len]");
+        $offsets = $this->new("size_t[$offsetsLength]");
 
-        self::checkStatus((self::api()->GetStringTensorContent)($value, $s, $len, $offsets, $offsetsLength));
+        $this->checkStatus((($this->api)->GetStringTensorContent)($value, $s, $len, $offsets, $offsetsLength));
 
         return [$s, $offsets];
     }
 
-    public static function GetValueType($value): CData
+    public function GetValueType($value): CData
     {
-        $outType = self::new('ONNXType');
+        $outType = $this->new('ONNXType');
 
-        self::checkStatus((self::api()->GetValueType)($value, FFI::addr($outType)));
+        $this->checkStatus((($this->api)->GetValueType)($value, FFI::addr($outType)));
 
         return $outType;
     }
 
-    public static function GetValueCount($value): int
+    public function GetValueCount($value): int
     {
-        $out = self::new('size_t');
+        $out = $this->new('size_t');
 
-        self::checkStatus((self::api()->GetValueCount)($value, FFI::addr($out)));
+        $this->checkStatus((($this->api)->GetValueCount)($value, FFI::addr($out)));
 
         return $out->cdata;
     }
 
-    public static function GetValue($value, int $index, $allocator): CData
+    public function GetValue($value, int $index, $allocator): CData
     {
-        $seq = self::new('OrtValue*');
+        $seq = $this->new('OrtValue*');
 
-        self::checkStatus((self::api()->GetValue)($value, $index, $allocator, FFI::addr($seq)));
+        $this->checkStatus((($this->api)->GetValue)($value, $index, $allocator, FFI::addr($seq)));
 
         return $seq;
     }
 
-    public static function ReleaseValue($value): void
+    public function ReleaseValue($value): void
     {
-        (self::api()->ReleaseValue)($value);
+        (($this->api)->ReleaseValue)($value);
     }
 
-    public static function GetTensorTypeAndShape($value): CData
+    public function GetTensorTypeAndShape($value): CData
     {
-        $typeInfo = self::new('OrtTensorTypeAndShapeInfo*');
+        $typeInfo = $this->new('OrtTensorTypeAndShapeInfo*');
 
-        self::checkStatus((self::api()->GetTensorTypeAndShape)($value, FFI::addr($typeInfo)));
+        $this->checkStatus((($this->api)->GetTensorTypeAndShape)($value, FFI::addr($typeInfo)));
 
         return $typeInfo;
     }
 
-    public static function ReleaseTensorTypeAndShapeInfo($info): void
+    public function ReleaseTensorTypeAndShapeInfo($info): void
     {
-        (self::api()->ReleaseTensorTypeAndShapeInfo)($info);
+        (($this->api)->ReleaseTensorTypeAndShapeInfo)($info);
     }
 
-    public static function GetTensorMutableData($value): CData
+    public function GetTensorMutableData($value): CData
     {
-        $tensorData = self::new('void*');
+        $tensorData = $this->new('void*');
 
-        self::checkStatus((self::api()->GetTensorMutableData)($value, FFI::addr($tensorData)));
+        $this->checkStatus((($this->api)->GetTensorMutableData)($value, FFI::addr($tensorData)));
 
         return $tensorData;
     }
 
-    public static function GetTensorShapeElementCount($info): int
+    public function GetTensorShapeElementCount($info): int
     {
-        $outSize = self::new('size_t');
+        $outSize = $this->new('size_t');
 
-        self::checkStatus((self::api()->GetTensorShapeElementCount)($info, FFI::addr($outSize)));
+        $this->checkStatus((($this->api)->GetTensorShapeElementCount)($info, FFI::addr($outSize)));
 
         return $outSize->cdata;
     }
 
-    public static function CreateCpuMemoryInfo(int $type, int $memType): CData
+    public function CreateCpuMemoryInfo(int $type, int $memType): CData
     {
-        $allocatorInfo = self::new('OrtMemoryInfo*');
-        self::checkStatus((self::api()->CreateCpuMemoryInfo)($type, $memType, FFI::addr($allocatorInfo)));
+        $allocatorInfo = $this->new('OrtMemoryInfo*');
+        $this->checkStatus((($this->api)->CreateCpuMemoryInfo)($type, $memType, FFI::addr($allocatorInfo)));
 
         return $allocatorInfo;
     }
 
-    public static function ReleaseMemoryInfo($info): void
+    public function ReleaseMemoryInfo($info): void
     {
-        (self::api()->ReleaseMemoryInfo)($info);
+        (($this->api)->ReleaseMemoryInfo)($info);
     }
 
-    public static function CreateTensorAsOrtValue($allocator, $shape, int $shapeLen, $type, $out): void
+    public function CreateTensorAsOrtValue($allocator, $shape, int $shapeLen, $type, $out): void
     {
-        self::checkStatus((self::api()->CreateTensorAsOrtValue)($allocator, $shape, $shapeLen, $type, $out));
+        $this->checkStatus((($this->api)->CreateTensorAsOrtValue)($allocator, $shape, $shapeLen, $type, $out));
     }
 
-    public static function FillStringTensor($value, $s, $len): void
+    public function FillStringTensor($value, $s, $len): void
     {
-        self::checkStatus((self::api()->FillStringTensor)($value, $s, $len));
+        $this->checkStatus((($this->api)->FillStringTensor)($value, $s, $len));
     }
 
-    public static function CreateTensorWithDataAsOrtValue($info, $pData, $pDataLen, $shape, int $shapeLen, $type, $out): void
+    public function CreateTensorWithDataAsOrtValue($info, $pData, $pDataLen, $shape, int $shapeLen, $type, $out): void
     {
-        self::checkStatus((self::api()->CreateTensorWithDataAsOrtValue)($info, $pData, $pDataLen, $shape, $shapeLen, $type, $out));
+        $this->checkStatus((($this->api)->CreateTensorWithDataAsOrtValue)($info, $pData, $pDataLen, $shape, $shapeLen, $type, $out));
     }
 
-    public static function GetAllocatorWithDefaultOptions(): CData
+    public function GetAllocatorWithDefaultOptions(): CData
     {
-        $allocator = self::new('OrtAllocator*');
-        self::checkStatus((self::api()->GetAllocatorWithDefaultOptions)(FFI::addr($allocator)));
+        $allocator = $this->new('OrtAllocator*');
+        $this->checkStatus((($this->api)->GetAllocatorWithDefaultOptions)(FFI::addr($allocator)));
 
         return $allocator;
     }
 
-    public static function ReleaseAllocator($allocator): void
+    public function ReleaseAllocator($allocator): void
     {
-        (self::api()->ReleaseAllocator)($allocator);
+        (($this->api)->ReleaseAllocator)($allocator);
     }
 
-    public static function AllocatorFree($allocator, $ptr): void
+    public function AllocatorFree($allocator, $ptr): void
     {
-        (self::api()->AllocatorFree)($allocator, $ptr);
+        (($this->api)->AllocatorFree)($allocator, $ptr);
     }
 
-    public static function CreateEnv(int $logSecurityLevel, string $logId): ?CData
+    public function CreateEnv(int $logSecurityLevel, string $logId): ?CData
     {
-        $env = static::new('OrtEnv*');
+        $env = $this->new('OrtEnv*');
 
-        (self::api()->CreateEnv)($logSecurityLevel, $logId, FFI::addr($env));
+        (($this->api)->CreateEnv)($logSecurityLevel, $logId, FFI::addr($env));
 
         // disable telemetry
         // https://github.com/microsoft/onnxruntime/blob/master/docs/Privacy.md
-        self::checkStatus((OnnxRuntime::api()->DisableTelemetryEvents)($env));
+        $this->checkStatus((($this->api)->DisableTelemetryEvents)($env));
 
         return $env;
     }

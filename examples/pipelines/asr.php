@@ -17,17 +17,17 @@ $transcriber = pipeline('asr', 'Xenova/whisper-tiny.en');
 //$transcriber = pipeline('automatic-speech-recognition', 'Xenova/wav2vec2-large-xlsr-53-english');
 
 //$audioUrl = __DIR__ . '/../sounds/kyrian-dev.wav';
-//$audioUrl = __DIR__ . '/../sounds/jfk.wav';
+$audioUrl = __DIR__ . '/../sounds/jfk.wav';
 //$audioUrl = __DIR__ . '/../sounds/preamble.wav';
 //$audioUrl = __DIR__ . '/../sounds/taunt.wav';
 //$audioUrl = __DIR__ . '/../sounds/gettysburg.wav';
 //$audioUrl = __DIR__ . '/../sounds/kyrian-speaking.wav';
-$audioUrl = __DIR__ . '/../sounds/ted_60.wav';
+//$audioUrl = __DIR__ . '/../sounds/ted_60.wav';
 //$audioUrl = __DIR__ . '/../sounds/sample-1.mp3';
 
-$streamer = WhisperTextStreamer::make()
+$streamer = WhisperTextStreamer::make();
 //->onTimestampStart(fn($timestamp) => dump($timestamp));
-->onStream(fn($text) => print($text));
+//->onStream(fn($text) => print($text));
 
 $output = $transcriber($audioUrl,
     maxNewTokens: 256,
