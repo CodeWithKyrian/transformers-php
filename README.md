@@ -11,6 +11,7 @@
 <a href="https://packagist.org/packages/codewithkyrian/transformers"><img src="https://img.shields.io/packagist/v/codewithkyrian/transformers" alt="Latest Stable Version"></a>
 <a href="https://github.com/CodeWithKyrian/transformers-php/blob/main/LICENSE"><img src="https://img.shields.io/github/license/codewithkyrian/transformers-php" alt="License"></a>
 <a href="https://github.com/codewithkyrian/transformers-php"><img src="https://img.shields.io/github/repo-size/codewithkyrian/transformers-php" alt="Documentation"></a>
+<a href="https://github.com/CodeWithKyrian/transformers-php/actions/workflows/tests.yml"><img src="https://github.com/CodeWithKyrian/transformers-php/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 </p>
 
 TransformersPHP is designed to be functionally equivalent to the Python library, while still maintaining the same level of performance and ease of use. This library is built on top of the Hugging Face's Transformers library, which provides thousands of pre-trained models in 100+ languages. It is designed to be a simple and easy-to-use library for PHP developers using a similar API to the Python library. These models can be used for a variety of tasks, including text generation, summarization, translation, and more.

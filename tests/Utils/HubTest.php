@@ -43,7 +43,7 @@ it('joins paths correctly with empty string', function () {
 });
 
 it('joins paths correctly with empty string and slashes', function () {
-    $result = joinPaths('path', '', '/file');
+    $result = joinPaths('path', '', DIRECTORY_SEPARATOR.'file');
     $expected = 'path'.DIRECTORY_SEPARATOR.'file';
     expect($result)->toBe($expected);
 });
