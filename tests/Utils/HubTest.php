@@ -20,27 +20,32 @@ beforeEach(function () {
 
 it('joins paths correctly', function () {
     $result = joinPaths('path', 'to', 'file');
-    expect($result)->toBe('path/to/file');
+    $expected = 'path'.DIRECTORY_SEPARATOR.'to'.DIRECTORY_SEPARATOR.'file';
+    expect($result)->toBe($expected);
 });
 
 it('joins paths correctly with leading slash', function () {
     $result = joinPaths('/path', 'to', 'file');
-    expect($result)->toBe('/path/to/file');
+    $expected = '/path'.DIRECTORY_SEPARATOR.'to'.DIRECTORY_SEPARATOR.'file';
+    expect($result)->toBe($expected);
 });
 
 it('joins paths correctly with trailing slash', function () {
     $result = joinPaths('path', 'to', 'file/');
-    expect($result)->toBe('path/to/file');
+    $expected = 'path'.DIRECTORY_SEPARATOR.'to'.DIRECTORY_SEPARATOR.'file';
+    expect($result)->toBe($expected);
 });
 
 it('joins paths correctly with empty string', function () {
     $result = joinPaths('path', '', 'file');
-    expect($result)->toBe('path/file');
+    $expected = 'path'.DIRECTORY_SEPARATOR.'file';
+    expect($result)->toBe($expected);
 });
 
 it('joins paths correctly with empty string and slashes', function () {
     $result = joinPaths('path', '', '/file');
-    expect($result)->toBe('path/file');
+    $expected = 'path'.DIRECTORY_SEPARATOR.'file';
+    expect($result)->toBe($expected);
 });
 
 it('ensures directory creation', function () {

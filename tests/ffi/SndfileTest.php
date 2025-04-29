@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Codewithkyrian\Transformers\FFI\Sndfile;
 use FFI\CData;
-use FFI;
 
 beforeEach(function () {
     if (!extension_loaded('ffi')) {

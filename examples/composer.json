@@ -17,7 +17,8 @@
     "codewithkyrian/transformers": "dev-model-revamp"
   },
   "require-dev": {
-    "symfony/var-dumper": "^7.0"
+    "symfony/var-dumper": "^7.0",
+    "ffi/var-dumper": "^1.0@dev"
   },
   "minimum-stability": "dev",
   "repositories": [
