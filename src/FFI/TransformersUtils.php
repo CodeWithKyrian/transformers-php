@@ -25,7 +25,7 @@ class TransformersUtils extends NativeLibrary
      */
     protected function getLibraryName(): string
     {
-        return 'libtransformersphp';
+        return 'transformersphp';
     }
 
 
@@ -34,7 +34,7 @@ class TransformersUtils extends NativeLibrary
      *
      * @return string The version of the library.
      */
-    public function version(): string
+    public function getLibraryVersion(): string
     {
         return '1.0.0';
     }

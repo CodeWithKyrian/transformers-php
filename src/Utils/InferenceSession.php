@@ -628,7 +628,12 @@ class InferenceSession
     private function env()
     {
         // TODO use mutex for thread-safety
-        // TODO memoize
-        return $this->ort->CreateEnv(3, 'Default');
+        $env = $this->ort->CreateEnv(3, 'Default');
+        
+        register_shutdown_function(function () use ($env) {
+            $this->ort->ReleaseEnv($env);
+        });
+
+        return $env;
     }
 }

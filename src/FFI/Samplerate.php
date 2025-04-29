@@ -29,9 +29,19 @@ class Samplerate extends NativeLibrary
      */
     protected function getLibraryName(): string
     {
-        return 'libsamplerate';
+        // Return only the base name
+        return 'samplerate';
     }
 
+    /**
+     * Get the library version string for this library
+     * 
+     * @return string The library version
+     */
+    protected function getLibraryVersion(): string
+    {
+        return '0.2.2';
+    }
 
     /**
      * Creates a new sample rate converter.

@@ -27,7 +27,17 @@ class OnnxRuntime extends NativeLibrary
 
     protected function getLibraryName(): string
     {
-        return 'libonnxruntime';
+        return 'onnxruntime';
+    }
+
+    /**
+     * Get the library version string for this library
+     * 
+     * @return string The library version
+     */
+    protected function getLibraryVersion(): string
+    {
+        return '1.21.0';
     }
 
     /**
@@ -489,8 +499,7 @@ class OnnxRuntime extends NativeLibrary
 
         $dims = [];
 
-        $n = count($nodeDims);
-        for ($i = 0; $i < $n; $i++) {
+        for ($i = 0; $i < $numDims; $i++) {
             $dims[] = $nodeDims[$i];
         }
 
@@ -709,5 +718,10 @@ class OnnxRuntime extends NativeLibrary
         $this->checkStatus((($this->api)->DisableTelemetryEvents)($env));
 
         return $env;
+    }
+
+    public function ReleaseEnv($env): void
+    {
+        (($this->api)->ReleaseEnv)($env);
     }
 }

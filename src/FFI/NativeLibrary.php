@@ -27,23 +27,23 @@ abstract class NativeLibrary
     protected const PLATFORMS = [
         'linux-x86_64' => [
             'directory' => 'linux-x86_64', 
-            'extension' => 'so'
+            'libraryTemplate' => 'lib{name}.so.{version}'
         ],
         'linux-arm64' => [
             'directory' => 'linux-arm64', 
-            'extension' => 'so'
+            'libraryTemplate' => 'lib{name}.so.{version}'
         ],
         'darwin-x86_64' => [
             'directory' => 'macosx-x86_64', 
-            'extension' => 'dylib'
+            'libraryTemplate' => 'lib{name}.{version}.dylib'
         ],
         'darwin-arm64' => [
             'directory' => 'macosx-arm64', 
-            'extension' => 'dylib'
+            'libraryTemplate' => 'lib{name}.{version}.dylib'
         ],
         'windows-x86_64' => [
             'directory' => 'windows-x86_64', 
-            'extension' => 'dll'
+            'libraryTemplate' => '{name}-{version}.dll'
         ],
     ];
 
@@ -87,11 +87,18 @@ abstract class NativeLibrary
     abstract protected function getHeaderName(): string;
 
     /**
-     * Get the library file name (without extension) for this library
+     * Get the library file name (without extension or version) for this library
      * 
-     * @return string The library file name
+     * @return string The base library file name
      */
     abstract protected function getLibraryName(): string;
+
+    /**
+     * Get the library version string for this library
+     * 
+     * @return string The library version
+     */
+    abstract protected function getLibraryVersion(): string;
 
     public function getHeaderPath(): string
     {
@@ -100,7 +107,19 @@ abstract class NativeLibrary
 
     public function getLibraryPath(): string
     {
-        return joinPaths($this->getLibDirectory(), "{$this->getLibraryName()}.{$this->getLibraryExtension()}");
+        $template = $this->platformConfig['libraryTemplate'];
+        $name = $this->getLibraryName();
+        $version = $this->getLibraryVersion();
+
+        // Check if the template expects a 'lib' prefix and the name already has it
+        if (str_contains($template, 'lib{name}') && str_starts_with($name, 'lib')) {
+            // Remove the 'lib' prefix from the template placeholder before substitution
+            $template = str_replace('lib{name}', '{name}', $template);
+        }
+
+        $filename = str_replace(['{name}', '{version}'], [$name, $version], $template);
+
+        return joinPaths($this->getLibDirectory(), $filename);
     }
 
     public function getPlatformPath(): string
@@ -116,11 +135,6 @@ abstract class NativeLibrary
     public function getLibDirectory(): string
     {
         return joinPaths($this->getPlatformPath(), 'lib');
-    }
-
-    public function getLibraryExtension(): string
-    {
-        return $this->platformConfig['extension'];
     }
 
     protected function loadLibrary() :void

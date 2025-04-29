@@ -27,9 +27,19 @@ class Sndfile extends NativeLibrary
      */
     protected function getLibraryName(): string
     {
-        return 'libsndfile';
+        // Return only the base name
+        return 'sndfile';
     }
 
+    /**
+     * Get the library version string for this library
+     * 
+     * @return string The library version
+     */
+    protected function getLibraryVersion(): string
+    {
+        return '1.2.2';
+    }
 
     /**
      * Opens a sound file for reading.

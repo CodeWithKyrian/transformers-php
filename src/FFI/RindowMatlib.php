@@ -25,6 +25,11 @@ class RindowMatlib extends NativeLibrary
 
     protected function getLibraryName(): string
     {
-        return 'librindowmatlib';
+        return 'rindowmatlib';
+    }
+
+    protected function getLibraryVersion(): string
+    {
+        return '1.1.0';
     }
 } 

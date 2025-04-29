@@ -25,6 +25,11 @@ class OpenBLAS extends NativeLibrary
 
     protected function getLibraryName(): string
     {
-        return 'libopenblas';
+        return 'openblas';
+    }
+
+    protected function getLibraryVersion(): string
+    {
+        return '0.3.28';
     }
 }

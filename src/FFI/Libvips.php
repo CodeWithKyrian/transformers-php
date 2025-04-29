@@ -27,4 +27,9 @@ class Libvips extends NativeLibrary
     {
         return 'libvips';
     }
+
+    protected function getLibraryVersion(): string
+    {
+        return '42';
+    }
 }
