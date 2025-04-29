@@ -30,10 +30,7 @@ can install them manually using the following command:
 ```
 
 > [!CAUTION]
-> The shared libraries is platform-specific, so it's important to run the `composer require`, or `transformers install`
-> command on the target platform where the code will be executed. In most cases, this will be your development machine
-> or a server where you deploy your application, but if you're using a Docker container, run the `composer require`
-> command inside that container.
+> The shared libraries is platform-specific, so it's important to run the `composer require`, or `transformers install` command on the target platform where the code will be executed. In most cases, this will be your development machine or a server where you deploy your application, but if you're using a Docker container, run the `composer require` command inside that container.
 
 That's it! You're now ready to use TransformersPHP in your PHP application.
 
@@ -89,10 +86,7 @@ Since TransformersPHP operates exclusively with ONNX models, you'll need to conv
 developed or plan to use from PyTorch, TensorFlow, or JAX into the ONNX format.
 
 For this conversion process, we recommend using
-the [conversion script](https://github.com/xenova/transformers.js/blob/main/scripts/convert.py)
-provided by the Transformers.js project. This script is designed to convert models from PyTorch, TensorFlow, and JAX to
-ONNX format, and most importantly, outputs it in a folder structure that is compatible with TransformersPHP. Behind the
-scenes, the script uses [🤗 Optimum](https://huggingface.co/docs/optimum) from Hugging Face to convert and quantize the
+the [conversion script](https://github.com/huggingface/transformers.js/blob/main/scripts/convert.py) provided by the Transformers.js project. This script is designed to convert models from PyTorch, TensorFlow, and JAX to ONNX format, and most importantly, outputs it in a folder structure that is compatible with TransformersPHP. Behind the scenes, the script uses [🤗 Optimum](https://huggingface.co/docs/optimum) from Hugging Face to convert and quantize the
 models.
 
 But let's be real, not all PHP developer are fans of Python, or even have a Python environment set up. And that's okay.

@@ -13,24 +13,15 @@
 <a href="https://github.com/codewithkyrian/transformers-php"><img src="https://img.shields.io/github/repo-size/codewithkyrian/transformers-php" alt="Documentation"></a>
 </p>
 
-TransformersPHP is designed to be functionally equivalent to the Python library, while still maintaining the same level
-of performance and ease of use. This library is built on top of the Hugging Face's Transformers library, which provides
-thousands of pre-trained models in 100+ languages. It is designed to be a simple and easy-to-use library for PHP
-developers using a similar API to the Python library. These models can be used for a variety of tasks, including text
-generation, summarization, translation, and more.
+TransformersPHP is designed to be functionally equivalent to the Python library, while still maintaining the same level of performance and ease of use. This library is built on top of the Hugging Face's Transformers library, which provides thousands of pre-trained models in 100+ languages. It is designed to be a simple and easy-to-use library for PHP developers using a similar API to the Python library. These models can be used for a variety of tasks, including text generation, summarization, translation, and more.
 
-TransformersPHP uses [ONNX Runtime](https://onnxruntime.ai/) to run the models, which is a high-performance scoring
-engine for Open Neural Network Exchange (ONNX) models. You can easily convert any PyTorch or TensorFlow model to ONNX
-and use it with TransformersPHP using [🤗 Optimum](https://github.com/huggingface/optimum#onnx--onnx-runtime).
+TransformersPHP uses [ONNX Runtime](https://onnxruntime.ai/) to run the models, which is a high-performance scoring engine for Open Neural Network Exchange (ONNX) models. You can easily convert any PyTorch or TensorFlow model to ONNX and use it with TransformersPHP using [🤗 Optimum](https://github.com/huggingface/optimum#onnx--onnx-runtime).
 
-TO learn more about the library and how it works, head over to
-our [extensive documentation](https://codewithkyrian.github.io/transformers-php/introduction).
+TO learn more about the library and how it works, head over to our [extensive documentation](https://codewithkyrian.github.io/transformers-php/introduction).
 
 ## Quick tour
 
-Because TransformersPHP is designed to be functionally equivalent to the Python library, it's super easy to learn from
-existing Python or Javascript code. We provide the `pipeline` API, which is a high-level, easy-to-use API that groups
-together a model with its necessary preprocessing and postprocessing steps.
+Because TransformersPHP is designed to be functionally equivalent to the Python library, it's super easy to learn from existing Python or Javascript code. We provide the `pipeline` API, which is a high-level, easy-to-use API that groups together a model with its necessary preprocessing and postprocessing steps.
 
 <table>
 <tr>
@@ -104,15 +95,11 @@ composer require codewithkyrian/transformers
 ```
 
 > [!CAUTION]
-> The ONNX library is platform-specific, so it's important to run the composer require command on the target platform
-> where the code will be executed. In most cases, this will be your development machine or a server where you deploy
-> your application, but if you're using a Docker container, run the `composer require` command inside that container.
+> The ONNX library is platform-specific, so it's important to run the composer require command on the target platform where the code will be executed. In most cases, this will be your development machine or a server where you deploy your application, but if you're using a Docker container, run the `composer require` command inside that container.
 
 ## PHP FFI Extension
 
-TransformersPHP uses the PHP FFI extension to interact with the ONNX runtime. The FFI extension is included by default
-in PHP 7.4 and later, but it may not be enabled by default. If the FFI extension is not enabled, you can enable it by
-uncommenting(remove the `;` from the beginning of the line) the
+TransformersPHP uses the PHP FFI extension to interact with the ONNX runtime. The FFI extension is included by default in PHP 7.4 and later, but it may not be enabled by default. If the FFI extension is not enabled, you can enable it by uncommenting(remove the `;` from the beginning of the line) the
 following line in your `php.ini` file:
 
 ```ini
@@ -129,14 +116,11 @@ After making these changes, restart your web server or PHP-FPM service, and you 
 
 ## Documentation
 
-For more detailed information on how to use the library, check out the
-documentation : [https://codewithkyrian.github.io/transformers-php](https://codewithkyrian.github.io/transformers-php)
+For more detailed information on how to use the library, check out the documentation : [https://codewithkyrian.github.io/transformers-php](https://codewithkyrian.github.io/transformers-php)
 
 ## Usage
 
-By default, TransformersPHP uses hosted pretrained ONNX models. For supported tasks, models that have been converted to
-work with [Xenova's Transformers.js](https://huggingface.co/models?library=transformers.js) on HuggingFace should work
-out of the box with TransformersPHP.
+By default, TransformersPHP uses hosted pretrained ONNX models. For supported tasks, models that have been converted to work with [Xenova's Transformers.js](https://huggingface.co/models?library=transformers.js) on HuggingFace should work out of the box with TransformersPHP.
 
 ## Configuration
 
@@ -155,23 +139,20 @@ Transformers::setup()
     ->apply(); // Apply the configuration
 ```
 
-You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For
-more information on the configuration options and what they mean, checkout
+You can call the `set` methods in any order, or leave any out entirely, in which case, it uses the default values. For more information on the configuration options and what they mean, checkout
 the [documentation](https://codewithkyrian.github.io/transformers-php/configuration).
 
 ## Convert your models to ONNX
 
-TransformersPHP only works with ONNX models, therefore, you must convert your PyTorch, TensorFlow or JAX models to
-ONNX. It is recommended to use [🤗 Optimum](https://huggingface.co/docs/optimum) to perform the conversion and
-quantization of your model.
+TransformersPHP only works with ONNX models, therefore, you must convert your PyTorch, TensorFlow or JAX models to ONNX. We recommend using the [conversion script](https://github.com/huggingface/transformers.js/blob/main/scripts/convert.py) from Transformers.js, which uses the  [🤗 Optimum](https://huggingface.co/docs/optimum) behind the scenes to perform the conversion and quantization of your model.
+
+```
+python -m convert --quantize --model_id <model_name_or_path>
+```
 
 ## Pre-Download Models
 
-By default, TransformersPHP automatically retrieves model weights (ONNX format) from the Hugging Face model hub when
-you first use a pipeline or pretrained model. This can lead to a slight delay during the initial use. To improve the
-user experience, it's recommended to pre-download the models you intend to use before running them in your PHP
-application, especially for larger models. One way to do that is run the request once manually, but TransformersPHP
-also comes with a command line tool to help you do just that:
+By default, TransformersPHP automatically retrieves model weights (ONNX format) from the Hugging Face model hub when you first use a pipeline or pretrained model. This can lead to a slight delay during the initial use. To improve the user experience, it's recommended to pre-download the models you intend to use before running them in your PHP application, especially for larger models. One way to do that is run the request once manually, but TransformersPHP also comes with a command line tool to help you do just that:
 
 ```bash
 ./vendor/bin/transformers download <model_identifier> [<task>] [options]
