@@ -31,7 +31,7 @@ it('joins paths correctly with leading slash', function () {
 });
 
 it('joins paths correctly with trailing slash', function () {
-    $result = joinPaths('path', 'to', 'file/');
+    $result = joinPaths('path', 'to', 'file'.DIRECTORY_SEPARATOR);
     $expected = 'path'.DIRECTORY_SEPARATOR.'to'.DIRECTORY_SEPARATOR.'file';
     expect($result)->toBe($expected);
 });
