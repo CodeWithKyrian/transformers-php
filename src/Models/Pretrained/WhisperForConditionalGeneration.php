@@ -41,9 +41,9 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         ?StoppingCriteria    $stoppingCriteria = null,
         ?Streamer            $streamer = null,
                              ...$kwargs
-    ): array
+    ): array|Tensor
     {
-        $generationConfig = $this->getGenerationConfig($generationConfig);
+        $generationConfig = $this->prepareGenerationConfig($generationConfig);
 
         // Whisper has additional options for returning timestamps
         $generationConfig['return_timestamps'] ??= false;

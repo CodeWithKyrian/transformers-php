@@ -17,10 +17,10 @@
     "ext-ffi": "*",
     "codewithkyrian/jinja-php": "^1.0",
     "imagine/imagine": "^1.3",
-    "rindow/rindow-math-matrix": "^2.0",
-    "rindow/rindow-matlib-ffi": "^1.0",
+    "rindow/rindow-math-matrix": "^2.1",
+    "rindow/rindow-matlib-ffi": "^1.1",
     "rindow/rindow-openblas-ffi": "^1.0",
-    "rokka/imagine-vips": "^0.31.0",
+    "rokka/imagine-vips": "^0.40",
     "symfony/console": "^6.4|^7.0",
     "codewithkyrian/platform-package-installer": "^1.0"
   },
@@ -30,8 +30,7 @@
   },
   "suggest": {
     "ext-imagick": "Required to use the Imagick Driver for image processing",
-    "ext-gd": "Required to use the GD Driver for image processing",
-    "rokka/imagine-vips": "Required to use the VIPS Driver for image processing"
+    "ext-gd": "Required to use the GD Driver for image processing"
   },
   "license": "Apache-2.0",
   "autoload": {
@@ -50,6 +49,7 @@
     }
   ],
   "config": {
+    "sort-packages": true,
     "allow-plugins": {
       "pestphp/pest-plugin": true,
       "codewithkyrian/platform-package-installer": true

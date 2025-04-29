@@ -26,12 +26,15 @@ class SuppressTokensAtBeginLogitsProcessor extends LogitsProcessor
      */
     public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
-        if (count($inputIds) == $this->beginIndex) {
-            foreach ($this->beginSuppressTokens as $token) {
-                $logits->buffer()[$token] = -INF;
+        for ($i = 0; $i < count($inputIds); $i++) {
+            if (count($inputIds[$i]) === $this->beginIndex) {
+                $batchLogits = $logits[$i];
+                foreach ($this->beginSuppressTokens as $token) {
+                    $batchLogits->buffer()[$token] = -INF;
+                }
             }
         }
-
+        
         return $logits;
     }
 }

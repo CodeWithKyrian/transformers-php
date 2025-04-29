@@ -51,7 +51,7 @@ enum ModelArchitecture: string
     function encoderDecoderPrepareInputsForGeneration(PretrainedModel $model, $inputIds, array $modelInputs): array
     {
         if (isset($modelInputs['past_key_values'])) {
-            $inputIds = array_map(fn ($x) => [end($x)], $inputIds);
+            $inputIds = array_map(fn($x) => [array_slice($x, -1)[0]], $inputIds);
         }
 
         return array_merge(

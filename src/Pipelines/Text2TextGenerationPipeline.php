@@ -47,7 +47,6 @@ class Text2TextGenerationPipeline extends Pipeline
 
         // Handle task specific params
         $taskSpecificParams = $this->model->config['task_specific_params'] ?? null;
-
         if ($taskSpecificParams && isset($taskSpecificParams[$this->task->value])) {
             // Add prefixes, if present
             $taskPrefix = $taskSpecificParams[$this->task->value]['prefix'] ?? null;

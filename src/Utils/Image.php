@@ -97,8 +97,7 @@ class Image
         };
 
         if ($imageDriver === ImageDriver::VIPS) {
-            $libvips = new Libvips();
-            putenv("VIPSHOME={$libvips->getPlatformPath()}");
+            Libvips::setup();
         }
     }
 
@@ -404,16 +403,6 @@ class Image
             $this->image instanceof \Imagine\Vips\Image => $this->image->copy()->applyMask($mask->image),
 
             $this->image instanceof \Imagine\Imagick\Image => (function () use ($mask) {
-//                $maskImagick = $mask->image->copy()->mask()->getImagick();
-//                $imageImagick = clone $this->image->getImagick();
-//
-//                $maskImagick->compositeImage($imageImagick, Imagick::COMPOSITE_DSTIN, 0, 0);
-//                $imageImagick->compositeImage($maskImagick, Imagick::COMPOSITE_COPYOPACITY, 0, 0);
-//
-//                $maskImagick->clear();
-//                $maskImagick->destroy();
-//
-//                return new \Imagine\Imagick\Image($imageImagick, $this->image->palette(), $this->image->metadata());
                 $image = $this->image->copy();
                 $maskImage = $mask->image->copy();
                 $maskImage->effects()->negative();
@@ -447,6 +436,7 @@ class Image
 
                 return new \Imagine\Gd\Image($gdResource, $this->image->palette(), $this->image->metadata());
             })(),
+            
             default => throw new InvalidArgumentException('Unsupported image driver'),
         };
 

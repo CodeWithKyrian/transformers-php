@@ -25,9 +25,8 @@ $audioUrl = __DIR__ . '/../sounds/jfk.wav';
 //$audioUrl = __DIR__ . '/../sounds/ted_60.wav';
 //$audioUrl = __DIR__ . '/../sounds/sample-1.mp3';
 
-$streamer = WhisperTextStreamer::make();
-//->onTimestampStart(fn($timestamp) => dump($timestamp));
-//->onStream(fn($text) => print($text));
+$streamer = WhisperTextStreamer::make()
+    ->onStream(fn($text) => print($text));
 
 $output = $transcriber($audioUrl,
     maxNewTokens: 256,

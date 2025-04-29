@@ -32,11 +32,15 @@ class MinLengthLogitsProcessor extends LogitsProcessor
      */
     public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
-        if (count($inputIds) < $this->minLength) {
-            foreach ($this->eosTokenId as $id) {
-                $logits->buffer()[$id] = -INF;
+        for ($i = 0; $i < count($inputIds); $i++) {
+            if (count($inputIds[$i]) < $this->minLength) {
+                $batchLogits = $logits[$i];
+                foreach ($this->eosTokenId as $id) {
+                    $batchLogits->buffer()[$id] = -INF;
+                }
             }
         }
+
         return $logits;
     }
 }

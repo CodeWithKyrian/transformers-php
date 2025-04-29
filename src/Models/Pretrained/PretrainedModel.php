@@ -9,10 +9,9 @@ use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
-use Codewithkyrian\Transformers\Generation\LogitsProcessors\BadWordsLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\LogitsProcessors\NoBadWordsLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForcedBOSTokenLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForcedEOSTokenLogitsProcessor;
-use Codewithkyrian\Transformers\Generation\LogitsProcessors\ForceTokensLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\MinLengthLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\MinNewTokensLengthLogitsProcessor;
@@ -94,15 +93,15 @@ class PretrainedModel
      * @throws HubException
      */
     public static function fromPretrained(
-        string                 $modelNameOrPath,
-        bool                   $quantized = true,
-        array|PretrainedConfig $config = null,
-        ?string                $cacheDir = null,
-        ?string                $token = null,
-        string                 $revision = 'main',
-        ?string                $modelFilename = null,
-        ModelArchitecture      $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ?callable              $onProgress = null
+        string                      $modelNameOrPath,
+        bool                        $quantized = true,
+        array|PretrainedConfig|null $config = null,
+        ?string                     $cacheDir = null,
+        ?string                     $token = null,
+        string                      $revision = 'main',
+        ?string                     $modelFilename = null,
+        ModelArchitecture           $modelArchitecture = ModelArchitecture::EncoderOnly,
+        ?callable                   $onProgress = null
     ): self
     {
         if (is_array($config)) {
@@ -273,7 +272,6 @@ class PretrainedModel
      * @return InferenceSession|null
      * @throws HubException
      */
-
     public static function constructSession(
         string    $modelNameOrPath,
         string    $fileName,
@@ -294,14 +292,24 @@ class PretrainedModel
         return new InferenceSession($file, ...$sessionOptions);
     }
 
+     // Main Public API Methods
+    // =======================
+
+
+    /**
+     * Makes the model callable. Alias for the forward method.
+     *
+     * @param array $modelInputs
+     * @return array|ModelOutput
+     */
     public function __invoke(array $modelInputs): array|ModelOutput
     {
         return $this->forward($modelInputs);
     }
 
     /**
-     * Forward method for a pretrained model. If not overridden by a subclass, the correct forward method
-     *  will be chosen based on the model type.
+     * Forward method for a pretrained model. Delegates to the appropriate forward 
+     * method based on model architecture.
      *
      * @param array $modelInputs The input data to the model in the format specified in the ONNX model.
      *
@@ -312,9 +320,155 @@ class PretrainedModel
         return $this->modelArchitecture->forward($this, $modelInputs);
     }
 
+    /** Generates text based on the given inputs and generation configuration using the model.
+     *
+     * @param Tensor $inputs The input token ids.
+     * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
+     * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
+     * @param Streamer|null $streamer
+     * @param mixed ...$kwargs
+     *
+     * @return array|Tensor An array of generated output sequences, where each sequence is an array of token IDs.
+     * @throws Exception
+     */
+    public function generate(
+        Tensor               $inputs,
+        ?GenerationConfig    $generationConfig = null,
+        ?LogitsProcessorList $logitsProcessor = null,
+        ?StoppingCriteria    $stoppingCriteria = null,
+        ?Streamer            $streamer = null,
+                             ...$kwargs
+    ): array|Tensor
+    {
+        $this->validateModelClass();
+
+        $kwargs = array_keys_to_snake_case($kwargs);
+
+        // 1. Update generation config with defaults
+        $generationConfig = $this->prepareGenerationConfig($generationConfig);
+
+        // 2. Prepare encoder inputs
+        [$modelInputs, $modelInputName] = $this->prepareEncoderInputs($inputs, $kwargs);
+
+        $isEncoderDecoder = $this->config->isEncoderDecoder;
+
+        // 3. Run encoder forward pass if model is encoder decoder
+        if ($isEncoderDecoder && !isset($modelInputs['encoder_outputs'])) {
+            $modelInputs = $this->runEncoderForwardPass($modelInputs, $generationConfig);
+        }
+
+        // 4. Prepare decoder inputs
+        if ($isEncoderDecoder) {
+            [$inputIds, $modelInputs] = $this->prepareDecoderInputs(
+                $modelInputs[$modelInputName]->shape()[0],
+                $modelInputs,
+                $generationConfig
+            );
+        } else {
+            $inputIds = $modelInputs[$modelInputName];
+        }
+
+        // 5. Prepare `max_length` depending on other stopping criteria.
+        $inputIdsLength = $inputs->shape()[count($inputs->shape()) - 1];
+
+        if ($generationConfig->max_new_tokens !== null) {
+            $generationConfig->max_length = $inputIdsLength + $generationConfig->max_new_tokens;
+        }
+
+        // 6. Prepare logits processor, stopping criteria and sampler
+        $logitsProcessor = $this->prepareLogitsProcessor($generationConfig, $inputIdsLength, $logitsProcessor);
+        $stoppingCriteria = $this->prepareStoppingCriteria($generationConfig, $stoppingCriteria);
+        $sampler = Sampler::getSampler($generationConfig);
+
+        // 7. Final preparation before generation
+        $attentions = [];
+        $numInputs = $modelInputs[$modelInputName]->shape()[0];
+        $scores = array_fill(0, $numInputs, 0);
+        $allInputIds = $inputIds->toArray();
+        $streamer?->put($allInputIds);
+
+        // 9. Generation loop
+        while (true) {
+            $modelInputs = $this->prepareInputsForGeneration($allInputIds, $modelInputs);
+            
+            $outputs = $this->forward($modelInputs);
+
+            if ($generationConfig->output_attentions && $generationConfig->return_dict_in_generate) {
+                $tokenAttentions = $this->getAttentions($outputs);
+                foreach ($tokenAttentions as $key => $value) {
+                    if (!array_key_exists($key, $attentions)) {
+                        $attentions[$key] = [];
+                    }
+                    $attentions[$key][] = $value;
+                }
+            }
+
+            // Logits are of the form [batch_size, out_seq_length, vocab_size]. In most cases, this will be [batch_size, 1, vocab_size]
+            // So, we select the last token's logits: (equivalent to `logits = outputs.logits[:, -1, :]`)
+            $logits = $outputs['logits']->slice(null, -1, null);
+
+            // Apply logits processor
+            $nextTokenScores = $logitsProcessor($allInputIds, $logits);
+
+            $generatedInputIds = [];
+
+            // Loop over each batch
+            for ($batchIdx = 0; $batchIdx < $nextTokenScores->shape()[0]; ++$batchIdx) {
+                $logs = $nextTokenScores[$batchIdx];
+
+                $sampledTokens = $sampler($logs);
+
+                foreach ($sampledTokens as [$newTokenId, $logProb]) {
+                    // update generated ids, model inputs, and length for next step
+                    $scores[$batchIdx] += $logProb;
+                    $allInputIds[$batchIdx][] = $newTokenId;
+                    $generatedInputIds[] = [$newTokenId];
+
+                    // TODO: Support beam search
+                    break;
+                }
+            }
+
+            $streamer?->put($generatedInputIds);
+
+            $stop = $stoppingCriteria($generatedInputIds, $scores);
+            if (array_every($stop, fn ($x) => $x)) {
+                break;
+            }
+
+            $modelInputs = $this->updateInputsAfterGeneration($generatedInputIds, $outputs, $modelInputs, $isEncoderDecoder);
+        }
+
+        $streamer?->end();
+
+        // 9. Retrieve and dispose all final past key values (including encoder attentions)
+        $pastKeyValues = $this->getPastKeyValues($outputs, $modelInputs['past_key_values'] ?? null);
+
+        $sequences = Tensor::fromArray($allInputIds, Tensor::int64);
+
+        if ($generationConfig->return_dict_in_generate) {
+            return [
+                'sequences' => $sequences,
+                'past_key_values' => $pastKeyValues,
+                ...$attentions
+            ];
+        } else {
+            return $sequences;
+        }
+    }
+
+
+    // Helper Methods for `forward`
+    // ============================
+
     /**
-     * @throws ModelExecutionException
-     * @throws MissingModelInputException
+     * Runs the ONNX session with the provided inputs.
+     *
+     * @param InferenceSession $session The ONNX session to run.
+     * @param array $inputs The inputs to the session.
+     * @return array The outputs from the session.
+     * @throws ModelExecutionException If an error occurs during session run.
+     * @throws MissingModelInputException If required inputs are missing.
      */
     public function runSession(InferenceSession $session, array $inputs): array
     {
@@ -334,11 +488,12 @@ class PretrainedModel
     }
 
     /**
-     * @param InferenceSession $session
-     * @param Tensor[] $inputs
+     * Validates the inputs against the expected input names of the ONNX session.
      *
-     * @return Tensor[]
-     * @throws MissingModelInputException
+     * @param string[] $inputNames Expected input names.
+     * @param array $inputs Provided inputs.
+     * @return array Validated inputs.
+     * @throws MissingModelInputException If required inputs are missing.
      */
     public function validateInputs(array $inputNames, array $inputs): array
     {
@@ -375,43 +530,79 @@ class PretrainedModel
         return $inputs;
     }
 
-    function updateModelKwargsForGeneration(array $generatedInputIds, $outputs, $modelInputs, $isEncoderDecoder)
+    // Helper Methods for `generate`
+    // 
+
+    /**
+     * Validates that the current model class is suitable for generation.
+     * @throws Error If the model class cannot perform generation.
+     * @return void
+     */
+    public function validateModelClass(): void
     {
-        $modelInputs['past_key_values'] = $this->getPastKeyValues($outputs, $modelInputs['past_key_values'] ?? null);
+        if (!$this->modelArchitecture->canGenerate()) {
+            $className = get_called_class();
+            $errorMsg = "The current model class $className is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
-        // Update input_ids for the next run
-        $flatGeneratedInputIds = array_merge(...$generatedInputIds);
-        $modelInputs['input_ids'] = new Tensor($flatGeneratedInputIds, Tensor::int64, [count($generatedInputIds), 1]);
+            $possibleInfo =
+                AutoModelForCausalLM::MODEL_CLASS_MAPPING[$this->config->modelType]
+                ?? AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING[$this->config->modelType]
+                ?? null;
 
-        if (!$isEncoderDecoder) {
-            // Update attention mask
-            $modelInputs['attention_mask'] = Tensor::concat([
-                $modelInputs['attention_mask'],
-                Tensor::ones([$modelInputs['attention_mask']->shape()[0], 1], Tensor::int64)
-            ], 1);
-        } elseif (array_key_exists('decoder_attention_mask', $modelInputs)) {
-            // TODO: Update decoder attention mask if the model requires it
+            if ($possibleInfo) {
+                $errorMsg .= " Try using `{$possibleInfo}` instead.";
+            }
+
+            throw new Error($errorMsg);
+
         }
-
-        // Force recreate position_ids in the next iteration
-        $modelInputs['position_ids'] = null;
-
-        return $modelInputs;
     }
 
     /**
-     * This function extracts the model-specific `inputs` for generation.
+     * Merges multiple generation configs to create the final configuration for generation.
+     *
+     * @param ?GenerationConfig $generationConfig User-provided generation config.
+     * @return GenerationConfig The final generation config.
+     */
+    protected function prepareGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
+    {
+        // 1. Get the model's config  so that if `eos_token_id` or `bos_token_id` exist in it, we will use them
+        $modelConfig = $this->config->config;
+        foreach (["decoder", "generator", "text_config"] as $key) {
+            // Special case: some models have generation attributes set in the key.
+            // Use them if still unset in the generation config.
+            if (array_key_exists($key, $modelConfig)) {
+                $modelConfig = array_merge($modelConfig, $modelConfig[$key]);
+            }
+        }
+
+        // 2. Create empty generation config (contains defaults) and values from model config
+        $genConfig = (new GenerationConfig($modelConfig))->toArray();
+
+        // Apply model's generation config, if it exists
+        if (property_exists($this, 'generationConfig')) {
+            $genConfig = array_merge($genConfig, $this->generationConfig->toArray());
+        }
+
+        // Finally, use any generation config specified by the user when calling `generate`
+        if ($generationConfig !== null) {
+            $genConfig = array_merge($genConfig, $generationConfig->toArray());
+        }
+
+        return new GenerationConfig($genConfig);
+    }
+
+    /**
+     * Prepares the encoder inputs for generation, handling potential conflicts.
      *
      * @param ?Tensor $inputs The input tensor.
-     * @param ?int $bosTokenId The beginning of sequence token ID.
      * @param array $modelKwargs Additional model-specific arguments.
-     *
-     * @return array{ inputs_tensor : Tensor, model_inputs: Tensor[], model_input_name: string}
+     * @return array An array containing the prepared model inputs and the main input name.
      * @throws Exception If `inputs` and main input name are both passed.
      */
-    function prepareModelInputs(?Tensor $inputs = null, ?int $bosTokenId = null, array $modelKwargs = []): array
+    function prepareEncoderInputs(?Tensor $inputs = null, array $modelKwargs = []): array
     {
-        $modelInputs = array_pick($modelKwargs, $this->forwardParams); // Assume array_pick is defined
+        $modelInputs = array_pick($modelKwargs, $this->forwardParams);
         $inputName = $this->mainInputName;
 
         if (array_key_exists($inputName, $modelInputs)) {
@@ -425,16 +616,18 @@ class PretrainedModel
             $modelInputs[$inputName] = $inputs;
         }
 
-        $inputsTensor = $modelInputs[$inputName];
-
-        return [
-            'inputs_tensor' => $inputsTensor,
-            'model_inputs' => $modelInputs,
-            'model_input_name' => $inputName,
-        ];
+        return [$modelInputs, $inputName];
     }
 
-    function prepareEncoderDecoderKwargsForGeneration($inputsTensor, $modelInputs, $modelInputName, GenerationConfig $generationConfig)
+    /**
+     * Runs the forward pass for the encoder part of an encoder-decoder model.
+     *
+     * @param array $modelInputs The model inputs.
+     * @param GenerationConfig $generationConfig The generation configuration.
+     * @return array The updated model inputs including encoder outputs.
+     * @throws Exception If batch sizes mismatch or other errors occur.
+     */
+    function runEncoderForwardPass($modelInputs, GenerationConfig $generationConfig)
     {
 
         $inputNames = array_column($this->session->inputs(), 'name');
@@ -486,14 +679,23 @@ class PretrainedModel
         return $modelInputs;
     }
 
-    function prepareDecoderInputIdsForGeneration($batchSize, $modelInputName, $modelKwargs, $decoderStartTokenId, $bosTokenId, GenerationConfig $generationConfig): array
+    /**
+     * Prepares the initial decoder inputs for generation.
+     *
+     * @param int $batchSize The batch size.
+     * @param array $modelInputs The current model inputs.
+     * @param GenerationConfig $generationConfig The generation configuration.
+     * @return array An array containing the decoder input IDs and updated model inputs.
+     * @throws Exception If `decoder_start_token_id` has incorrect length.
+     */
+    function prepareDecoderInputs($batchSize, $modelInputs, GenerationConfig $generationConfig): array
     {
-        $decoderInputIds = array_pop_key($modelKwargs, 'decoder_input_ids');
+        $decoderInputIds = array_pop_key($modelInputs, 'decoder_input_ids');
 
         // Prepare input IDs if not manually defined
         if (!$decoderInputIds instanceof Tensor) {
             if (empty($decoderInputIds)) {
-                $decoderStartTokenId = $decoderStartTokenId ?? $bosTokenId;
+                $decoderStartTokenId = $generationConfig->decoder_start_token_id ?? $generationConfig->bos_token_id;
 
                 if ($this->config['model_type'] === 'musicgen') {
                     $decoderInputIds = array_fill(0, $batchSize * $this->config['decoder']['num_codebooks'], [$decoderStartTokenId]);
@@ -516,279 +718,20 @@ class PretrainedModel
             $decoderInputIds = Tensor::fromArray($decoderInputIds, Tensor::int64);
         }
 
-        $modelKwargs['decoder_attention_mask'] = Tensor::onesLike($decoderInputIds);
+        $modelInputs['decoder_attention_mask'] = Tensor::onesLike($decoderInputIds);
 
-        return [
-            'input_ids' => $decoderInputIds,
-            'model_inputs' => $modelKwargs,
-        ];
+        return [$decoderInputIds, $modelInputs];
     }
 
     /**
-     * Returns an object containing past key values from the given decoder results object.
+     * Prepares the list of logits processors based on the generation configuration.
      *
-     * @param array $decoderResults The decoder results object.
-     * @param ?array $pastKeyValues The previous past key values.
-     *
-     * @return array An object containing past key values.
+     * @param GenerationConfig $generationConfig The generation configuration.
+     * @param int $inputIdsSeqLength The length of the initial input IDs sequence.
+     * @param ?LogitsProcessorList $logitsProcessor Optional existing logits processors list.
+     * @return LogitsProcessorList The configured list of logits processors.
      */
-    public function getPastKeyValues(array $decoderResults, ?array $pastKeyValues): array
-    {
-        $pkvs = [];
-
-        foreach ($decoderResults as $name => $value) {
-            if (str_starts_with($name, 'present')) {
-                $newName = str_replace('present', 'past_key_values', $name);
-
-                if ($pastKeyValues && str_contains($name, 'encoder')) {
-                    // Optimization introduced by optimum to reuse past key values.
-                    // So, we just replace the constant outputs with the previous past key values.
-                    // https://github.com/huggingface/optimum/blob/0bf2c05fb7e1182b52d21b703cfc95fd9e4ea3dc/optimum/onnxruntime/base.py#L677-L704
-                    $pkvs[$newName] = $pastKeyValues[$newName];
-                } else {
-                    $pkvs[$newName] = $value;
-                }
-            }
-        }
-
-        return $pkvs;
-    }
-
-    /**
-     * Returns an object containing attentions from the given decoder results object.
-     *
-     * @param array $decoderResults The decoder results object.
-     *
-     * @return array An object containing attentions.
-     */
-    public function getAttentions(array $decoderResults): array
-    {
-        $attns = [];
-
-        foreach (['cross_attentions', 'decoder_attentions'] as $attnName) {
-            $result = [];
-            foreach ($decoderResults as $name => $value) {
-                if (str_starts_with($name, $attnName)) {
-                    $index = intval(substr(strrchr($name, '.'), 1));
-                    $result[$index] = $value;
-                }
-            }
-            $attns[$attnName] = $result;
-        }
-
-        return $attns;
-    }
-
-    /**
-     * Adds past key values to the decoder feeds object. If pastKeyValues is null, creates new tensors for past key values.
-     *
-     * @param array $decoderFeeds The decoder feeds object to add past key values to.
-     * @param ?array $pastKeyValues An object containing past key values.
-     */
-    public function addPastKeyValues(array &$decoderFeeds, ?array $pastKeyValues): void
-    {
-        if ($pastKeyValues !== null) {
-            $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
-        } else {
-            $shapes = $this->config->getKeyValueShapes();
-
-            foreach ($shapes as $name => $shape) {
-                $decoderFeeds[$name] = new Tensor([], shape: $shape);
-            }
-        }
-    }
-
-    /** Generates text based on the given inputs and generation configuration using the model.
-     *
-     * @param Tensor $inputs The input token ids.
-     * @param GenerationConfig|null $generationConfig The generation configuration to use. If null, default configuration will be used.
-     * @param LogitsProcessorList|null $logitsProcessor An optional logits processor to use. If null, a new LogitsProcessorList instance will be created.
-     * @param Streamer|null $streamer
-     * @param mixed ...$kwargs
-     *
-     * @return array|Tensor An array of generated output sequences, where each sequence is an array of token IDs.
-     * @throws Exception
-     */
-    public function generate(
-        Tensor               $inputs,
-        ?GenerationConfig    $generationConfig = null,
-        ?LogitsProcessorList $logitsProcessor = null,
-        ?StoppingCriteria    $stoppingCriteria = null,
-        ?Streamer            $streamer = null,
-                             ...$kwargs
-    ): array|Tensor
-    {
-        $this->validateModelClass();
-
-        $kwargs = array_keys_to_snake_case($kwargs);
-        $isEncoderDecoder = $this->config->isEncoderDecoder;
-
-        // 1. Update generation config with defaults
-        $generationConfig = $this->getGenerationConfig($generationConfig);
-
-        // 2. Define model inputs
-        [
-            'inputs_tensor' => $inputsTensor,
-            'model_inputs' => $modelInputs,
-            'model_input_name' => $modelInputName
-        ] = $this->prepareModelInputs($inputs, modelKwargs: $kwargs);
-
-        // 3. Define other model kwargs
-        if (!$isEncoderDecoder) {
-            // decoder-only models should use left-padding for generation
-        } elseif (!isset($modelInputs['encoder_outputs'])) {
-            // if model is encoder decoder encoder_outputs are created
-            // and added to `model_kwargs`
-            $modelInputs = $this->prepareEncoderDecoderKwargsForGeneration(
-                $inputsTensor,
-                $modelInputs,
-                $modelInputName,
-                $generationConfig
-            );
-        }
-
-        // 4. Prepare `input_ids` which will be used for auto-regressive generation
-        if ($isEncoderDecoder) {
-            [
-                'input_ids' => $inputIds,
-                'model_inputs' => $modelInputs
-            ] = $this->prepareDecoderInputIdsForGeneration(
-                $modelInputs[$modelInputName]->shape()[0],
-                $modelInputName,
-                modelKwargs: $modelInputs,
-                decoderStartTokenId: $generationConfig->decoder_start_token_id,
-                bosTokenId: $generationConfig->bos_token_id,
-                generationConfig: $generationConfig
-            );
-        } else {
-            $inputIds = $modelInputs[$modelInputName];
-        }
-
-        // 5. Prepare `max_length` depending on other stopping criteria.
-        $inputIdsLength = $inputs->shape()[count($inputs->shape()) - 1];
-
-        if ($generationConfig->max_new_tokens !== null) {
-            $generationConfig->max_length = $inputIdsLength + $generationConfig->max_new_tokens;
-        }
-
-        // 6. Prepare logits processor, stopping criteria and sampler
-        $logitsProcessor = $this->getLogitsProcessor($generationConfig, $inputIdsLength, $logitsProcessor);
-        $stoppingCriteria = $this->getStoppingCriteria($generationConfig, $stoppingCriteria);
-        $sampler = Sampler::getSampler($generationConfig);
-
-        // 7. Final preparation before generation
-        $attentions = [];
-        $numInputs = $modelInputs[$modelInputName]->shape()[0];
-        $scores = array_fill(0, $numInputs, 0);
-        $allInputIds = $inputIds->toArray();
-        $streamer?->put($allInputIds);
-
-        // 9. Generation loop
-        while (true) {
-            $modelInputs = $this->modelArchitecture->prepareInputsForGeneration($this, $allInputIds, $modelInputs);
-            $outputs = $this->forward($modelInputs);
-
-            if ($generationConfig->output_attentions && $generationConfig->return_dict_in_generate) {
-                $tokenAttentions = $this->getAttentions($outputs);
-                foreach ($tokenAttentions as $key => $value) {
-                    if (!array_key_exists($key, $attentions)) {
-                        $attentions[$key] = [];
-                    }
-                    $attentions[$key][] = $value;
-                }
-            }
-
-            // Logits are of the form [batch_size, out_seq_length, vocab_size]. In most cases, this will be [batch_size, 1, vocab_size]
-            // So, we select the last token's logits: (equivalent to `logits = outputs.logits[:, -1, :]`)
-            $logits = $outputs['logits']->slice(null, -1, null);
-
-            // Apply logits processor
-            $nextTokenScores = $logitsProcessor($allInputIds, $logits);
-
-            $generatedInputIds = [];
-
-            // Loop over each batch
-            for ($batchIdx = 0; $batchIdx < $nextTokenScores->shape()[0]; ++$batchIdx) {
-                $logs = $nextTokenScores[$batchIdx];
-
-                $sampledTokens = $sampler($logs);
-
-                foreach ($sampledTokens as [$newTokenId, $logProb]) {
-                    // update generated ids, model inputs, and length for next step
-                    $scores[$batchIdx] += $logProb;
-                    $allInputIds[$batchIdx][] = $newTokenId;
-                    $generatedInputIds[] = [$newTokenId];
-
-                    // TODO: Support beam search
-                    break;
-                }
-            }
-
-            $streamer?->put($generatedInputIds);
-
-            $stop = $stoppingCriteria($generatedInputIds, $scores);
-            if (array_every($stop, fn ($x) => $x)) {
-                break;
-            }
-
-            $modelInputs = $this->updateModelKwargsForGeneration($generatedInputIds, $outputs, $modelInputs, $isEncoderDecoder);
-        }
-
-        $streamer?->end();
-
-        // 9. Retrieve and dispose all final past key values (including encoder attentions)
-        $pastKeyValues = $this->getPastKeyValues($outputs, $modelInputs['past_key_values'] ?? null);
-
-        $sequences = Tensor::fromArray($allInputIds, Tensor::int64);
-
-        if ($generationConfig->return_dict_in_generate) {
-            return [
-                'sequences' => $sequences,
-                'past_key_values' => $pastKeyValues,
-                ...$attentions
-            ];
-        } else {
-            return $sequences;
-        }
-    }
-
-    /**
-     * This function merges multiple generation configs together to form a final generation config to be used by the model for text generation.
-     * It first creates an empty `GenerationConfig` object, then it applies the model's own `generation_config` property to it. Finally, if a `generation_config` object was passed in the arguments, it overwrites the corresponding properties in the final config with those of the passed config object.
-     *
-     * @param ?GenerationConfig $generationConfig A `GenerationConfig` object containing generation parameters.
-     *
-     * @return GenerationConfig The final generation config object to be used by the model for text generation.
-     */
-    protected function getGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
-    {
-        // 1. Get the model's config  so that if `eos_token_id` or `bos_token_id` exist in it, we will use them
-        $modelConfig = $this->config->config;
-        foreach (["decoder", "generator", "text_config"] as $key) {
-            // Special case: some models have generation attributes set in the key.
-            // Use them if still unset in the generation config.
-            if (array_key_exists($key, $modelConfig)) {
-                $modelConfig = array_merge($modelConfig, $modelConfig[$key]);
-            }
-        }
-
-        // 2. Create empty generation config (contains defaults) and values from model config
-        $genConfig = (new GenerationConfig($modelConfig))->toArray();
-
-        // Apply model's generation config, if it exists
-        if (property_exists($this, 'generationConfig')) {
-            $genConfig = array_merge($genConfig, $this->generationConfig->toArray());
-        }
-
-        // Finally, use any generation config specified by the user when calling `generate`
-        if ($generationConfig !== null) {
-            $genConfig = array_merge($genConfig, $generationConfig->toArray());
-        }
-
-        return new GenerationConfig($genConfig);
-    }
-
-    protected function getLogitsProcessor(
+    protected function prepareLogitsProcessor(
         GenerationConfig     $generationConfig,
         int                  $inputIdsSeqLength,
         ?LogitsProcessorList $logitsProcessor = null
@@ -805,7 +748,7 @@ class PretrainedModel
         }
 
         if ($generationConfig->bad_words_ids != null) {
-            $processors->push(new BadWordsLogitsProcessor($generationConfig->bad_words_ids, $inputIdsSeqLength));
+            $processors->push(new NoBadWordsLogitsProcessor($generationConfig->bad_words_ids, $inputIdsSeqLength));
         }
 
         if ($generationConfig->min_length != null && $generationConfig->eos_token_id != null && $generationConfig->min_length > 0) {
@@ -840,24 +783,26 @@ class PretrainedModel
             $processors->push(new SuppressTokensAtBeginLogitsProcessor($generationConfig->begin_suppress_tokens, $beginIndex));
         }
 
-        if ($generationConfig->forced_decoder_ids !== null) {
-            $processors->push(new ForceTokensLogitsProcessor($generationConfig->forced_decoder_ids));
-        }
-
         if ($logitsProcessor !== null) {
             $processors->extend($logitsProcessor);
         }
 
-//         `LogitNormalization` should always be the last logit processor, when present
-//        if($generationConfig->renormalize_logits) {
-//            $processors->push(new LogitNormalization());
-//        }
+        // `LogitNormalization` should always be the last logit processor, when present
+        // if($generationConfig->renormalize_logits) {
+        //     $processors->push(new LogitNormalization());
+        // }
 
         return $processors;
-
     }
 
-    public function getStoppingCriteria(GenerationConfig $generationConfig, ?StoppingCriteriaList $stoppingCriteria = null): StoppingCriteriaList
+    /**
+     * Prepares the list of stopping criteria based on the generation configuration.
+     *
+     * @param GenerationConfig $generationConfig The generation configuration.
+     * @param ?StoppingCriteriaList $stoppingCriteria Optional existing stopping criteria list.
+     * @return StoppingCriteriaList The configured list of stopping criteria.
+     */
+    public function prepareStoppingCriteria(GenerationConfig $generationConfig, ?StoppingCriteriaList $stoppingCriteria = null): StoppingCriteriaList
     {
         $criteria = $stoppingCriteria ?? new StoppingCriteriaList();
 
@@ -876,26 +821,124 @@ class PretrainedModel
         return $criteria;
     }
 
+    
     /**
+     * Prepares the inputs required for the model's forward pass within the generation loop.
+     * Delegates to the model architecture specific implementation.
+     *
+     * @param array $inputs Current input IDs.
+     * @param array $modelInputs Current model inputs (including past states).
+     * @return array Prepared model inputs for the next forward pass.
+     */
+    function prepareInputsForGeneration(array $inputs, array $modelInputs)
+    {
+        return $this->modelArchitecture->prepareInputsForGeneration($this, $inputs, $modelInputs);
+    }
+
+    /**
+     * Updates the model inputs dictionary for the next generation step.
+     *
+     * @param array $generatedInputIds The newly generated token IDs for the current step.
+     * @param array $outputs The outputs from the model's forward pass in the current step.
+     * @param array $modelInputs The model inputs used in the current step.
+     * @param bool $isEncoderDecoder Whether the model is an encoder-decoder architecture.
+     * @return array The updated model inputs for the next generation step.
+     */
+    function updateInputsAfterGeneration(array $generatedInputIds, $outputs, $modelInputs, $isEncoderDecoder)
+    {
+        $modelInputs['past_key_values'] = $this->getPastKeyValues($outputs, $modelInputs['past_key_values'] ?? null);
+
+        // Update input_ids for the next run
+        $flatGeneratedInputIds = array_merge(...$generatedInputIds);
+        $modelInputs['input_ids'] = new Tensor($flatGeneratedInputIds, Tensor::int64, [count($generatedInputIds), 1]);
+
+        if (!$isEncoderDecoder) {
+            // Update attention mask
+            $modelInputs['attention_mask'] = Tensor::concat([
+                $modelInputs['attention_mask'],
+                Tensor::ones([$modelInputs['attention_mask']->shape()[0], 1], Tensor::int64)
+            ], 1);
+        } elseif (array_key_exists('decoder_attention_mask', $modelInputs)) {
+            // TODO: Update decoder attention mask if the model requires it
+        }
+
+        // Force recreate position_ids in the next iteration
+        $modelInputs['position_ids'] = null;
+
+        return $modelInputs;
+    }
+
+    /**
+     * Extracts past key values from the decoder/model outputs.
+     *
+     * @param array $decoderResults The outputs from the decoder/model forward pass.
+     * @param ?array $pastKeyValues The previous past key values.
+     * @return array An object containing the updated past key values.
+     */
+    public function getPastKeyValues(array $decoderResults, ?array $pastKeyValues): array
+    {
+        $pkvs = [];
+
+        foreach ($decoderResults as $name => $value) {
+            if (str_starts_with($name, 'present')) {
+                $newName = str_replace('present', 'past_key_values', $name);
+
+                if ($pastKeyValues && str_contains($name, 'encoder')) {
+                    // Optimization introduced by optimum to reuse past key values.
+                    // So, we just replace the constant outputs with the previous past key values.
+                    // https://github.com/huggingface/optimum/blob/0bf2c05fb7e1182b52d21b703cfc95fd9e4ea3dc/optimum/onnxruntime/base.py#L677-L704
+                    $pkvs[$newName] = $pastKeyValues[$newName];
+                } else {
+                    $pkvs[$newName] = $value;
+                }
+            }
+        }
+
+        return $pkvs;
+    }
+
+    /**
+     * Extracts attention values from the decoder/model outputs.
+     *
+     * @param array $decoderResults The outputs from the decoder/model forward pass.
+     * @return array An object containing attentions.
+     */
+    public function getAttentions(array $decoderResults): array
+    {
+        $attns = [];
+
+        foreach (['cross_attentions', 'decoder_attentions'] as $attnName) {
+            $result = [];
+            foreach ($decoderResults as $name => $value) {
+                if (str_starts_with($name, $attnName)) {
+                    $index = intval(substr(strrchr($name, '.'), 1));
+                    $result[$index] = $value;
+                }
+            }
+            $attns[$attnName] = $result;
+        }
+
+        return $attns;
+    }
+
+    /**
+     * Adds past key values to the decoder feeds object for the ONNX session.
+     * Initializes tensors if `pastKeyValues` is null.
+     *
+     * @param array $decoderFeeds The decoder feeds object (passed by reference).
+     * @param ?array $pastKeyValues An object containing past key values.
      * @return void
      */
-    public function validateModelClass(): void
+    public function addPastKeyValues(array &$decoderFeeds, ?array $pastKeyValues): void
     {
-        if (!$this->modelArchitecture->canGenerate()) {
-            $className = get_called_class();
-            $errorMsg = "The current model class $className is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
+        if ($pastKeyValues !== null) {
+            $decoderFeeds = array_merge($decoderFeeds, $pastKeyValues);
+        } else {
+            $shapes = $this->config->getKeyValueShapes();
 
-            $possibleInfo =
-                AutoModelForCausalLM::MODEL_CLASS_MAPPING[$this->config->modelType]
-                ?? AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING[$this->config->modelType]
-                ?? null;
-
-            if ($possibleInfo) {
-                $errorMsg .= " Try using `{$possibleInfo}` instead.";
+            foreach ($shapes as $name => $shape) {
+                $decoderFeeds[$name] = new Tensor([], shape: $shape);
             }
-
-            throw new Error($errorMsg);
-
         }
     }
 }
