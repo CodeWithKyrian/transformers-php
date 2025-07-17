@@ -17,9 +17,9 @@ class Transformers
 
     protected static ?string $authToken = null;
 
-    protected static ?string $userAgent = 'transformers-php/0.4.0';
+    protected static ?string $userAgent = 'transformers-php/0.5.3';
 
-    protected static ImageDriver $imageDriver;
+    protected static ImageDriver $imageDriver = ImageDriver::VIPS;
 
 
     /**
