@@ -42,10 +42,9 @@ class InferenceSession
         $profileFilePrefix = null,
         $sessionConfigEntries = null,
         $providers = []
-    )
-    {
+    ) {
         $this->ort = new OnnxRuntime();
-//        $providers = ['CoreMLExecutionProvider', 'CPUExecutionProvider'];
+        //        $providers = ['CoreMLExecutionProvider', 'CPUExecutionProvider'];
         // session options
         $sessionOptions = $this->ort->CreateSessionOptions();
 
@@ -106,7 +105,8 @@ class InferenceSession
 
         foreach ($providers as $provider) {
             if (!in_array($provider, $this->providers())) {
-                trigger_error('Provider not available: ' . $provider, E_USER_WARNING);
+                // trigger_error('Provider not available: ' . $provider, E_USER_WARNING);
+                // TODO: Log warning when we implement logging
                 continue;
             }
 
@@ -115,7 +115,7 @@ class InferenceSession
                 $this->ort->SessionOptionsAppendExecutionProvider_CUDA_V2($sessionOptions, $cudaOptions);
                 $this->ort->ReleaseCUDAProviderOptions($cudaOptions);
             } elseif ($provider == 'CoreMLExecutionProvider') {
-                $this->ort->OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, 1);
+                $this->ort->OrtSessionOptionsAppendExecutionProvider_CoreML($sessionOptions, 0);
             } elseif ($provider == 'CPUExecutionProvider') {
                 break;
             } else {
@@ -140,11 +140,11 @@ class InferenceSession
         // pointer references
         $refs = [];
 
-        $inputTensor = $this->convertInputTensorToOnnxTensor($inputFeed, $refs);
+        $inputTensor = $this->tensorArrayToOrtValueArray($inputFeed, $refs);
         $outputNames ??= array_map(fn($v) => $v['name'], $this->outputs);
 
-        $inputNodeNames = $this->createNodeNames(array_keys($inputFeed), $refs);
-        $outputNodeNames = $this->createNodeNames($outputNames, $refs);
+        $inputNodeNames = $this->createCStringArray(array_keys($inputFeed), $refs);
+        $outputNodeNames = $this->createCStringArray($outputNames, $refs);
 
         // run options
         $runOptions = $this->ort->CreateRunOptions();
@@ -170,7 +170,7 @@ class InferenceSession
 
         $output = [];
         foreach ($outputTensor as $i => $t) {
-            $output[$outputNames[$i]] = $this->createFromOnnxValue($t);
+            $output[$outputNames[$i]] = $this->ortValueToTensor($t);
         }
 
         // TODO use finally
@@ -182,7 +182,7 @@ class InferenceSession
             }
         }
 
-        // output values released in createFromOnnxValue
+        // output values released in ortValueToTensor
 
         return $output;
     }
@@ -213,7 +213,7 @@ class InferenceSession
         $description = $this->ort->ModelMetadataGetDescription($metadata, $this->allocator);
         $domain = $this->ort->ModelMetadataGetDomain($metadata, $this->allocator);
         $graphName = $this->ort->ModelMetadataGetGraphName($metadata, $this->allocator);
-//        $graphDescription = OnnxRuntime::ModelMetadataGetGraphDescription($metadata, $this->allocator);
+        //        $graphDescription = OnnxRuntime::ModelMetadataGetGraphDescription($metadata, $this->allocator);
         $producerName = $this->ort->ModelMetadataGetProducerName($metadata, $this->allocator);
         $version = $this->ort->ModelMetadataGetVersion($metadata);
 
@@ -222,7 +222,7 @@ class InferenceSession
             'description' => $description,
             'domain' => $domain,
             'graph_name' => $graphName,
-//            'graph_description' => $graphDescription,
+            //            'graph_description' => $graphDescription,
             'producer_name' => $producerName,
             'version' => $version
         ];
@@ -298,7 +298,14 @@ class InferenceSession
         return $outputs;
     }
 
-    private function convertInputTensorToOnnxTensor($inputFeed, &$refs): ?CData
+    /**
+     * Convert internal input tensor to Onnx tensor
+     *
+     * @param array<string, Tensor> $inputFeed
+     * @param array<int, CData> $refs
+     * @return CData|null
+     */
+    private function tensorArrayToOrtValueArray($inputFeed, &$refs): ?CData
     {
         $allocatorInfo = $this->ort->CreateCpuMemoryInfo(1, 0);
 
@@ -333,8 +340,7 @@ class InferenceSession
             }
 
             if ($inp['type'] == 'tensor(string)') {
-                $inputTensorValues = $this->ort->new("char*[$size]");
-                $this->fillStringTensorValues($input, $inputTensorValues, $refs);
+                $inputTensorValues = $this->createCStringArray($input->toArray(), $refs);
 
                 $typeEnum = $this->ort->enum('ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING');
                 $this->ort->CreateTensorAsOrtValue($this->allocator, $inputNodeShape, $ndim, $typeEnum, FFI::addr($inputTensor[$idx]));
@@ -359,7 +365,7 @@ class InferenceSession
                 }
 
                 $inputDump = $input->buffer()->dump();
-                FFI::memcpy($inputTensorValues, $input->buffer()->dump(), strlen($inputDump));
+                FFI::memcpy($inputTensorValues, $inputDump, strlen($inputDump));
 
                 $this->ort->CreateTensorWithDataAsOrtValue($allocatorInfo, $inputTensorValues, FFI::sizeof($inputTensorValues), $inputNodeShape, $ndim, $typeEnum, FFI::addr($inputTensor[$idx]));
             }
@@ -376,28 +382,19 @@ class InferenceSession
         return $inputTensor;
     }
 
-    private function fillStringTensorValues(Tensor $input, $ptr, &$refs): void
+    private function createCStringArray(array $strings, array &$refs): CData
     {
-        foreach ($input->buffer() as $i => $v) {
-            $strPtr = Libc::cstring($v);
-            $ptr[$i] = $strPtr;
-            $refs[] = $strPtr;
-        }
-    }
-
-    private function createNodeNames($names, &$refs): CData
-    {
-        $namesSize = count($names);
-        $ptr = $this->ort->new("char*[$namesSize]");
-        foreach ($names as $i => $name) {
-            $strPtr = Libc::cstring($name);
+        $arraySize = count($strings);
+        $ptr = $this->ort->new("char*[$arraySize]");
+        foreach ($strings as $i => $str) {
+            $strPtr = Libc::cstring($str);
             $ptr[$i] = $strPtr;
             $refs[] = $strPtr;
         }
         return $ptr;
     }
 
-    private function createFromOnnxValue($outPtr)
+    private function ortValueToTensor($outPtr)
     {
         try {
             $outType = $this->ort->GetValueType($outPtr);
@@ -419,7 +416,7 @@ class InferenceSession
                 if (isset($castTypes[$type])) {
                     $arr = $this->ort->cast($castTypes[$type] . "[$outputTensorSize]", $tensorData);
                 } elseif ($type == $this->ort->enum('ONNX_TENSOR_ELEMENT_DATA_TYPE_STRING')) {
-                    $arr = $this->createStringsFromOnnxValue($outPtr, $outputTensorSize);
+                    $arr = $this->ortValueToStrings($outPtr, $outputTensorSize);
                 } else {
                     $this->unsupportedType('element', $type);
                 }
@@ -439,7 +436,7 @@ class InferenceSession
                 $result = [];
                 for ($i = 0; $i < $out; $i++) {
                     $sequence = $this->ort->GetValue($outPtr, $i, $this->allocator);
-                    $result[] = $this->createFromOnnxValue($sequence);
+                    $result[] = $this->ortValueToTensor($sequence);
                 }
                 return $result;
             } elseif ($outType->cdata == $this->ort->enum('ONNX_TYPE_MAP')) {
@@ -450,11 +447,12 @@ class InferenceSession
 
                 $this->ort->ReleaseTensorTypeAndShapeInfo($typeShape);
 
-                // TODO support more types
                 if ($elemType->cdata == $this->ort->enum('ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64')) {
-                    $keys = $this->createFromOnnxValue($mapKeys);
-                    $values = $this->createFromOnnxValue($mapValues);
-                    return array_combine($keys, $values);
+                    $keys = $this->ortValueToTensor($mapKeys);
+                    $values = $this->ortValueToTensor($mapValues);
+
+                    $pairs = Tensor::stack([$keys->to($values->dtype()), $values], 1);
+                    return $pairs;
                 } else {
                     $this->unsupportedType('element', $elemType);
                 }
@@ -468,7 +466,7 @@ class InferenceSession
         }
     }
 
-    private function createStringsFromOnnxValue($outPtr, $outputTensorSize): array
+    private function ortValueToStrings($outPtr, $outputTensorSize): array
     {
         $len = $this->ort->GetStringTensorDataLength($outPtr);
 
@@ -629,7 +627,7 @@ class InferenceSession
     {
         // TODO use mutex for thread-safety
         $env = $this->ort->CreateEnv(3, 'Default');
-        
+
         register_shutdown_function(function () use ($env) {
             $this->ort->ReleaseEnv($env);
         });

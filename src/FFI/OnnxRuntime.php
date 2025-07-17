@@ -571,7 +571,7 @@ class OnnxRuntime extends NativeLibrary
 
     public function GetMapValueType($mapTypeInfo): CData
     {
-        $keyType = $this->new('OrtTypeInfo');
+        $keyType = $this->new('OrtTypeInfo*');
 
         $this->checkStatus((($this->api)->GetMapValueType)($mapTypeInfo, FFI::addr($keyType)));
 
