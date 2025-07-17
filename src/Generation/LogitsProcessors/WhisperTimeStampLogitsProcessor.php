@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\LogitsProcessors;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperTimeStampLogitsProcessor extends LogitsProcessor

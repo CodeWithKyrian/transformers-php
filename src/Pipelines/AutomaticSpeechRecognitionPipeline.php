@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Generation\Streamers\WhisperTextStreamer;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Audio;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Image;
+
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 
@@ -115,7 +115,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             throw new \InvalidArgumentException('`streamer` must be an instance of `WhisperTextStreamer`');
         }
 
-//        if (!is_null($streamer)) trigger_error('`streamer` is not supported yet for Whisper', E_USER_WARNING);
+        //        if (!is_null($streamer)) trigger_error('`streamer` is not supported yet for Whisper', E_USER_WARNING);
 
         $kwargs = array_keys_to_snake_case($args);
 
@@ -126,7 +126,11 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 throw new \InvalidArgumentException('Cannot specify `forcedDecoderIds` when specifying `language`, `task`, or `returnTimestamps`');
             }
 
-            $decoderPromptIds = $this->tokenizer->getDecoderPromptIds(language: $language, task: $task, noTimestamps: !$returnTimestamps);
+            if (!method_exists($this->tokenizer, 'getDecoderPromptIds')) {
+                throw new \InvalidArgumentException('Tokenizer not supported for Automatic Speech Recognition');
+            }
+
+            $decoderPromptIds = call_user_func([$this->tokenizer, 'getDecoderPromptIds'], language: $language, task: $task, noTimestamps: !$returnTimestamps);
 
             if (count($decoderPromptIds) > 0) {
                 $generationConfig['forced_decoder_ids'] = $decoderPromptIds;
@@ -200,7 +204,6 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                         'is_last' => true
                     ]
                 ];
-
             }
 
             // Generate for each set of input features
@@ -223,8 +226,14 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
                 $streamer?->putChunk($chunk);
             }
 
+            if (!method_exists($this->tokenizer, 'decodeASR')) {
+                throw new \InvalidArgumentException('Tokenizer not supported for Automatic Speech Recognition');
+            }
+
             // Merge text chunks
-            [$fullText, $optional] = $this->tokenizer->decodeASR($chunks,
+            [$fullText, $optional] = call_user_func(
+                [$this->tokenizer, 'decodeASR'],
+                $chunks,
                 timePrecision: $timePrecision,
                 returnTimestamps: $returnTimestamps,
                 forceFullSequences: $forceFullSequences
@@ -247,7 +256,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
 
         $toReturn = [];
         foreach ($inputs as $input) {
-            $audio = Audio::read($input);
+            $audio = new Audio($input);
             $audioTensor = $audio->toTensor(samplerate: $samplingRate);
             $processedInputs = ($this->processor)($audioTensor);
             $outputs = ($this->model)($processedInputs);
@@ -262,6 +271,7 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             $predictedSentences = $this->tokenizer->decode($predictedIds);
             $toReturn[] = ['text' => $predictedSentences];
         }
+
         return $isBatched ? $toReturn : $toReturn[0];
     }
 }

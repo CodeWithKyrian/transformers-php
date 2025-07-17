@@ -5,10 +5,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
+use Codewithkyrian\Transformers\Configs\AutoConfig;
 use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
-use Codewithkyrian\Transformers\Utils\AutoConfig;
 
 /**
  * Base class of all AutoModels. Contains the `from_pretrained` function
@@ -47,8 +47,7 @@ abstract class PretrainedMixin
         string           $revision = 'main',
         ?string          $modelFilename = null,
         ?callable $onProgress = null
-    ): PretrainedModel
-    {
+    ): PretrainedModel {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
 
         foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {
@@ -72,7 +71,7 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-//            echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.";
+            //            echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.";
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,

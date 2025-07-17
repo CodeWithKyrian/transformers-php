@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\WhisperTimeStampLogitsProcessor;
@@ -12,12 +12,9 @@ use Codewithkyrian\Transformers\Generation\StoppingCriteria\StoppingCriteria;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Exception;
 use InvalidArgumentException;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
@@ -29,8 +26,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         public InferenceSession  $decoderMergedSession,
         public ModelArchitecture $modelArchitecture,
         public GenerationConfig  $generationConfig
-    )
-    {
+    ) {
         parent::__construct($config, $session, $modelArchitecture);
     }
 
@@ -40,19 +36,16 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         ?LogitsProcessorList $logitsProcessor = null,
         ?StoppingCriteria    $stoppingCriteria = null,
         ?Streamer            $streamer = null,
-                             ...$kwargs
-    ): array|Tensor
-    {
+        ...$kwargs
+    ): array|Tensor {
         $generationConfig = $this->prepareGenerationConfig($generationConfig);
 
-        // Whisper has additional options for returning timestamps
         $generationConfig['return_timestamps'] ??= false;
 
         if ($generationConfig['return_timestamps']) {
             $logitsProcessor ??= new LogitsProcessorList();
             $logitsProcessor->push(new WhisperTimeStampLogitsProcessor($generationConfig));
         }
-
 
         if (isset($generationConfig['return_token_timestamps'])) {
             $generationConfig['output_attentions'] = true;
@@ -64,8 +57,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
             if (!isset($generationConfig['alignment_heads'])) {
                 throw new Exception(
-                    "Model generation config has no `alignment_heads`, token-level timestamps not available. ".
-                    "See https://gist.github.com/hollance/42e32852f24243b748ae6bc1f985b13a on how to add this property to the generation config."
+                    "Model generation config has no `alignment_heads`, token-level timestamps not available. " .
+                        "See https://gist.github.com/hollance/42e32852f24243b748ae6bc1f985b13a on how to add this property to the generation config."
                 );
             }
         }
@@ -100,12 +93,11 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         array    $alignmentHeads,
         int|null $numFrames = null,
         float    $timePrecision = 0.02
-    ): Tensor
-    {
+    ): Tensor {
         if (!isset($generateOutputs['cross_attentions'])) {
             throw new Exception(
-                "Model outputs must contain cross attentions to extract timestamps. ".
-                "This is most likely because the model was not exported with `output_attentions=True`."
+                "Model outputs must contain cross attentions to extract timestamps. " .
+                    "This is most likely because the model was not exported with `output_attentions=True`."
             );
         }
 
@@ -122,7 +114,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             /** @var Tensor[] $crossAttentions */
             $crossAttentions = [];
             for ($i = 0; $i < $this->config['decoder_layers']; $i++) {
-                $crossAttentions[] = Tensor::concat(array_map(fn ($x) => $x[$i], $batch), 2);
+                $crossAttentions[] = Tensor::concat(array_map(fn($x) => $x[$i], $batch), 2);
             }
 
             $weights = Tensor::stack(array_map(function ($alignmentHead) use ($crossAttentions, $numFrames) {
@@ -177,8 +169,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $matrix = $batchedMatrices[$batchIdx]->multiply(-1)->squeeze(0);
             [$textIndices, $timeIndices] = $this->dynamicTimeWarping($matrix);
 
-            $diffs = array_map(fn ($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
-            $jumps = array_map(fn ($x) => (bool)$x, array_merge([1], $diffs));
+            $diffs = array_map(fn($i) => $textIndices[$i + 1] - $textIndices[$i], range(0, count($textIndices) - 2));
+            $jumps = array_map(fn($x) => (bool)$x, array_merge([1], $diffs));
 
             $jumpTimes = [];
             for ($i = 0; $i < count($jumps); ++$i) {
@@ -316,5 +308,4 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
         return [$textIndices, $timeIndices];
     }
-
 }

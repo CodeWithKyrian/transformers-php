@@ -5,7 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
+
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
@@ -62,7 +63,7 @@ class ImageToTextPipeline extends Pipeline
             $output = $this->model->generate($batch, generationConfig: $generationConfig, streamer: $streamer);
 
             $decoded = array_map(
-                fn ($x) => ['generated_text' => trim($x)],
+                fn($x) => ['generated_text' => trim($x)],
                 $this->tokenizer->batchDecode($output, skipSpecialTokens: true)
             );
 
@@ -71,5 +72,4 @@ class ImageToTextPipeline extends Pipeline
 
         return $isBatched ? $toReturn : $toReturn[0];
     }
-
 }

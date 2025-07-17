@@ -5,8 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
+
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 
@@ -43,21 +44,21 @@ class Text2TextGenerationPipeline extends Pipeline
 
         // Add global prefix, if present
         $prefix = $this->model->config['prefix'] ?? null;
-        if ($prefix) $inputs = array_map(fn ($x) => $prefix.$x, $inputs);
+        if ($prefix) $inputs = array_map(fn($x) => $prefix . $x, $inputs);
 
         // Handle task specific params
         $taskSpecificParams = $this->model->config['task_specific_params'] ?? null;
         if ($taskSpecificParams && isset($taskSpecificParams[$this->task->value])) {
             // Add prefixes, if present
             $taskPrefix = $taskSpecificParams[$this->task->value]['prefix'] ?? null;
-            if ($taskPrefix) $inputs = array_map(fn ($x) => $taskPrefix.$x, $inputs);
+            if ($taskPrefix) $inputs = array_map(fn($x) => $taskPrefix . $x, $inputs);
 
             // TODO: update generation config
         }
 
         $inputs = $this instanceof TranslationPipeline && method_exists($this->tokenizer, 'buildTranslationInputs')
-            ? $this->tokenizer->buildTranslationInputs($inputs, $generationConfig, padding: true, truncation: true)
-            : $this->tokenizer->__invoke($inputs, padding: true, truncation: true);
+            ? call_user_func([$this->tokenizer, 'buildTranslationInputs'], $inputs, $generationConfig, padding: true, truncation: true)
+            : call_user_func([$this->tokenizer, '__invoke'], $inputs, padding: true, truncation: true);
 
         $streamer?->setTokenizer($this->tokenizer)?->shouldSkipPrompt(false);
 
@@ -70,7 +71,7 @@ class Text2TextGenerationPipeline extends Pipeline
 
         // Decode token ids to text
         return array_map(
-            fn ($text) => [$this->key => $text],
+            fn($text) => [$this->key => $text],
             $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true)
         );
     }

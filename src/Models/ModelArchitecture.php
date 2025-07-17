@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models;
 
-use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
-use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
+
 use function Codewithkyrian\Transformers\Utils\array_pick;
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
 
@@ -102,8 +100,8 @@ enum ModelArchitecture: string
             } // Case 3: Past length >= Input IDs
             else {
                 if (
-                    isset($model->config->image_token_index) &&
-                    in_array($model->config->image_token_index, $inputIds->toArray())
+                    isset($model->config['image_token_index']) &&
+                    in_array($model->config['image_token_index'], $inputIds->toArray())
                 ) {
                     // Support for multiple image tokens
                     $numImageTokens = $model->config['num_image_tokens'] ?? null;
@@ -181,7 +179,7 @@ enum ModelArchitecture: string
         return $this->decoderForward($model, $decoderFeeds, true);
     }
 
-    protected function createPositionIds(array $modelInputs, array $pastKeyValues = null): Tensor
+    protected function createPositionIds(array $modelInputs, ?array $pastKeyValues = null): Tensor
     {
         $inputIds = $modelInputs['input_ids'] ?? null;
         $inputsEmbeds = $modelInputs['inputs_embeds'] ?? null;
@@ -211,7 +209,7 @@ enum ModelArchitecture: string
         $positionIds = new Tensor($data, Tensor::int64, $attentionMask->shape());
 
         if ($pastKeyValues) {
-            $offset = -(($inputIds ?? $inputsEmbeds)->shape()[1]);
+            $offset = - (($inputIds ?? $inputsEmbeds)->shape()[1]);
             $positionIds = $positionIds->slice(null, [$offset, null]); //  position_ids[:, -input_ids.shape[1] :]
         }
 

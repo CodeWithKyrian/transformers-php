@@ -5,8 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PreTrainedTokenizers;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 
 class M2M100Tokenizer extends PreTrainedTokenizer
 {
@@ -50,8 +50,7 @@ class M2M100Tokenizer extends PreTrainedTokenizer
         bool             $truncation = false,
         ?int             $maxLength = null,
         bool             $addSpecialTokens = true,
-    ): array
-    {
+    ): array {
 
         $srcLangToken = $generationConfig['src_lang'] ?? null;
         $tgtLangToken = $generationConfig['tgt_lang'];
@@ -71,7 +70,7 @@ class M2M100Tokenizer extends PreTrainedTokenizer
 
             // In the same way as the Python library, we override the post-processor
             // to force the source language to be first:
-            foreach ($this->postProcessor->single as &$item) {
+            foreach ($this->postProcessor->config['single'] as &$item) {
                 if (isset($item['SpecialToken']) && preg_match($this->languageRegex, $item['SpecialToken']['id'])) {
                     $item['SpecialToken']['id'] = call_user_func($this->langToToken, $srcLangToken);
                     break;

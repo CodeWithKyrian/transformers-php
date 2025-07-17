@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Configs\PretrainedConfig;
+use Codewithkyrian\Transformers\Configs\AutoConfig;
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Exceptions\MissingModelInputException;
 use Codewithkyrian\Transformers\Exceptions\ModelExecutionException;
@@ -29,8 +31,6 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;

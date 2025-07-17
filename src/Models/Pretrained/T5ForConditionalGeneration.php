@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
-use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 
 /**
@@ -22,8 +20,7 @@ class T5ForConditionalGeneration extends T5PretrainedModel
         public InferenceSession  $decoderMergedSession,
         public ModelArchitecture $modelArchitecture,
         public GenerationConfig  $generationConfig
-    )
-    {
+    ) {
         parent::__construct($config, $session, $modelArchitecture);
     }
 }

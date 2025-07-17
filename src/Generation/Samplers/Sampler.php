@@ -5,17 +5,15 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Generation\Samplers;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
 
 /**
  * Sampler is a base class for all sampling methods used for text generation.
  */
 abstract class Sampler
 {
-    public function __construct(protected GenerationConfig $generationConfig)
-    {
-    }
+    public function __construct(protected GenerationConfig $generationConfig) {}
 
     /**
      * Executes the sampler, using the specified logits.

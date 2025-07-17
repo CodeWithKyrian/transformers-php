@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 
-namespace Codewithkyrian\Transformers\Utils;
+namespace Codewithkyrian\Transformers\Configs;
 
 /**
  * Class representing a configuration for a generation task.
