@@ -206,6 +206,35 @@ class GenerationConfig implements \ArrayAccess
         return array_merge($objectProps, $this->kwargs);
     }
 
+    /**
+     * Merge multiple GenerationConfig objects or arrays, with later arguments taking precedence.
+     * @param GenerationConfig|array ...$configs
+     * @return GenerationConfig
+     */
+    public static function mergeConfigs(...$configs): GenerationConfig
+    {
+        // Start with an empty array (lowest precedence)
+        $merged = [];
+        foreach ($configs as $config) {
+            if ($config instanceof self) {
+                $arr = $config->toArray();
+            } elseif (is_array($config)) {
+                $arr = $config;
+            } elseif ($config === null) {
+                continue;
+            } else {
+                throw new \InvalidArgumentException('mergeConfigs expects GenerationConfig, array, or null');
+            }
+            // Only overwrite if value is not null
+            foreach ($arr as $k => $v) {
+                if ($v !== null) {
+                    $merged[$k] = $v;
+                }
+            }
+        }
+        return new self($merged);
+    }
+
     public function offsetExists(mixed $offset): bool
     {
         return property_exists($this, $offset) || isset($this->kwargs[$offset]);

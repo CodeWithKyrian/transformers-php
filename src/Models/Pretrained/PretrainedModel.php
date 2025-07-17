@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Configs\PretrainedConfig;
@@ -36,6 +35,7 @@ use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;
 use Exception;
+
 use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
 use function Codewithkyrian\Transformers\Utils\array_pick;
@@ -60,9 +60,8 @@ class PretrainedModel
         public PretrainedConfig  $config,
         public InferenceSession  $session,
         public ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-                                 ...$args
-    )
-    {
+        ...$args
+    ) {
         if ($this->modelArchitecture->canGenerate()) {
             $this->forwardParams[] = 'past_key_values';
         }
@@ -102,8 +101,7 @@ class PretrainedModel
         ?string                     $modelFilename = null,
         ModelArchitecture           $modelArchitecture = ModelArchitecture::EncoderOnly,
         ?callable                   $onProgress = null
-    ): self
-    {
+    ): self {
         if (is_array($config)) {
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
         }
@@ -111,148 +109,143 @@ class PretrainedModel
         $quantizedSuffix = $quantized ? '_quantized' : '';
 
         switch ($modelArchitecture) {
-            case ModelArchitecture::DecoderOnly:
-            {
-                $session = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress,
-                );
+            case ModelArchitecture::DecoderOnly: {
+                    $session = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress,
+                    );
 
-                $generatorConfigArr = Hub::getJson(
-                    pathOrRepoID: $modelNameOrPath,
-                    fileName: 'generation_config.json',
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    fatal: false,
-                    onProgress: $onProgress
-                );
+                    $generatorConfigArr = Hub::getJson(
+                        pathOrRepoID: $modelNameOrPath,
+                        fileName: 'generation_config.json',
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        fatal: false,
+                        onProgress: $onProgress
+                    );
 
-                $generatorConfig = new GenerationConfig($generatorConfigArr);
+                    $generatorConfig = new GenerationConfig($generatorConfigArr);
 
-                return new static(
-                    config: $config,
-                    session: $session,
-                    modelArchitecture: $modelArchitecture,
-                    generationConfig: $generatorConfig
-                );
-            }
-
-            case ModelArchitecture::Seq2SeqLM:
-            case ModelArchitecture::Vision2Seq:
-            {
-                $encoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "encoder_model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress,
-                );
-
-                $decoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress,
-                );
-
-                $generatorConfigArr = Hub::getJson(
-                    pathOrRepoID: $modelNameOrPath,
-                    fileName: 'generation_config.json',
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    fatal: false,
-                    onProgress: $onProgress
-                );
-
-                $generatorConfig = new GenerationConfig($generatorConfigArr);
-
-                return new static(
-                    config: $config,
-                    session: $encoderSession,
-                    modelArchitecture: $modelArchitecture,
-                    generationConfig: $generatorConfig,
-                    decoderMergedSession: $decoderSession
-                );
-            }
-
-            case ModelArchitecture::MaskGeneration:
-            {
-                $visionEncoder = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "vision_encoder$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress
-                );
-
-                $promptMaskEncoder = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress
-                );
-
-                return new static(
-                    config: $config,
-                    session: $visionEncoder,
-                    promptMaskEncoderSession: $promptMaskEncoder,
-                    modelArchitecture: $modelArchitecture
-                );
-            }
-
-            case ModelArchitecture::EncoderDecoder:
-            {
-                $encoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "encoder_model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress
-                );
-
-                $decoderSession = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: "decoder_model_merged$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress
-                );
-
-                return new static(
-                    config: $config,
-                    session: $encoderSession,
-                    decoderMergedSession: $decoderSession,
-                    modelArchitecture: $modelArchitecture
-                );
-            }
-
-            default:
-            {
-                if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
-                    echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
+                    return new static(
+                        config: $config,
+                        session: $session,
+                        modelArchitecture: $modelArchitecture,
+                        generationConfig: $generatorConfig
+                    );
                 }
 
+            case ModelArchitecture::Seq2SeqLM:
+            case ModelArchitecture::Vision2Seq: {
+                    $encoderSession = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "encoder_model$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress,
+                    );
 
-                $session = self::constructSession(
-                    modelNameOrPath: $modelNameOrPath,
-                    fileName: $modelFilename ?? "model$quantizedSuffix",
-                    cacheDir: $cacheDir,
-                    revision: $revision,
-                    onProgress: $onProgress
-                );
+                    $decoderSession = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "decoder_model_merged$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress,
+                    );
+
+                    $generatorConfigArr = Hub::getJson(
+                        pathOrRepoID: $modelNameOrPath,
+                        fileName: 'generation_config.json',
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        fatal: false,
+                        onProgress: $onProgress
+                    );
+
+                    $generatorConfig = new GenerationConfig($generatorConfigArr);
+
+                    return new static(
+                        config: $config,
+                        session: $encoderSession,
+                        modelArchitecture: $modelArchitecture,
+                        generationConfig: $generatorConfig,
+                        decoderMergedSession: $decoderSession
+                    );
+                }
+
+            case ModelArchitecture::MaskGeneration: {
+                    $visionEncoder = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "vision_encoder$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress
+                    );
+
+                    $promptMaskEncoder = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress
+                    );
+
+                    return new static(
+                        config: $config,
+                        session: $visionEncoder,
+                        promptMaskEncoderSession: $promptMaskEncoder,
+                        modelArchitecture: $modelArchitecture
+                    );
+                }
+
+            case ModelArchitecture::EncoderDecoder: {
+                    $encoderSession = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "encoder_model$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress
+                    );
+
+                    $decoderSession = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: "decoder_model_merged$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress
+                    );
+
+                    return new static(
+                        config: $config,
+                        session: $encoderSession,
+                        decoderMergedSession: $decoderSession,
+                        modelArchitecture: $modelArchitecture
+                    );
+                }
+
+            default: {
+                    if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
+                        echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
+                    }
 
 
-                return new static(
-                    config: $config,
-                    session: $session,
-                    modelArchitecture: $modelArchitecture
-                );
-            }
+                    $session = self::constructSession(
+                        modelNameOrPath: $modelNameOrPath,
+                        fileName: $modelFilename ?? "model$quantizedSuffix",
+                        cacheDir: $cacheDir,
+                        revision: $revision,
+                        onProgress: $onProgress
+                    );
+
+
+                    return new static(
+                        config: $config,
+                        session: $session,
+                        modelArchitecture: $modelArchitecture
+                    );
+                }
         }
     }
 
@@ -280,9 +273,8 @@ class PretrainedModel
         string    $subFolder = 'onnx',
         bool      $fatal = true,
         ?callable $onProgress = null,
-                  ...$sessionOptions
-    ): ?InferenceSession
-    {
+        ...$sessionOptions
+    ): ?InferenceSession {
         $modelFileName = "$fileName.onnx";
 
         $file = Hub::getFile($modelNameOrPath, $modelFileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
@@ -291,10 +283,6 @@ class PretrainedModel
 
         return new InferenceSession($file, ...$sessionOptions);
     }
-
-     // Main Public API Methods
-    // =======================
-
 
     /**
      * Makes the model callable. Alias for the forward method.
@@ -337,14 +325,13 @@ class PretrainedModel
         ?LogitsProcessorList $logitsProcessor = null,
         ?StoppingCriteria    $stoppingCriteria = null,
         ?Streamer            $streamer = null,
-                             ...$kwargs
-    ): array|Tensor
-    {
+        ...$kwargs
+    ): array|Tensor {
         $this->validateModelClass();
 
         $kwargs = array_keys_to_snake_case($kwargs);
 
-        // 1. Update generation config with defaults
+        // 1. Prepare generation config
         $generationConfig = $this->prepareGenerationConfig($generationConfig);
 
         // 2. Prepare encoder inputs
@@ -390,7 +377,7 @@ class PretrainedModel
         // 9. Generation loop
         while (true) {
             $modelInputs = $this->prepareInputsForGeneration($allInputIds, $modelInputs);
-            
+
             $outputs = $this->forward($modelInputs);
 
             if ($generationConfig->output_attentions && $generationConfig->return_dict_in_generate) {
@@ -432,7 +419,7 @@ class PretrainedModel
             $streamer?->put($generatedInputIds);
 
             $stop = $stoppingCriteria($generatedInputIds, $scores);
-            if (array_every($stop, fn ($x) => $x)) {
+            if (array_every($stop, fn($x) => $x)) {
                 break;
             }
 
@@ -457,10 +444,6 @@ class PretrainedModel
         }
     }
 
-
-    // Helper Methods for `forward`
-    // ============================
-
     /**
      * Runs the ONNX session with the provided inputs.
      *
@@ -483,7 +466,7 @@ class PretrainedModel
         } catch (MissingModelInputException $e) {
             throw $e;
         } catch (Exception $e) {
-            throw ModelExecutionException::make($e->getMessage());
+            throw ModelExecutionException::make($e->getMessage(), $e);
         }
     }
 
@@ -503,7 +486,6 @@ class PretrainedModel
         foreach ($inputNames as $inputName) {
             $tensor = $inputs[$inputName] ?? null;
 
-            // Check if the input is an instance of Tensor
             if (!($tensor instanceof Tensor)) {
                 $missingInputs[] = $inputName;
                 continue;
@@ -520,18 +502,13 @@ class PretrainedModel
         $numInputsNeeded = count($inputNames);
 
         if ($numInputsProvided > $numInputsNeeded) {
-            // No missing inputs, but too many inputs were provided.
-            // Warn the user and ignore the extra inputs.
             $ignored = array_diff(array_keys($inputs), $inputNames);
-            echo 'WARNING: Too many inputs were provided ('.$numInputsProvided.' > '.$numInputsNeeded.'). 
-            The following inputs will be ignored: "'.implode(', ', $ignored).'".';
+            echo 'WARNING: Too many inputs were provided (' . $numInputsProvided . ' > ' . $numInputsNeeded . '). 
+            The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
         }
 
         return $inputs;
     }
-
-    // Helper Methods for `generate`
-    // 
 
     /**
      * Validates that the current model class is suitable for generation.
@@ -554,7 +531,6 @@ class PretrainedModel
             }
 
             throw new Error($errorMsg);
-
         }
     }
 
@@ -564,32 +540,19 @@ class PretrainedModel
      * @param ?GenerationConfig $generationConfig User-provided generation config.
      * @return GenerationConfig The final generation config.
      */
-    protected function prepareGenerationConfig(?GenerationConfig $generationConfig): GenerationConfig
+    protected function prepareGenerationConfig(?GenerationConfig $userProvidedConfig): GenerationConfig
     {
-        // 1. Get the model's config  so that if `eos_token_id` or `bos_token_id` exist in it, we will use them
         $modelConfig = $this->config->config;
         foreach (["decoder", "generator", "text_config"] as $key) {
-            // Special case: some models have generation attributes set in the key.
-            // Use them if still unset in the generation config.
             if (array_key_exists($key, $modelConfig)) {
                 $modelConfig = array_merge($modelConfig, $modelConfig[$key]);
             }
         }
 
-        // 2. Create empty generation config (contains defaults) and values from model config
-        $genConfig = (new GenerationConfig($modelConfig))->toArray();
+        /** @disregard P1014 */
+        $classConfig = (property_exists($this, 'generationConfig')) ? $this->generationConfig : null;
 
-        // Apply model's generation config, if it exists
-        if (property_exists($this, 'generationConfig')) {
-            $genConfig = array_merge($genConfig, $this->generationConfig->toArray());
-        }
-
-        // Finally, use any generation config specified by the user when calling `generate`
-        if ($generationConfig !== null) {
-            $genConfig = array_merge($genConfig, $generationConfig->toArray());
-        }
-
-        return new GenerationConfig($genConfig);
+        return GenerationConfig::mergeConfigs($modelConfig, $classConfig, $userProvidedConfig);
     }
 
     /**
@@ -608,8 +571,8 @@ class PretrainedModel
         if (array_key_exists($inputName, $modelInputs)) {
             if ($inputs) {
                 throw new Exception(
-                    "`inputs` were passed alongside `{$inputName}` which is not allowed. ".
-                    "Make sure to either pass `inputs` or `{$inputName}`."
+                    "`inputs` were passed alongside `{$inputName}` which is not allowed. " .
+                        "Make sure to either pass `inputs` or `{$inputName}`."
                 );
             }
         } else {
@@ -639,7 +602,7 @@ class PretrainedModel
         ) {
             // Encoder expects `inputs_embeds` instead of `input_ids`
             $kwargs = array_diff_key($modelInputs, array_flip(['input_ids', 'pixel_values', 'attention_mask']));
-            $preparedInputs = $this->prepareInputsEmbeds($modelInputs);
+            $preparedInputs = call_user_func([$this, 'prepareInputsEmbeds'], $modelInputs);
             $modelInputs = array_merge(
                 $kwargs,
                 array_pick($preparedInputs, ['inputs_embeds', 'attention_mask'])
@@ -735,8 +698,7 @@ class PretrainedModel
         GenerationConfig     $generationConfig,
         int                  $inputIdsSeqLength,
         ?LogitsProcessorList $logitsProcessor = null
-    ): LogitsProcessorList
-    {
+    ): LogitsProcessorList {
         $processors = new LogitsProcessorList();
 
         if ($generationConfig->repetition_penalty != null && $generationConfig->repetition_penalty !== 1.0) {
@@ -756,10 +718,12 @@ class PretrainedModel
         }
 
         if ($generationConfig->min_new_tokens != null && $generationConfig->eos_token_id != null && $generationConfig->min_new_tokens > 0) {
-            $processors->push(new MinNewTokensLengthLogitsProcessor(
+            $processors->push(
+                new MinNewTokensLengthLogitsProcessor(
                     $inputIdsSeqLength,
                     $generationConfig->min_new_tokens,
-                    $generationConfig->eos_token_id)
+                    $generationConfig->eos_token_id
+                )
             );
         }
 
@@ -821,7 +785,7 @@ class PretrainedModel
         return $criteria;
     }
 
-    
+
     /**
      * Prepares the inputs required for the model's forward pass within the generation loop.
      * Delegates to the model architecture specific implementation.
