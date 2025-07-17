@@ -18,7 +18,7 @@ class WordPieceModel extends TokenizerModel
     {
         parent::__construct($config);
 
-        $this->tokenToIds = self::toMap($config['vocab']);
+        $this->tokenToIds = $config['vocab'];
         $this->unkToken = $this->config['unk_token'] ?? '[UNK]';
         $this->unkTokenId = $this->tokenToIds[$this->unkToken];
 

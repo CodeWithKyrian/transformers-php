@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Tokenizers;
 
-use ArrayObject;
 use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Exception;
-use function Codewithkyrian\Jinja\slice;
-use function Codewithkyrian\Transformers\Utils\array_pop_key;
 
 abstract class TokenizerModel
 {
@@ -30,18 +27,29 @@ abstract class TokenizerModel
      * @var string[]
      */
     public array $vocab = [];
+
     /**
      * A mapping of tokens to ids.
      *
      * @var array<string, int>
      */
     public array $tokenToIds = [];
+
+    /**
+     * The suffix of the end of word.
+     */
     public ?string $endOfWordSuffix = null;
+
+    /**
+     * The prefix of the continuing subword.
+     */
     public ?string $continuingSubwordPrefix = null;
+
     /**
      *The id of the unknown token.
      */
     protected ?int $unkTokenId = null;
+
     /**
      * The unknown token string.
      */
@@ -52,6 +60,11 @@ abstract class TokenizerModel
      */
     protected bool $fuseUnk = false;
 
+    /**
+     * Constructs a new TokenizerModel instance.
+     *
+     * @param array $config The configuration for the tokenizer model.
+     */
     public function __construct(protected array $config)
     {
         $this->continuingSubwordPrefix = $config['continuing_subword_prefix'] ?? null;
@@ -67,11 +80,13 @@ abstract class TokenizerModel
      */
     public static function fromConfig(array $config, ...$args): self
     {
-        return match ($config['type'] ?? null) {
+        $type = $config['type'] ?? null;
+
+        return match ($type) {
             'WordPiece' => new WordPieceModel($config),
             'Unigram' => new UnigramModel($config, ...$args),
             'BPE' => new BPEModel($config),
-            default => self::inferTokenizerModel($config, $args),
+            default => self::inferTokenizerModel($type, $config, $args),
         };
     }
 
@@ -80,43 +95,29 @@ abstract class TokenizerModel
      *
      * This function is necessary for legacy tokenizer.json files that do not contain the model.type key.
      *
+     * @param string $type The tokenizer type.
      * @param array $config The tokenizer configuration.
      * @param array $args Additional arguments that may include pretokenizerConfig.
      * @return TokenizerModel The inferred tokenizer model instance.
      * @throws Exception If the tokenizer type is unknown.
      */
-    private static function inferTokenizerModel(array $config, array &$args): TokenizerModel
+    private static function inferTokenizerModel(?string $type, array $config, array &$args): TokenizerModel
     {
-        $pretokenizerConfig = array_pop_key($args, 'pretokenizerConfig');
-        $decoderConfig = array_pop_key($args, 'decoderConfig');
-
-        if ($pretokenizerConfig) {
-            if ($pretokenizerConfig['type'] === 'ByteLevel') {
-                return new BPEModel($config);
-            } elseif ($pretokenizerConfig['type'] === 'MetaSpace') {
+        if (isset($config['vocab'])) {
+            if (is_array($config['vocab']) && array_is_list($config['vocab'])) {
                 return new UnigramModel($config, ...$args);
-            } elseif ($pretokenizerConfig['type'] === 'Sequence') {
-                foreach ($pretokenizerConfig['pretokenizers'] as $pretokenizer) {
-                    if ($pretokenizer['type'] === 'ByteLevel') {
-                        return new BPEModel($config);
-                    } elseif ($pretokenizer['type'] === 'Metaspace') {
-                        return new UnigramModel($config, ...$args);
-                    }
+            } elseif (array_key_exists('continuing_subword_prefix', $config) && array_key_exists('unk_token', $config)) {
+                if (array_key_exists('merges', $config)) {
+                    return new BPEModel($config);
+                } else {
+                    return new WordPieceModel($config);
                 }
+            } else {
+                return new LegacyModel($config, ...$args);
             }
         }
 
-        if ($decoderConfig) {
-            if ($decoderConfig['type'] === 'WordPiece') {
-                return new WordPieceModel($config);
-            }
-        }
-
-        if ($config['vocab'] ?? false) {
-            return new LegacyModel($config, ...$args);
-        }
-
-        throw new Exception("Unknown tokenizer type {$config['type']}");
+        throw new Exception("Unknown tokenizer type: " . $type ?? 'undefined');
     }
 
     /**
@@ -167,42 +168,6 @@ abstract class TokenizerModel
     }
 
     /**
-     * Helper function to split a string on whitespace.
-     *
-     * @param string $text The text to split.
-     *
-     * @return string[] The split text.
-     */
-    public static function whitespaceSplit(string $text): array
-    {
-        return preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-    }
-
-    /**
-     * Helper function to lowercase a string and remove accents.
-     *
-     * @param string $text The text to lowercase and remove accents from.
-     *
-     * @return string The text with accents removed and lowercased.
-     */
-    public static function lowerCaseAndRemoveAccents(string $text): string
-    {
-        return mb_strtolower(self::removeAccents($text));
-    }
-
-    /**
-     * Helper function to remove accents from a string.
-     *
-     * @param string $text The text to remove accents from.
-     *
-     * @return string The text with accents removed.
-     */
-    public static function removeAccents(string $text): string
-    {
-        return preg_replace('/[\x{0300}-\x{036f}]/u', '', $text);
-    }
-
-    /**
      * Clean up a list of simple English tokenization artifacts like spaces before punctuations and abbreviated forms
      *
      * @param string $text The text to clean up.
@@ -226,13 +191,6 @@ abstract class TokenizerModel
         $text = preg_replace('/ \'ve/', "'ve", $text);
 
         return preg_replace('/ \'re/', "'re", $text);
-    }
-
-    public static function toMap(array $arr): array
-    {
-        $arrayObject = new ArrayObject($arr);
-
-        return $arrayObject->getArrayCopy();
     }
 
     /**
@@ -293,53 +251,6 @@ abstract class TokenizerModel
         }
 
         return $fused;
-    }
-
-    /**
-     * Adds whitespace around any CJK (Chinese, Japanese, or Korean) character in the input text.
-     *
-     * @param string $text The input text to tokenize.
-     *
-     * @return string The tokenized text with whitespace added around CJK characters.
-     */
-    public static function tokenizeChineseChars(string $text): string
-    {
-        $output = [];
-        for ($i = 0; $i < mb_strlen($text); ++$i) {
-            $char = mb_substr($text, $i, 1);
-            $cp = mb_ord($char);
-            if (self::isChineseChar($cp)) {
-                $output[] = " ";
-                $output[] = $char;
-                $output[] = " ";
-            } else {
-                $output[] = $char;
-            }
-        }
-        return implode("", $output);
-    }
-
-    /**
-     * Checks whether the given Unicode codepoint represents a CJK (Chinese, Japanese, or Korean) character.
-     *
-     * A "chinese character" is defined as anything in the CJK Unicode block.
-     *
-     * @param int $cp The Unicode codepoint to check.
-     *
-     * @return bool True if the codepoint represents a CJK character, false otherwise.
-     */
-    public static function isChineseChar(int $cp): bool
-    {
-        return (
-            ($cp >= 0x4E00 && $cp <= 0x9FFF)
-            || ($cp >= 0x3400 && $cp <= 0x4DBF)
-            || ($cp >= 0x20000 && $cp <= 0x2A6DF)
-            || ($cp >= 0x2A700 && $cp <= 0x2B73F)
-            || ($cp >= 0x2B740 && $cp <= 0x2B81F)
-            || ($cp >= 0x2B820 && $cp <= 0x2CEAF)
-            || ($cp >= 0xF900 && $cp <= 0xFAFF)
-            || ($cp >= 0x2F800 && $cp <= 0x2FA1F)
-        );
     }
 
     /**

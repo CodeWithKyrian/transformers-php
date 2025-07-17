@@ -25,14 +25,6 @@ class LegacyModel extends TokenizerModel
     public function __construct(array $config, ...$moreConfig)
     {
         parent::__construct($config);
-
-//        $vocab = $moreConfig['vocab'] ?? $this->config['vocab'];
-//        $this->tokenToIds = self::toMap(
-//                $moreConfig['target_lang'] ?? false
-//                ? $vocab[$moreConfig['target_lang']]
-//                : $vocab
-//        );
-
         $vocab = $moreConfig['target_lang'] ?? false
             ? $config['vocab'][$moreConfig['target_lang']]
             : $config['vocab'];
@@ -52,7 +44,6 @@ class LegacyModel extends TokenizerModel
 
         $this->unkToken = $moreConfig['unk_token'] ?? null;
         $this->unkTokenId = $this->tokenToIds[$this->unkToken] ?? null;
-
 
         foreach ($this->tokenToIds as $token => $id) {
             $this->vocab[$id] = $token;

@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Tokenizers;
 
-use SplDoublyLinkedList;
 use SplPriorityQueue;
 
 /**
@@ -48,7 +46,7 @@ class BPEModel extends TokenizerModel
 
         $vocab = $moreConfig['vocab'] ?? $this->config['vocab'];
 
-        $this->tokenToIds = self::toMap($vocab);
+        $this->tokenToIds = $vocab;
 
         $this->unkTokenId = $this->tokenToIds[$config['unk_token']] ?? null;
         $this->unkToken = $config['unk_token'];
@@ -63,7 +61,6 @@ class BPEModel extends TokenizerModel
         $this->continuingSubwordSuffix = $config['continuing_subword_suffix'] ?? null;
 
         $this->byteFallback = $config['byte_fallback'] ?? false;
-
     }
 
     /**
@@ -198,7 +195,7 @@ class BPEModel extends TokenizerModel
         $rank = $this->bpeRanks[$node->token . self::BPE_SPLIT_TOKEN . $node->next?->token] ?? null;
 
         if ($rank !== null) {
-            $node->score = -($rank + $node->bias);
+            $node->score = - ($rank + $node->bias);
             $queue->insert($node, $node->score);
         }
     }
@@ -219,8 +216,7 @@ class BPEModel extends TokenizerModel
             foreach ($bpeTokenList as $bpeToken) {
                 if (array_key_exists($bpeToken, $this->tokenToIds)) {
                     $outputTokens[] = $bpeToken;
-                }
-                else {
+                } else {
                     if ($this->byteFallback) {
                         $bytes = unpack('C*', $bpeToken);
 
