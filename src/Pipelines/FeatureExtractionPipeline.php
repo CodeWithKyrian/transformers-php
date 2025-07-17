@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
@@ -80,15 +79,23 @@ class FeatureExtractionPipeline extends Pipeline
             case 'none':
                 // No pooling, return the full tensor
                 break;
+
             case 'mean':
                 $result = $result->meanPooling($modelInputs["attention_mask"]);
                 break;
+
+            case 'first_token':
             case 'cls':
                 $result = $result->slice(null, 0);
                 break;
 
+            case 'last_token':
+            case 'eos':
+                $result = $result->slice(null, -1);
+                break;
+
             default:
-                throw new \Error("Pooling method not supported. Please use 'mean',  'cls', or 'none'.");
+                throw new \Error("Pooling method not supported. Please use 'mean',  'cls', 'first_token', 'last_token', or 'none'.");
         }
 
         if ($normalize) {
