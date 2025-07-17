@@ -34,10 +34,8 @@ class Math
      */
     public static function logSoftmax(array $arr): array
     {
-        // Compute the softmax values
         $softmaxArr = self::softmax($arr);
 
-        // Apply log formula to each element
         return array_map(fn($x) => log($x), $softmaxArr);
     }
 
@@ -49,16 +47,12 @@ class Math
      */
     public static function softmax(array $arr): array
     {
-        // Compute the maximum value in the array
         $maxVal = max($arr);
 
-        // Compute the exponentials of the array values
         $exps = array_map(fn($x) => exp($x - $maxVal), $arr);
 
-        // Compute the sum of the exponentials
         $sumExps = array_sum($exps);
 
-        // Compute the softmax values
         return array_map(fn($x) => $x / $sumExps, $exps);
     }
 
@@ -80,7 +74,6 @@ class Math
             return $b[1] <=> $a[1];
         });
 
-        // Get top k items if top_k > 0
         if ($topK !== -1 && $topK > 0) {
             $indexedItems = array_slice($indexedItems, 0, $topK);
         }
@@ -96,9 +89,6 @@ class Math
      */
     public static function product(...$a): array
     {
-        // Cartesian product of items
-        // Adapted from https://stackoverflow.com/a/43053803
-
         return array_reduce($a, function ($carry, $array) {
             return array_merge(
                 ...array_map(function ($d) use ($array) {
@@ -122,8 +112,6 @@ class Math
      */
     public static function permuteData($array, array $shape, array $axes): array
     {
-        // Calculate the new shape of the permuted array
-        // and the stride of the original array
         $newShape = array_fill(0, count($axes), 0);
         $stride = array_fill(0, count($axes), 0);
 
@@ -133,15 +121,12 @@ class Math
             $s *= $newShape[$i];
         }
 
-        // Precompute inverse mapping of stride
         $invStride = array_map(function ($_, $i) use ($stride, $axes) {
             return $stride[array_search($i, $axes)];
         }, $stride, array_keys($stride));
 
-        // Create the permuted array with the new shape
         $permutedData = array_fill(0, count($array), null);
 
-        // Permute the original array to the new array
         for ($i = 0; $i < count($array); ++$i) {
             $newIndex = 0;
             for ($j = count($shape) - 1, $k = $i; $j >= 0; --$j) {
@@ -153,6 +138,4 @@ class Math
 
         return [$permutedData, $newShape];
     }
-
-
 }

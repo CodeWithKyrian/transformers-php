@@ -35,7 +35,7 @@ class Downloader
      * @param callable|null $onProgress Callback to notify about the download progress
      * @return false|string
      */
-    public static function download(string $url, string $to, array $options = [], callable $onProgress = null): bool|string
+    public static function download(string $url, string $to, array $options = [], ?callable $onProgress = null): bool|string
     {
         $curlHandle = curl_init();
 

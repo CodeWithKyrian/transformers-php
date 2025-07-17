@@ -27,9 +27,6 @@ class CharTrie
      */
     public function extend(array $texts): void
     {
-//        foreach ($texts as $text) {
-//            $this->push($text);
-//        }
         array_map([$this, 'push'], $texts);
     }
 
@@ -61,7 +58,7 @@ class CharTrie
         $node = $this->root;
         $prefix = "";
         $length = mb_strlen($text);
-        
+
         for ($i = 0; $i < $length && $node != null; $i++) {
             $ch = mb_substr($text, $i, 1);
             $prefix .= $ch;

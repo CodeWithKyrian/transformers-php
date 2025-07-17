@@ -8,7 +8,6 @@ use Codewithkyrian\Transformers\Exceptions\HubException;
 use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use RuntimeException;
-use Symfony\Component\Console\Helper\ProgressBar;
 
 /**
  * Utility class to download files from the Hugging Face Hub
@@ -55,8 +54,7 @@ class Hub
         string    $subFolder = '',
         bool      $fatal = true,
         ?callable $onProgress = null
-    ): ?string
-    {
+    ): ?string {
         # Local cache and file paths
         $cacheDir ??= Transformers::getCacheDir();
 
@@ -72,17 +70,17 @@ class Hub
         $partCounter = 1;
         $partBasePath = "$filePath.part";
 
-        while (file_exists($partBasePath.$partCounter)) {
+        while (file_exists($partBasePath . $partCounter)) {
             $partCounter++;
         }
 
-        $partPath = $partBasePath.$partCounter;
+        $partPath = $partBasePath . $partCounter;
 
         # Resume download if partially downloaded
         $downloadedBytes = 0;
         if ($partCounter > 1) {
             for ($i = 1; $i < $partCounter; $i++) {
-                $downloadedBytes += filesize($partBasePath.$i);
+                $downloadedBytes += filesize($partBasePath . $i);
             }
         }
 
@@ -92,14 +90,14 @@ class Hub
         $options = [
             'http' => [
                 'header' => [
-                    'Range: bytes='.$downloadedBytes.'-',
+                    'Range: bytes=' . $downloadedBytes . '-',
                 ],
                 'User-Agent' => Transformers::getUserAgent(),
             ],
         ];
 
         if (Transformers::getAuthToken()) {
-            $options['http']['header'][] = 'Authorization: Bearer '.Transformers::getAuthToken();
+            $options['http']['header'][] = 'Authorization: Bearer ' . Transformers::getAuthToken();
         }
 
         try {
@@ -146,8 +144,7 @@ class Hub
         string    $subFolder = '',
         bool      $fatal = true,
         ?callable $onProgress = null
-    ): ?array
-    {
+    ): ?array {
         $file = self::getFile($pathOrRepoID, $fileName, $cacheDir, $revision, $subFolder, $fatal, $onProgress);
 
         if ($file === null) {
@@ -166,23 +163,11 @@ class Hub
         return $data;
     }
 
-
-    private static function onProgress(ProgressBar $progressBar): callable
-    {
-        return function ($totalDownload, $downloadedBytes) use ($progressBar) {
-            if ($totalDownload == 0) return;
-
-            $percent = round(($downloadedBytes / $totalDownload) * 100, 2);
-            $progressBar->setProgress((int)$percent);
-        };
-    }
-
-
     public static function combinePartFiles($filePath, $partBasePath, $partCount): void
     {
         $fileHandle = fopen($filePath, 'w');
         for ($i = 1; $i <= $partCount; $i++) {
-            $partPath = $partBasePath.$i;
+            $partPath = $partBasePath . $i;
             $partFileHandle = fopen($partPath, 'r');
             stream_copy_to_stream($partFileHandle, $fileHandle);
             fclose($partFileHandle);

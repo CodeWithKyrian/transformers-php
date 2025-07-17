@@ -7,6 +7,8 @@ use Codewithkyrian\Transformers\Utils\ImageDriver;
 
 require_once './vendor/autoload.php';
 
+$cacheDir = '/Volumes/KYRIAN SSD/Transformers';
+
 Transformers::setup()
-    ->setCacheDir('/Users/Kyrian/.transformers')
+    ->setCacheDir($cacheDir)
     ->setImageDriver(ImageDriver::VIPS);
