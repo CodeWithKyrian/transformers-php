@@ -86,7 +86,13 @@ class PretrainedConfig implements ArrayAccess
             // Sub-configs
             case 'llava':
             case 'paligemma':
+            case 'gemma3':
             case 'florence2':
+            case 'llava_onevision':
+            case 'idefics3':
+            case 'ultravox':
+            case 'smolvlm':
+            case 'gemma3n':
                 $normalizedConfig = $this->getNormalizedConfig($config['text_config']);
                 break;
             case 'moondream1':
@@ -111,8 +117,6 @@ class PretrainedConfig implements ArrayAccess
             case 'gpt_neox':
             case 'stablelm':
             case 'opt':
-            case 'phi':
-            case 'phi3':
             case 'falcon':
                 $mapping = [
                     'num_heads' => 'num_attention_heads',
@@ -121,13 +125,21 @@ class PretrainedConfig implements ArrayAccess
                 ];
                 break;
             case 'llama':
+            case 'lfm2':
+            case 'smollm3':
             case 'olmo':
+            case 'olmo2':
             case 'mobilellm':
             case 'granite':
             case 'cohere':
             case 'mistral':
             case 'starcoder2':
             case 'qwen2':
+            case 'qwen2_vl':
+            case 'phi':
+            case 'phi3':
+            case 'phi3_v':
+            case 'llava_qwen2':
                 $mapping = [
                     'num_heads' => 'num_key_value_heads',
                     'num_layers' => 'num_hidden_layers',
@@ -135,8 +147,14 @@ class PretrainedConfig implements ArrayAccess
                     'num_attention_heads' => 'num_attention_heads',
                 ];
                 break;
+            case 'qwen3':
             case 'gemma':
             case 'gemma2':
+            case 'gemma3_text':
+            case 'gemma3n_text':
+            case 'glm':
+            case 'helium':
+            case 'ernie4_5':
                 $mapping = [
                     'num_heads' => 'num_key_value_heads',
                     'num_layers' => 'num_hidden_layers',
