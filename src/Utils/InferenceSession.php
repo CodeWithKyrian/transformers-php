@@ -136,6 +136,17 @@ class InferenceSession
         $this->ort->ReleaseSession($this->session);
     }
 
+    /**
+     * Runs the inference session with the provided inputs and outputs.
+     *
+     * @param array<string, Tensor> $inputFeed
+     * @param array<string, Tensor> $outputNames
+     * @param string|null $logSeverityLevel
+     * @param string|null $logVerbosityLevel
+     * @param string|null $logid
+     * @param bool|null $terminate
+     * @return array<string, Tensor> The output tensors.
+     */
     public function run($outputNames, $inputFeed, $logSeverityLevel = null, $logVerbosityLevel = null, $logid = null, $terminate = null): array
     {
         // pointer references

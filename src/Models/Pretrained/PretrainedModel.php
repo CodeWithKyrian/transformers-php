@@ -456,11 +456,48 @@ class PretrainedModel
     }
 
     /**
+     * Encodes an image using the vision encoder session.
+     *
+     * @param array{pixel_values: Tensor} $inputs
+     * @return Tensor The image features.
+     */
+    public function encodeImage(array $inputs): Tensor
+    {
+        $result = $this->runSession($this->sessions['vision_encoder'], $inputs);
+        return $result['image_features'] ?? throw new \RuntimeException('image_features not found in session output');
+    }
+
+    /**
+     * Encodes text using the embed tokens session.
+     *
+     * @param array{input_ids: Tensor, attention_mask?: Tensor} $inputs
+     * @return Tensor The text embeddings.
+     */
+    public function encodeText(array $inputs): Tensor
+    {
+        $result = $this->runSession($this->sessions['embed_tokens'], $inputs);
+        return $result['inputs_embeds'] ?? throw new \RuntimeException('inputs_embeds not found in session output');
+    }
+
+    /**
+     * Encodes audio using the audio encoder session.
+     *
+     * @param array{audio_values: Tensor} $inputs
+     * @return Tensor The audio features.
+     */
+    public function encodeAudio(array $inputs): Tensor
+    {
+        $result = $this->runSession($this->sessions['audio_encoder'], $inputs);
+        return $result['audio_features'] ?? throw new \RuntimeException('audio_features not found in session output');
+    }
+
+
+    /**
      * Runs the ONNX session with the provided inputs.
      *
      * @param InferenceSession $session The ONNX session to run.
      * @param array $inputs The inputs to the session.
-     * @return array The outputs from the session.
+     * @return array<string, Tensor> The outputs from the session.
      * @throws ModelExecutionException If an error occurs during session run.
      * @throws MissingModelInputException If required inputs are missing.
      */

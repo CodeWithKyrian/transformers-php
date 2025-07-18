@@ -19,9 +19,9 @@ abstract class AutoModelBase
 {
     /**
      * Mapping from model type to model class.
-     * @var array<string, array<string, string>> The model class mappings.
+     * @var array<string, class-string<PretrainedModel>> The model class mappings.
      */
-    const MODEL_CLASS_MAPPINGS = [];
+    const MODELS = [];
 
     /**
      * Whether to attempt to instantiate the base class (`PretrainedModel`) if
@@ -47,15 +47,12 @@ abstract class AutoModelBase
         ?string          $cacheDir = null,
         string           $revision = 'main',
         ?string          $modelFilename = null,
-        ?callable $onProgress = null
+        ?callable        $onProgress = null
     ): PretrainedModel {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
 
-        foreach (static::MODEL_CLASS_MAPPINGS as $modelClassMapping) {
-            $modelClass = $modelClassMapping[$config->modelType] ?? null;
-
-
-            if ($modelClass === null) continue;
+        foreach (static::MODELS as $modelType => $modelClass) {
+            if ($modelType != $config->modelType)  continue;
 
             $modelArchitecture = self::getModelArchitecture($modelClass);
 
@@ -92,20 +89,20 @@ abstract class AutoModelBase
     protected static function getModelArchitecture($modelClass): ModelArchitecture
     {
         return match (true) {
-            in_array($modelClass, AutoModel::ENCODER_ONLY_MODEL_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModel::ENCODER_DECODER_MODEL_MAPPING) => ModelArchitecture::EncoderDecoder,
-            in_array($modelClass, AutoModel::DECODER_ONLY_MODEL_MAPPING) => ModelArchitecture::DecoderOnly,
-            in_array($modelClass, AutoModelForSequenceClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING) => ModelArchitecture::Seq2SeqLM,
-            in_array($modelClass, AutoModelForCausalLM::MODEL_CLASS_MAPPING) => ModelArchitecture::DecoderOnly,
-            in_array($modelClass, AutoModelForTokenClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForQuestionAnswering::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForMaskedLM::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForVision2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Vision2Seq,
-            in_array($modelClass, AutoModelForImageClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForAudioClassification::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
-            in_array($modelClass, AutoModelForSpeechSeq2Seq::MODEL_CLASS_MAPPING) => ModelArchitecture::Seq2SeqLM,
-            in_array($modelClass, AutoModelForCTC::MODEL_CLASS_MAPPING) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModel::ENCODER_ONLY_MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModel::ENCODER_DECODER_MODELS) => ModelArchitecture::EncoderDecoder,
+            in_array($modelClass, AutoModel::DECODER_ONLY_MODELS) => ModelArchitecture::DecoderOnly,
+            in_array($modelClass, AutoModelForSequenceClassification::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForSeq2SeqLM::MODELS) => ModelArchitecture::Seq2SeqLM,
+            in_array($modelClass, AutoModelForCausalLM::MODELS) => ModelArchitecture::DecoderOnly,
+            in_array($modelClass, AutoModelForTokenClassification::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForQuestionAnswering::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForMaskedLM::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForVision2Seq::MODELS) => ModelArchitecture::Vision2Seq,
+            in_array($modelClass, AutoModelForImageClassification::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForAudioClassification::MODELS) => ModelArchitecture::EncoderOnly,
+            in_array($modelClass, AutoModelForSpeechSeq2Seq::MODELS) => ModelArchitecture::Seq2SeqLM,
+            in_array($modelClass, AutoModelForCTC::MODELS) => ModelArchitecture::EncoderOnly,
 
             default => ModelArchitecture::EncoderOnly,
         };

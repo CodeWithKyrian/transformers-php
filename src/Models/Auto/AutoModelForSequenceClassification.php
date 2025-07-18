@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Auto;
-
 
 class AutoModelForSequenceClassification extends AutoModelBase
 {
-    const MODEL_CLASS_MAPPING = [
+    const MODELS = [
         'albert' => \Codewithkyrian\Transformers\Models\Pretrained\AlbertForSequenceClassification::class,
         'bert' => \Codewithkyrian\Transformers\Models\Pretrained\BertForSequenceClassification::class,
         'bart' => \Codewithkyrian\Transformers\Models\Pretrained\BartForSequenceClassification::class,
@@ -18,9 +16,5 @@ class AutoModelForSequenceClassification extends AutoModelBase
         'mobilebert' => \Codewithkyrian\Transformers\Models\Pretrained\MobileBertForSequenceClassification::class,
         'roberta' => \Codewithkyrian\Transformers\Models\Pretrained\RobertaForSequenceClassification::class,
         'roformer' => \Codewithkyrian\Transformers\Models\Pretrained\RoFormerForSequenceClassification::class,
-    ];
-
-    const MODEL_CLASS_MAPPINGS = [
-        self::MODEL_CLASS_MAPPING,
     ];
 }
