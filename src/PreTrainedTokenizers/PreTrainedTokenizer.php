@@ -18,6 +18,8 @@ use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use Error;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Codewithkyrian\Transformers\Transformers;
+use Psr\Log\LoggerInterface;
 
 class PreTrainedTokenizer
 {
@@ -54,6 +56,8 @@ class PreTrainedTokenizer
     protected mixed $chatTemplate;
     protected array $compiledTemplateCache = [];
 
+    protected LoggerInterface $logger;
+
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
      * @param ?array $tokenizerConfig The config of the tokenizer.
@@ -62,7 +66,8 @@ class PreTrainedTokenizer
      */
     public function __construct(protected array $tokenizerJSON, protected ?array $tokenizerConfig)
     {
-        // Construct parts of the tokenizer from the JSON
+        $this->logger = Transformers::getLogger();
+
         $this->normalizer = Normalizer::fromConfig($this->tokenizerJSON['normalizer']);
         $this->preTokenizer = PreTokenizer::fromConfig($this->tokenizerJSON['pre_tokenizer']);
         $this->model = TokenizerModel::fromConfig(
@@ -74,6 +79,10 @@ class PreTrainedTokenizer
         $this->postProcessor = PostProcessor::fromConfig($this->tokenizerJSON['post_processor'] ?? null);
         $this->decoder = Decoder::fromConfig($this->tokenizerJSON['decoder']);
 
+        $this->logger->info('Tokenizer loaded', [
+            'model' => (new \ReflectionClass($this->model))->getShortName(),
+            'vocab_size' => isset($this->model->vocab) ? count($this->model->vocab) : null,
+        ]);
 
         foreach ($this->tokenizerJSON['added_tokens'] as $addedToken) {
             $token = AddedToken::make($addedToken);
@@ -88,7 +97,6 @@ class PreTrainedTokenizer
             }
         }
 
-        // Update additional_special_tokens
         $this->additionalSpecialTokens = $this->tokenizerConfig['additional_special_tokens'] ?? [];
         $this->specialTokens = [...$this->specialTokens, ...$this->additionalSpecialTokens];
         $this->specialTokens = array_unique($this->specialTokens);
@@ -244,13 +252,16 @@ class PreTrainedTokenizer
 
         if ($isBatched) {
             if (count($text) === 0) {
+                $this->logger->error('Tokenization called with empty text array');
                 throw new Exception('$text array must be non-empty');
             }
 
             if ($textPair !== null) {
                 if (!is_array($textPair)) {
+                    $this->logger->error('Tokenization called with mismatched text/textPair types');
                     throw new Exception('$textPair must also be an array');
                 } elseif (count($text) !== count($textPair)) {
+                    $this->logger->error('Tokenization called with text/textPair of different lengths');
                     throw new Exception('$text and $textPair must have the same length');
                 }
 
@@ -267,6 +278,7 @@ class PreTrainedTokenizer
             }
         } else {
             if (is_array($textPair)) {
+                $this->logger->error('Tokenization called with string text and array textPair');
                 throw new Exception('When specifying `$textPair`, since `$text` is a string, `$textPair` must also be a string (i.e., not an array).');
             }
 
@@ -286,7 +298,7 @@ class PreTrainedTokenizer
             }
         } else {
             if (!$truncation) {
-                trigger_error("Truncation was not explicitly activated but `maxLength` is provided a specific value, please use `truncation=true` to explicitly truncate examples to max length.", E_USER_WARNING);
+                $this->logger->warning('Truncation was not explicitly activated but `maxLength` is provided a specific value, please use `truncation=true` to explicitly truncate examples to max length.');
             }
         }
 
@@ -549,6 +561,7 @@ class PreTrainedTokenizer
     public function decode(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
         if (empty($tokenIds) || !is_int($tokenIds[0])) {
+            $this->logger->error('decode called with invalid input', ['token_ids' => $tokenIds]);
             throw new Exception("token_ids must be a non-empty array of integers.");
         }
 
@@ -679,10 +692,10 @@ class PreTrainedTokenizer
 
     protected function getDefaultChatTemplate(): string
     {
-        //        if (!$this->warnedAboutChatTemplate) {
-        //            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
-        //            $this->warnedAboutChatTemplate = true;
-        //        }
+        if (!$this->warnedAboutChatTemplate) {
+            $this->logger->warning("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.");
+            $this->warnedAboutChatTemplate = true;
+        }
 
         return $this->defaultChatTemplate;
     }

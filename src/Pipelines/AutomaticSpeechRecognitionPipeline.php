@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Generation\Streamers\WhisperTextStreamer;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Audio;
 use Codewithkyrian\Transformers\Utils\Image;
+use Codewithkyrian\Transformers\Transformers;
 
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
@@ -115,7 +116,10 @@ class AutomaticSpeechRecognitionPipeline extends Pipeline
             throw new \InvalidArgumentException('`streamer` must be an instance of `WhisperTextStreamer`');
         }
 
-        //        if (!is_null($streamer)) trigger_error('`streamer` is not supported yet for Whisper', E_USER_WARNING);
+        if (!is_null($streamer)) {
+            $logger = Transformers::getLogger();
+            $logger->warning('`streamer` is not supported yet for Whisper');
+        }
 
         $kwargs = array_keys_to_snake_case($args);
 

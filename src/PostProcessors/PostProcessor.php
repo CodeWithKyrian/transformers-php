@@ -7,9 +7,7 @@ namespace Codewithkyrian\Transformers\PostProcessors;
 
 abstract class PostProcessor
 {
-    public function __construct(public array $config)
-    {
-    }
+    public function __construct(public array $config) {}
 
     /**
      * Factory method to create a PostProcessor object from a configuration object.
@@ -45,5 +43,4 @@ abstract class PostProcessor
     {
         return $this->postProcess($tokens, ...$args);
     }
-
 }

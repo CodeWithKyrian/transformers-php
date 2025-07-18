@@ -136,7 +136,8 @@ Transformers::setup()
     ->setRemotePathTemplate('...') // Set the remote path template for downloading models. Defaults to `{model}/resolve/{revision}/{file}`
     ->setAuthToken('...') // Set the auth token for downloading models. Defaults to `null`
     ->setUserAgent('...') // Set the user agent for downloading models. Defaults to `transformers-php/{version}`
-    ->setImageDriver('...') // Set the image driver for processing images. Defaults to `IMAGICK'
+    ->setImageDriver('...') // Set the image driver for processing images. Defaults to `VIPS`
+    ->setLogger($logger) // Set a PSR-3 compatible logger. Defaults to `NullLogger` if not set
     ->apply(); // Apply the configuration
 ```
 

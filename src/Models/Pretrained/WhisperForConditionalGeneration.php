@@ -13,6 +13,7 @@ use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
+use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use InvalidArgumentException;
 
@@ -52,7 +53,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $generationConfig['return_dict_in_generate'] = true;
 
             if ($generationConfig['task'] ?? '' === 'translate') {
-                trigger_error("Token-level timestamps may not be reliable for task 'translate'.", E_USER_WARNING);
+                $logger = Transformers::getLogger();
+                $logger->warning("Token-level timestamps may not be reliable for task 'translate'.");
             }
 
             if (!isset($generationConfig['alignment_heads'])) {
@@ -103,7 +105,8 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
         $medianFilterWidth = $this->config['median_filter_width'] ?? null;
         if ($medianFilterWidth === null) {
-            trigger_error("Model config has no `median_filter_width`, using default value of 7.", E_USER_WARNING);
+            $logger = Transformers::getLogger();
+            $logger->warning("Model config has no `median_filter_width`, using default value of 7.");
             $medianFilterWidth = 7;
         }
 

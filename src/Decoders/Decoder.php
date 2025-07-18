@@ -6,6 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Decoders;
 
 use Codewithkyrian\Transformers\Tokenizers\AddedToken;
+use Codewithkyrian\Transformers\Transformers;
 
 /**
  * The base class for token decoders.
@@ -35,9 +36,11 @@ abstract class Decoder
      */
     public static function fromConfig(?array $config): ?self
     {
+        $logger = Transformers::getLogger();
         if ($config === null) {
             return null;
         }
+        $logger->debug('Creating decoder', ['type' => $config['type'] ?? 'unknown']);
 
         return match ($config['type']) {
             'WordPiece' => new WordPieceDecoder($config),
@@ -83,6 +86,4 @@ abstract class Decoder
     {
         return $this->decode($tokens);
     }
-
-
 }

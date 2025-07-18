@@ -18,9 +18,7 @@ class Pipeline
         protected PretrainedModel   $model,
         public ?PreTrainedTokenizer $tokenizer = null,
         protected ?Processor        $processor = null,
-    )
-    {
-    }
+    ) {}
 
     /**
      * @param string[]|string $inputs
@@ -31,7 +29,6 @@ class Pipeline
     {
         return [];
     }
-
 }
 
 /**
@@ -64,8 +61,7 @@ function pipeline(
     string           $revision = 'main',
     ?string          $modelFilename = null,
     ?callable $onProgress = null
-): Pipeline
-{
+): Pipeline {
     if (is_string($task)) {
         $stringTask = $task;
         $task = Task::tryFrom($stringTask);

@@ -35,6 +35,8 @@ use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;
 use Exception;
+use Codewithkyrian\Transformers\Transformers;
+use Psr\Log\LoggerInterface;
 
 use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
@@ -49,6 +51,8 @@ class PretrainedModel
     public string $mainInputName = 'input_ids';
 
     protected array $forwardParams = ['input_ids', 'attention_mask'];
+
+    protected LoggerInterface $logger;
 
     /**
      * @param PretrainedConfig $config The model configuration.
@@ -65,6 +69,7 @@ class PretrainedModel
         if ($this->modelArchitecture->canGenerate()) {
             $this->forwardParams[] = 'past_key_values';
         }
+        $this->logger = Transformers::getLogger();
     }
 
 
@@ -102,11 +107,18 @@ class PretrainedModel
         ModelArchitecture           $modelArchitecture = ModelArchitecture::EncoderOnly,
         ?callable                   $onProgress = null
     ): self {
+        $logger = Transformers::getLogger();
         if (is_array($config)) {
             $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
         }
 
         $quantizedSuffix = $quantized ? '_quantized' : '';
+
+        $logger->info('Loading model', [
+            'model' => $modelNameOrPath,
+            'quantized' => $quantized,
+            'architecture' => $modelArchitecture->value,
+        ]);
 
         switch ($modelArchitecture) {
             case ModelArchitecture::DecoderOnly: {
@@ -117,7 +129,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
-
                     $generatorConfigArr = Hub::getJson(
                         pathOrRepoID: $modelNameOrPath,
                         fileName: 'generation_config.json',
@@ -126,9 +137,7 @@ class PretrainedModel
                         fatal: false,
                         onProgress: $onProgress
                     );
-
                     $generatorConfig = new GenerationConfig($generatorConfigArr);
-
                     return new static(
                         config: $config,
                         session: $session,
@@ -136,7 +145,6 @@ class PretrainedModel
                         generationConfig: $generatorConfig
                     );
                 }
-
             case ModelArchitecture::Seq2SeqLM:
             case ModelArchitecture::Vision2Seq: {
                     $encoderSession = self::constructSession(
@@ -146,7 +154,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
-
                     $decoderSession = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "decoder_model_merged$quantizedSuffix",
@@ -154,7 +161,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
-
                     $generatorConfigArr = Hub::getJson(
                         pathOrRepoID: $modelNameOrPath,
                         fileName: 'generation_config.json',
@@ -163,9 +169,7 @@ class PretrainedModel
                         fatal: false,
                         onProgress: $onProgress
                     );
-
                     $generatorConfig = new GenerationConfig($generatorConfigArr);
-
                     return new static(
                         config: $config,
                         session: $encoderSession,
@@ -174,7 +178,6 @@ class PretrainedModel
                         decoderMergedSession: $decoderSession
                     );
                 }
-
             case ModelArchitecture::MaskGeneration: {
                     $visionEncoder = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
@@ -183,7 +186,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
-
                     $promptMaskEncoder = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
@@ -191,7 +193,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
-
                     return new static(
                         config: $config,
                         session: $visionEncoder,
@@ -199,7 +200,6 @@ class PretrainedModel
                         modelArchitecture: $modelArchitecture
                     );
                 }
-
             case ModelArchitecture::EncoderDecoder: {
                     $encoderSession = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
@@ -208,7 +208,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
-
                     $decoderSession = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "decoder_model_merged$quantizedSuffix",
@@ -216,7 +215,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
-
                     return new static(
                         config: $config,
                         session: $encoderSession,
@@ -224,12 +222,10 @@ class PretrainedModel
                         modelArchitecture: $modelArchitecture
                     );
                 }
-
             default: {
                     if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
-                        echo "WARNING: {$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.";
+                        $logger->warning("{$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.");
                     }
-
 
                     $session = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
@@ -238,7 +234,6 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
-
 
                     return new static(
                         config: $config,
@@ -327,6 +322,10 @@ class PretrainedModel
         ?Streamer            $streamer = null,
         ...$kwargs
     ): array|Tensor {
+        $this->logger->debug('Starting generation', [
+            'input_shape' => $inputs->shape(),
+            'generation_config' => $generationConfig ? $generationConfig->toArray() : null
+        ]);
         $this->validateModelClass();
 
         $kwargs = array_keys_to_snake_case($kwargs);
@@ -375,6 +374,7 @@ class PretrainedModel
         $streamer?->put($allInputIds);
 
         // 9. Generation loop
+        $step = 0;
         while (true) {
             $modelInputs = $this->prepareInputsForGeneration($allInputIds, $modelInputs);
 
@@ -424,6 +424,7 @@ class PretrainedModel
             }
 
             $modelInputs = $this->updateInputsAfterGeneration($generatedInputIds, $outputs, $modelInputs, $isEncoderDecoder);
+            $step++;
         }
 
         $streamer?->end();
@@ -432,6 +433,10 @@ class PretrainedModel
         $pastKeyValues = $this->getPastKeyValues($outputs, $modelInputs['past_key_values'] ?? null);
 
         $sequences = Tensor::fromArray($allInputIds, Tensor::int64);
+        $this->logger->info('Generation completed', [
+            'steps' => $step,
+            'output_shape' => $sequences->shape(),
+        ]);
 
         if ($generationConfig->return_dict_in_generate) {
             return [
@@ -466,6 +471,7 @@ class PretrainedModel
         } catch (MissingModelInputException $e) {
             throw $e;
         } catch (Exception $e) {
+            $this->logger->error('ONNX session run failed', ['exception' => $e]);
             throw ModelExecutionException::make($e->getMessage(), $e);
         }
     }
@@ -495,6 +501,7 @@ class PretrainedModel
         }
 
         if (!empty($missingInputs)) {
+            $this->logger->warning('Missing required model inputs', ['missing' => $missingInputs]);
             throw MissingModelInputException::make($missingInputs);
         }
 
@@ -503,8 +510,8 @@ class PretrainedModel
 
         if ($numInputsProvided > $numInputsNeeded) {
             $ignored = array_diff(array_keys($inputs), $inputNames);
-            echo 'WARNING: Too many inputs were provided (' . $numInputsProvided . ' > ' . $numInputsNeeded . '). 
-            The following inputs will be ignored: "' . implode(', ', $ignored) . '".';
+            $this->logger->warning('Too many inputs were provided (' . $numInputsProvided . ' > ' . $numInputsNeeded . '). 
+            The following inputs will be ignored: "' . implode(', ', $ignored) . '".');
         }
 
         return $inputs;
@@ -592,7 +599,6 @@ class PretrainedModel
      */
     function runEncoderForwardPass($modelInputs, GenerationConfig $generationConfig)
     {
-
         $inputNames = array_column($this->session->inputs(), 'name');
 
         if (

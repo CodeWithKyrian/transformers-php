@@ -5,20 +5,23 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Normalizers;
 
+use Codewithkyrian\Transformers\Transformers;
+
 /**
  * A base class for text normalization.
  */
 abstract class Normalizer
 {
-    public function __construct(protected array $config)
-    {
-    }
+    public function __construct(protected array $config) {}
 
     public static function fromConfig(?array $config): ?self
     {
         if ($config === null) {
             return null;
         }
+
+        $logger = Transformers::getLogger();
+        $logger->debug('Creating normalizer', ['type' => $config['type'] ?? 'unknown']);
 
         return match ($config['type'] ?? null) {
             'BertNormalizer' => new BertNormalizer($config),
@@ -40,6 +43,6 @@ abstract class Normalizer
 
     public function __invoke(): string
     {
-          return $this->normalize(...func_get_args());
+        return $this->normalize(...func_get_args());
     }
 }

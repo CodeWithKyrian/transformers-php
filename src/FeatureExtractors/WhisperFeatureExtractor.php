@@ -7,7 +7,7 @@ namespace Codewithkyrian\Transformers\FeatureExtractors;
 
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Audio;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Codewithkyrian\Transformers\Transformers;
 
 class WhisperFeatureExtractor extends FeatureExtractor
 {
@@ -38,9 +38,10 @@ class WhisperFeatureExtractor extends FeatureExtractor
     public function __invoke(Tensor $waveform): array
     {
         if ($waveform->size() > $this->config['n_samples']) {
-            trigger_error('Attempting to extract features for audio longer than 30 seconds.' .
+            $logger = Transformers::getLogger();
+            $logger->warning('Attempting to extract features for audio longer than 30 seconds.' .
                 'If using a pipeline to extract transcript from a long audio clip,' .
-                'remember to specify `chunkLengthSecs` and/or `strideLengthSecs` in the pipeline options.', E_USER_WARNING);
+                'remember to specify `chunkLengthSecs` and/or `strideLengthSecs` in the pipeline options.');
 
             $waveform = $waveform->sliceWithBounds([0], [$this->config['n_samples']]);
         } else if ($waveform->size() < $this->config['n_samples']) {

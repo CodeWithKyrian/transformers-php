@@ -6,6 +6,8 @@ namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\ImageDriver;
 use RuntimeException;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class Transformers
 {
@@ -20,6 +22,8 @@ class Transformers
     protected static ?string $userAgent = 'transformers-php/0.5.3';
 
     protected static ImageDriver $imageDriver = ImageDriver::VIPS;
+
+    protected static ?LoggerInterface $logger = null;
 
 
     /**
@@ -122,6 +126,18 @@ class Transformers
         return $this;
     }
 
+    /**
+     * Set the global logger for Transformers.
+     *
+     * @param LoggerInterface $logger
+     * @return $this
+     */
+    public function setLogger(LoggerInterface $logger): static
+    {
+        self::$logger = $logger;
+        return $this;
+    }
+
     public static function getCacheDir(): string
     {
         return self::$cacheDir;
@@ -154,5 +170,14 @@ class Transformers
         }
 
         return self::$imageDriver;
+    }
+
+    public static function getLogger(): LoggerInterface
+    {
+        if (!isset(self::$logger)) {
+            self::$logger = new NullLogger();
+        }
+
+        return self::$logger;
     }
 }

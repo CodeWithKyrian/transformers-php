@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Normalizers;
 
+use function Codewithkyrian\Transformers\Utils\isChineseChar;
+
 /**
  * A class representing a normalizer used in BERT tokenization.
  */
@@ -84,29 +86,6 @@ class BertNormalizer extends Normalizer
     }
 
     /**
-     * Checks whether the given Unicode codepoint represents a CJK (Chinese, Japanese, or Korean) character.
-     *
-     * A "chinese character" is defined as anything in the CJK Unicode block.
-     *
-     * @param int $cp The Unicode codepoint to check.
-     *
-     * @return bool True if the codepoint represents a CJK character, false otherwise.
-     */
-    protected function isChineseChar(int $cp): bool
-    {
-        return (
-            ($cp >= 0x4E00 && $cp <= 0x9FFF)
-            || ($cp >= 0x3400 && $cp <= 0x4DBF)
-            || ($cp >= 0x20000 && $cp <= 0x2A6DF)
-            || ($cp >= 0x2A700 && $cp <= 0x2B73F)
-            || ($cp >= 0x2B740 && $cp <= 0x2B81F)
-            || ($cp >= 0x2B820 && $cp <= 0x2CEAF)
-            || ($cp >= 0xF900 && $cp <= 0xFAFF)
-            || ($cp >= 0x2F800 && $cp <= 0x2FA1F)
-        );
-    }
-
-    /**
      * Adds whitespace around any CJK (Chinese, Japanese, or Korean) character in the input text.
      *
      * @param string $text The input text to tokenize.
@@ -119,7 +98,7 @@ class BertNormalizer extends Normalizer
         for ($i = 0; $i < mb_strlen($text); ++$i) {
             $char = mb_substr($text, $i, 1);
             $cp = mb_ord($char);
-            if ($this->isChineseChar($cp)) {
+            if (isChineseChar($cp)) {
                 $output[] = " ";
                 $output[] = $char;
                 $output[] = " ";

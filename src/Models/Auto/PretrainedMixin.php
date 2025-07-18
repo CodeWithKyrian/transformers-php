@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\Configs\AutoConfig;
 use Codewithkyrian\Transformers\Exceptions\UnsupportedModelTypeException;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
+use Codewithkyrian\Transformers\Transformers;
 
 /**
  * Base class of all AutoModels. Contains the `from_pretrained` function
@@ -71,7 +72,8 @@ abstract class PretrainedMixin
         }
 
         if (static::BASE_IF_FAIL) {
-            //            echo "Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.";
+            $logger = Transformers::getLogger();
+            $logger->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
 
             return PretrainedModel::fromPretrained(
                 modelNameOrPath: $modelNameOrPath,

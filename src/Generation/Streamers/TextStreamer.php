@@ -9,6 +9,8 @@ use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use DateTime;
 use InvalidArgumentException;
 
+use function Codewithkyrian\Transformers\Utils\isChineseChar;
+
 /**
  * Simple text streamer that prints the token(s) to stdout as soon as entire words are formed.
  */
@@ -59,7 +61,7 @@ class TextStreamer extends Streamer
             $printableText = substr($text, $this->printLen);
             $this->tokenCache = [];
             $this->printLen = 0;
-        } elseif (strlen($text) > 0 && TokenizerModel::isChineseChar(ord($text[strlen($text) - 1]))) {
+        } elseif (strlen($text) > 0 && isChineseChar(ord($text[strlen($text) - 1]))) {
             // If the last token is a CJK character, print the characters.
             $printableText = substr($text, $this->printLen);
             $this->printLen += strlen($printableText);

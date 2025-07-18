@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\PreTrainedTokenizers;
 
+use Codewithkyrian\Transformers\Transformers;
+
 class XLMTokenizer extends PreTrainedTokenizer
 {
     protected bool $returnTokenTypeIds = true;
@@ -13,6 +15,7 @@ class XLMTokenizer extends PreTrainedTokenizer
     {
         parent::__construct($tokenizerJSON, $tokenizerConfig);
 
-        trigger_error("WARNING: `XLMTokenizer` is not yet supported by Hugging Face\'s `fast` tokenizers library. Therefore, you may experience slightly inaccurate results.");
+        $logger = Transformers::getLogger();
+        $logger->warning("`XLMTokenizer` is not yet supported by Hugging Face\'s `fast` tokenizers library. Therefore, you may experience slightly inaccurate results.");
     }
 }

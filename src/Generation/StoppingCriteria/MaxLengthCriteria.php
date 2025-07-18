@@ -30,18 +30,18 @@ class MaxLengthCriteria extends StoppingCriteria
      */
     public function __invoke(array $inputIds, array $scores): array
     {
-//        return array_map(fn ($ids) => count($ids) >= $this->maxLength, $inputIds);
         $results = [];
         foreach ($inputIds as $ids) {
             $currentLength = count($ids);
             $isDone = $currentLength >= $this->maxLength;
 
             if ($this->maxPositionEmbeddings !== null && !$isDone && $currentLength >= $this->maxPositionEmbeddings) {
-                echo
+                $logger = Transformers::getLogger();
+                $logger->warning(
                     "This is a friendly reminder - the current text generation call will exceed the model's predefined " .
-                    "maximum length ({$this->maxPositionEmbeddings}). Depending on the model, you may observe " .
-                    "exceptions, performance degradation, or nothing at all."
-                ;
+                        "maximum length ({$this->maxPositionEmbeddings}). Depending on the model, you may observe " .
+                        "exceptions, performance degradation, or nothing at all."
+                );
             }
 
             $results[] = $isDone;

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Utils;
 
+use Codewithkyrian\Transformers\Transformers;
+
 function memoryUsage(): string
 {
     $mem = memory_get_usage(true);
@@ -193,7 +195,31 @@ function createPattern(array $pattern, bool $invert = true): ?string
         // NOTE: if invert is true, we wrap the pattern in a group so that it is kept when performing split
         return $invert ? $escaped : "($escaped)";
     } else {
-        echo 'Unknown pattern type: ' . print_r($pattern, true);
+        $logger = Transformers::getLogger();
+        $logger->warning('Unknown pattern type: ' . print_r($pattern, true));
         return null;
     }
+}
+
+/**
+ * Checks whether the given Unicode codepoint represents a CJK (Chinese, Japanese, or Korean) character.
+ *
+ * A "chinese character" is defined as anything in the CJK Unicode block.
+ *
+ * @param int $cp The Unicode codepoint to check.
+ *
+ * @return bool True if the codepoint represents a CJK character, false otherwise.
+ */
+function isChineseChar(int $cp): bool
+{
+    return (
+        ($cp >= 0x4E00 && $cp <= 0x9FFF)
+        || ($cp >= 0x3400 && $cp <= 0x4DBF)
+        || ($cp >= 0x20000 && $cp <= 0x2A6DF)
+        || ($cp >= 0x2A700 && $cp <= 0x2B73F)
+        || ($cp >= 0x2B740 && $cp <= 0x2B81F)
+        || ($cp >= 0x2B820 && $cp <= 0x2CEAF)
+        || ($cp >= 0xF900 && $cp <= 0xFAFF)
+        || ($cp >= 0x2F800 && $cp <= 0x2FA1F)
+    );
 }

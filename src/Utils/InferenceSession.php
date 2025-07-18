@@ -15,6 +15,7 @@ use Codewithkyrian\Transformers\Tensor\Tensor;
 use Exception;
 use FFI;
 use FFI\CData;
+use Codewithkyrian\Transformers\Transformers;
 
 class InferenceSession
 {
@@ -105,8 +106,8 @@ class InferenceSession
 
         foreach ($providers as $provider) {
             if (!in_array($provider, $this->providers())) {
-                // trigger_error('Provider not available: ' . $provider, E_USER_WARNING);
-                // TODO: Log warning when we implement logging
+                $logger = Transformers::getLogger();
+                $logger->warning('Provider not available: ' . $provider);
                 continue;
             }
 

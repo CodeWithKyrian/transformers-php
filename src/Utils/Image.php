@@ -496,6 +496,11 @@ class Image
      */
     public function resize(int $width, int $height, int|Resample $resample = 2): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Resizing image', [
+            'from' => $this->size(),
+            'to' => [$width, $height],
+        ]);
         $resampleMethod = $resample instanceof Resample ? $resample : Resample::from($resample) ?? Resample::NEAREST;
 
         $image = $this->image->copy()->resize(new Box($width, $height), $resampleMethod->toString());
@@ -536,6 +541,10 @@ class Image
      */
     public function grayscale(bool $force = false): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Converting image to grayscale', [
+            'channels_before' => $this->channels
+        ]);
         if ($this->channels === 1 && !$force) {
             return $this->clone();
         }
@@ -553,6 +562,10 @@ class Image
      */
     public function rgb(bool $force = false): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Converting image to RGB', [
+            'channels_before' => $this->channels
+        ]);
         if ($this->channels === 3 && !$force) {
             return $this->clone();
         }
@@ -575,6 +588,10 @@ class Image
      */
     public function rgba(bool $force = false): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Converting image to RGBA', [
+            'channels_before' => $this->channels
+        ]);
         if ($this->channels === 4 && !$force) {
             return $this->clone();
         }
@@ -594,6 +611,11 @@ class Image
 
     public function centerCrop(int $cropWidth, int $cropHeight): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Center cropping image', [
+            'original_size' => $this->size(),
+            'crop_size' => [$cropWidth, $cropHeight],
+        ]);
         $originalWidth = $this->image->getSize()->getWidth();
         $originalHeight = $this->image->getSize()->getHeight();
 
@@ -611,6 +633,11 @@ class Image
 
     public function crop(int $xMin, int $yMin, int $xMax, int $yMax): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Cropping image', [
+            'from' => $this->size(),
+            'crop_coords' => [$xMin, $yMin, $xMax, $yMax],
+        ]);
         $originalWidth = $this->image->getSize()->getWidth();
         $originalHeight = $this->image->getSize()->getHeight();
 
@@ -679,6 +706,11 @@ class Image
 
     public function pad(int $left, int $right, int $top, int $bottom): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Padding image', [
+            'original_size' => $this->size(),
+            'pad' => [$left, $right, $top, $bottom],
+        ]);
         if ($left === 0 && $right === 0 && $top === 0 && $bottom === 0) {
             return $this;
         }
@@ -697,6 +729,8 @@ class Image
 
     public function invert(): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Inverting image');
         $image = $this->image->copy();
         $image->effects()->negative();
 
@@ -784,6 +818,11 @@ class Image
      */
     public static function fromTensor(Tensor $tensor, string $channelFormat = 'CHW'): static
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Creating image from tensor', [
+            'tensor_shape' => $tensor->shape(),
+            'channel_format' => $channelFormat
+        ]);
         $tensor = $channelFormat === 'CHW' ? $tensor->permute(1, 2, 0) : $tensor;
 
         [$height, $width, $channels] = $tensor->shape();
@@ -855,7 +894,8 @@ class Image
             return new self($image, $channels);
         }
 
-        throw new Exception('Unsupported image driver');
+        $logger->error('Unsupported image driver');
+        throw new \Exception('Unsupported image driver');
     }
 
     /**
@@ -941,6 +981,10 @@ class Image
 
     public function save(string $path): void
     {
+        $logger = Transformers::getLogger();
+        $logger->debug('Saving image', [
+            'path' => $path
+        ]);
         $this->image->save($path);
     }
 

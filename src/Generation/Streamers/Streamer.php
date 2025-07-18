@@ -68,5 +68,4 @@ abstract class Streamer
     {
         return $this->tokensPerSecond;
     }
-
 }

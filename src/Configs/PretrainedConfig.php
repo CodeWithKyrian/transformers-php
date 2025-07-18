@@ -7,6 +7,7 @@ namespace Codewithkyrian\Transformers\Configs;
 use ArrayAccess;
 use Codewithkyrian\Transformers\Utils\Hub;
 use function Codewithkyrian\Transformers\Utils\array_pick;
+use Codewithkyrian\Transformers\Transformers;
 
 /**
  * The base class that implements the common methods for loading a configuration either from a local file or directory,
@@ -40,8 +41,7 @@ class PretrainedConfig implements ArrayAccess
         ?string   $cacheDir = null,
         string    $revision = 'main',
         ?callable $onProgress = null
-    ): self
-    {
+    ): self {
         $config ??= Hub::getJson(
             $modelNameOrPath,
             fileName: 'config.json',
@@ -50,7 +50,10 @@ class PretrainedConfig implements ArrayAccess
             fatal: false,
             onProgress: $onProgress
         );
-
+        if ($config === null) {
+            $logger = Transformers::getLogger();
+            $logger->warning('Config loading returned null, using fallback/defaults');
+        }
         return new self($config);
     }
 
