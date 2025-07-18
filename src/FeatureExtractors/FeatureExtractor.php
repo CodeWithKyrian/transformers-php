@@ -12,7 +12,7 @@ class FeatureExtractor
 {
     public function __construct(public array $config) {}
 
-    public function __invoke(mixed $input, ...$args)
+    public function __invoke($input, ...$args)
     {
         return $input;
     }

@@ -66,20 +66,22 @@ class Audio
     {
         $tensorData = '';
         $totalOutputFrames = 0;
+
         $state = $this->src->src_new($this->src->enum('SRC_SINC_FASTEST'), $this->channels());
         $inputSize = $chunkSize * $this->channels();
         $inputData = $this->src->new("float[$inputSize]");
         $outputSize = $chunkSize * $this->channels();
         $outputData = $this->src->new("float[$outputSize]");
+
         $srcData = $this->src->new('SRC_DATA');
         $srcData->data_in = $this->src->cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
         $srcData->data_out = $this->src->cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
+
         while (true) {
             $srcData->input_frames = $this->snd->readf_float($this->sndfile, $inputData, $chunkSize);
             if ($this->samplerate() === $samplerate) {
-                $this->logger->info('No resampling needed; using original sample rate', ['samplerate' => $samplerate]);
                 $strBuffer = FFI::string($inputData, $srcData->input_frames * $this->channels() * FFI::sizeof($inputData[0]));
                 $tensorData .= $strBuffer;
                 $totalOutputFrames += $srcData->input_frames;
@@ -88,24 +90,37 @@ class Audio
                 }
                 continue;
             }
+
+            $this->logger->info('Resampling audio segment', [
+                'input_samplerate' => $this->samplerate(),
+                'output_samplerate' => $samplerate,
+                'input_frames' => $srcData->input_frames,
+                'output_frames' => $srcData->output_frames_gen
+            ]);
+
             if ($srcData->input_frames < $chunkSize) {
                 $srcData->end_of_input = $this->snd->enum('SF_TRUE');
             }
+
             $this->src->process($state, FFI::addr($srcData));
             if ($srcData->end_of_input && $srcData->output_frames_gen === 0) {
                 break;
             }
+
             $outputSize = $srcData->output_frames_gen * $this->channels() * FFI::sizeof($outputData[0]);
             $strBuffer = FFI::string($outputData, $outputSize);
             $tensorData .= $strBuffer;
             $totalOutputFrames += $srcData->output_frames_gen;
         }
+
         $this->src->delete($state);
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
+
         if ($this->channels() > 1) {
             $this->logger->info('Averaging channels to mono', ['channels' => $this->channels()]);
             $audioTensor = $audioTensor->mean(1)->multiply(sqrt(2));
         }
+
         $this->logger->info('Audio tensor conversion complete', ['shape' => $audioTensor->shape()]);
         return $audioTensor->squeeze();
     }
@@ -117,6 +132,7 @@ class Audio
         $bufferString = $tensor->toString();
         $buffer->cdata = $this->snd->cast('float *', (int)$bufferString);
         $write = $this->snd->writef_float($this->sndfile, $buffer, $size);
+
         if ($write !== $size) {
             $this->logger->warning('Wrote fewer frames than expected to audio file', [
                 'expected' => $size,
@@ -124,6 +140,7 @@ class Audio
             ]);
             throw new RuntimeException("Failed to write to file");
         }
+
         $this->logger->info('Audio tensor written to file successfully', ['frames' => $write]);
     }
 
@@ -351,12 +368,12 @@ class Audio
      * Converts an amplitude spectrogram to the decibel scale. This computes `20 * log10(spectrogram / reference)`,
      *  using basic logarithm properties for numerical stability. NOTE: Operates in-place.
      *
-     * @param SplFixedArray $spectrogram The input amplitude (mel) spectrogram.
+     * @param Tensor $spectrogram The input amplitude (mel) spectrogram.
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
      *
-     * @return SplFixedArray
+     * @return Tensor
      */
     public static function amplitudeToDB(
         Tensor $spectrogram,
@@ -371,12 +388,12 @@ class Audio
      * Converts a power spectrogram (amplitude squared) to the decibel scale. This computes `10 * log10(spectrogram / reference)`,
      * using basic logarithm properties for numerical stability. NOTE: Operates in-place.
      *
-     * @param SplFixedArray $spectrogram The input power spectrogram.
+     * @param Tensor $spectrogram The input power spectrogram.
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
      *
-     * @return SplFixedArray
+     * @return Tensor
      */
     public static function powerToDB(
         Tensor $spectrogram,

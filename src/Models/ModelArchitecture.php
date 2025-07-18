@@ -60,7 +60,7 @@ enum ModelArchitecture: string
 
     public function encoderForward(PretrainedModel $model, array $modelInputs): array
     {
-        $inputNames = array_column($model->session->inputs(), 'name');
+        $inputNames = array_column($model->sessions['encoder']->inputs(), 'name');
 
         $encoderFeeds = array_pick($modelInputs, $inputNames);
 
@@ -78,7 +78,7 @@ enum ModelArchitecture: string
             $encoderFeeds['token_type_ids'] ??= Tensor::zerosLike($encoderFeeds['input_ids']);
         }
 
-        return $model->runSession($model->session, $encoderFeeds);
+        return $model->runSession($model->sessions['encoder'], $encoderFeeds);
     }
 
     function decoderPrepareInputsForGeneration(PretrainedModel $model, $inputIds, array $modelInputs): array
@@ -121,9 +121,9 @@ enum ModelArchitecture: string
         return $modelInputs;
     }
 
-    protected function decoderForward(PretrainedModel $model, array $modelInputs, $isEncoderDecoder = false): array
+    protected function decoderForward(PretrainedModel $model, array $modelInputs): array
     {
-        $session = $isEncoderDecoder ? $model->decoderMergedSession : $model->session;
+        $session = $model->sessions['decoder'];
 
         $inputNames = array_column($session->inputs(), 'name');
 
@@ -152,45 +152,43 @@ enum ModelArchitecture: string
     {
         $decoderFeeds = $modelInputs;
         $encoderOutputs = array_pop_key($decoderFeeds, 'encoder_outputs');
-        $inputIds = array_pop_key($decoderFeeds, 'input_ids');
         $decoderInputIds = array_pop_key($decoderFeeds, 'decoder_input_ids');
 
-
-
-        // Encode if needed
         if (!$encoderOutputs) {
-            $inputNames = array_column($model->session->inputs(), 'name');
-            // Pick necessary encoder inputs
+            $inputNames = array_column($model->sessions['encoder']->inputs(), 'name');
             $encoderInputs = array_pick($modelInputs, $inputNames);
-            // Encoder outputs are not given, so we must compute them
             $encoderOutputs = $this->encoderForward($model, $encoderInputs)['last_hidden_state'];
         }
 
-        // Set decoder input ids and encoder hidden states
         $decoderFeeds['input_ids'] = $decoderInputIds;
         $decoderFeeds['encoder_hidden_states'] = $encoderOutputs;
 
-        $inputNames = array_column($model->decoderMergedSession->inputs(), 'name');
+        $inputNames = array_column($model->sessions['decoder']->inputs(), 'name');
 
         if (in_array('encoder_attention_mask', $inputNames)) {
             $decoderFeeds['encoder_attention_mask'] = $modelInputs['attention_mask'];
         }
 
-        return $this->decoderForward($model, $decoderFeeds, true);
+        return $this->decoderForward($model, $decoderFeeds);
     }
 
+    /**
+     * Create position IDs based on the attention mask.
+     * 
+     * @param array{input_ids: Tensor, inputs_embeds: Tensor, attention_mask: Tensor} $modelInputs
+     * @param array|null $pastKeyValues
+     * @return Tensor
+     */
     protected function createPositionIds(array $modelInputs, ?array $pastKeyValues = null): Tensor
     {
         $inputIds = $modelInputs['input_ids'] ?? null;
         $inputsEmbeds = $modelInputs['inputs_embeds'] ?? null;
-        /** @var Tensor $attentionMask */
         $attentionMask = $modelInputs['attention_mask'];
 
         [$batchSize, $seqLen] = $attentionMask->shape();
 
         $data = array_fill(0, $attentionMask->size(), 0);
 
-        // Compute position IDs based on the attention mask
         for ($i = 0; $i < $batchSize; ++$i) {
             $start = $i * $seqLen;
             $sum = 0;

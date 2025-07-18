@@ -2,3 +2,4 @@ vendor
 .transformers-cache/*
 composer.lock
 paddleocr
+*.log

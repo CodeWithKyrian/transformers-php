@@ -16,7 +16,7 @@ class FileLogger extends AbstractLogger
 
     public function log($level, $message, array $context = []): void
     {
-        $line = sprintf("[%s][%s] %s %s\n", date('Y-m-d H:i:s'), strtoupper($level), $message, empty($context) ? '' : json_encode($context));
+        $line = sprintf("[%s][%s] %s %s\n", date('Y-m-d H:i:s'), strtoupper($level), $message, empty($context) ? '' : json_encode($context, JSON_UNESCAPED_SLASHES));
         file_put_contents($this->filename, $line, FILE_APPEND);
     }
 }

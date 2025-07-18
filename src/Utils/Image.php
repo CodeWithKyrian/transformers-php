@@ -450,6 +450,14 @@ class Image
     {
         $image = self::getImagine()->open($input, $options);
 
+        $logger = Transformers::getLogger();
+        $logger->debug('Image file loaded', [
+            'filepath' => $image->metadata()->get('filepath'),
+            'size' => (string) $image->getSize(),
+            'palette' => $image->palette()->name(),
+            'mime_type' => $image->metadata()->get('file.MimeType')
+        ]);
+
         return new self($image);
     }
 
@@ -496,6 +504,10 @@ class Image
      */
     public function resize(int $width, int $height, int|Resample $resample = 2): static
     {
+        if ($width === $this->width() && $height === $this->height()) {
+            return $this->clone();
+        }
+
         $logger = Transformers::getLogger();
         $logger->debug('Resizing image', [
             'from' => $this->size(),
@@ -983,7 +995,7 @@ class Image
     {
         $logger = Transformers::getLogger();
         $logger->debug('Saving image', [
-            'path' => $path
+            'path' => realpath($path)
         ]);
         $this->image->save($path);
     }

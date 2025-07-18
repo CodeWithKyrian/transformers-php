@@ -46,13 +46,13 @@ class ASTFeatureExtractor extends FeatureExtractor
 
     /**
      *  Extracts features from a given audio using the provided configuration.
-     * @param Tensor $waveform The audio tensor to extract features from.
+     * @param Tensor $input The audio tensor to extract features from.
      * @return Tensor[] The extracted features.
      */
-    public function __invoke(Tensor $waveform): array
+    public function __invoke($input, ...$args): array
     {
         $features = Audio::spectrogram(
-            $waveform,
+            $input,
             $this->window,
             frameLength: 400,
             hopLength: 160,

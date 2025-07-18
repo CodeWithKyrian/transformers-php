@@ -74,19 +74,12 @@ class Processor
                 }
                 foreach ($indices as $index) {
                     $box = $bbox[$j]->toArray();
-                    $clamped = false;
                     // convert to [x0, y0, x1, y1] format
                     $box = self::centerToCornersFormat($box);
                     if ($targetSize !== null) {
-                        $boxBefore = $box;
                         $box = array_map(fn($x, $i) => $x * $targetSize[($i + 1) % 2], $box, array_keys($box));
-                        if ($box !== $boxBefore) {
-                            $clamped = true;
-                        }
                     }
-                    if ($clamped) {
-                        $logger->warning('Box coordinates clamped to target size', ['box' => $box]);
-                    }
+
                     $info['boxes'][] = $box;
                     $info['classes'][] = $index;
                     $info['scores'][] = $probs[$index];

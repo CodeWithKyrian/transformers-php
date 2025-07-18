@@ -56,19 +56,20 @@ class PretrainedModel
 
     /**
      * @param PretrainedConfig $config The model configuration.
-     * @param InferenceSession $session The ONNX session.
-     * @param ModelArchitecture $modelArchitecture
-     * @param mixed ...$args
+     * @param array<string, InferenceSession> $sessions The ONNX sessions for this this model.
+     * @param ModelArchitecture $modelArchitecture The model architecture.
+     * @param GenerationConfig|null $generationConfig The generation configuration (for models that can generate)
      */
     public function __construct(
         public PretrainedConfig  $config,
-        public InferenceSession  $session,
+        public array  $sessions,
         public ModelArchitecture $modelArchitecture = ModelArchitecture::EncoderOnly,
-        ...$args
+        public ?GenerationConfig $generationConfig = null
     ) {
         if ($this->modelArchitecture->canGenerate()) {
-            $this->forwardParams[] = 'past_key_values';
+            $this->forwardParams = array_merge($this->forwardParams, ['past_key_values']);
         }
+
         $this->logger = Transformers::getLogger();
     }
 
@@ -129,20 +130,21 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
-                    $generatorConfigArr = Hub::getJson(
+
+                    $generationConfig = new GenerationConfig(Hub::getJson(
                         pathOrRepoID: $modelNameOrPath,
                         fileName: 'generation_config.json',
                         cacheDir: $cacheDir,
                         revision: $revision,
                         fatal: false,
                         onProgress: $onProgress
-                    );
-                    $generatorConfig = new GenerationConfig($generatorConfigArr);
+                    ));
+
                     return new static(
                         config: $config,
-                        session: $session,
+                        sessions: ['decoder' => $session],
                         modelArchitecture: $modelArchitecture,
-                        generationConfig: $generatorConfig
+                        generationConfig: $generationConfig
                     );
                 }
             case ModelArchitecture::Seq2SeqLM:
@@ -154,6 +156,7 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
+
                     $decoderSession = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "decoder_model_merged$quantizedSuffix",
@@ -161,21 +164,21 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress,
                     );
-                    $generatorConfigArr = Hub::getJson(
+
+                    $generationConfig = new GenerationConfig(Hub::getJson(
                         pathOrRepoID: $modelNameOrPath,
                         fileName: 'generation_config.json',
                         cacheDir: $cacheDir,
                         revision: $revision,
                         fatal: false,
                         onProgress: $onProgress
-                    );
-                    $generatorConfig = new GenerationConfig($generatorConfigArr);
+                    ));
+
                     return new static(
                         config: $config,
-                        session: $encoderSession,
+                        sessions: ['encoder' => $encoderSession, 'decoder' => $decoderSession],
                         modelArchitecture: $modelArchitecture,
-                        generationConfig: $generatorConfig,
-                        decoderMergedSession: $decoderSession
+                        generationConfig: $generationConfig,
                     );
                 }
             case ModelArchitecture::MaskGeneration: {
@@ -186,6 +189,7 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
+
                     $promptMaskEncoder = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "prompt_encoder_mask_decoder$quantizedSuffix",
@@ -193,10 +197,10 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
+
                     return new static(
                         config: $config,
-                        session: $visionEncoder,
-                        promptMaskEncoderSession: $promptMaskEncoder,
+                        sessions: ['vision_encoder' => $visionEncoder, 'prompt_mask_decoder' => $promptMaskEncoder],
                         modelArchitecture: $modelArchitecture
                     );
                 }
@@ -208,6 +212,7 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
+
                     $decoderSession = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
                         fileName: "decoder_model_merged$quantizedSuffix",
@@ -215,16 +220,17 @@ class PretrainedModel
                         revision: $revision,
                         onProgress: $onProgress
                     );
+
                     return new static(
                         config: $config,
-                        session: $encoderSession,
-                        decoderMergedSession: $decoderSession,
+                        sessions: ['encoder' => $encoderSession, 'decoder' => $decoderSession],
                         modelArchitecture: $modelArchitecture
                     );
                 }
             default: {
                     if ($modelArchitecture != ModelArchitecture::EncoderOnly) {
                         $logger->warning("{$modelArchitecture->value} is not a valid model group. Defaulting to EncoderOnly.");
+                        $modelArchitecture = ModelArchitecture::EncoderOnly;
                     }
 
                     $session = self::constructSession(
@@ -237,7 +243,7 @@ class PretrainedModel
 
                     return new static(
                         config: $config,
-                        session: $session,
+                        sessions: ['encoder' => $session],
                         modelArchitecture: $modelArchitecture
                     );
                 }
@@ -326,7 +332,7 @@ class PretrainedModel
             'input_shape' => $inputs->shape(),
             'generation_config' => $generationConfig ? $generationConfig->toArray() : null
         ]);
-        $this->validateModelClass();
+        $this->ensureModelCanGenerate();
 
         $kwargs = array_keys_to_snake_case($kwargs);
 
@@ -522,7 +528,7 @@ class PretrainedModel
      * @throws Error If the model class cannot perform generation.
      * @return void
      */
-    public function validateModelClass(): void
+    public function ensureModelCanGenerate(): void
     {
         if (!$this->modelArchitecture->canGenerate()) {
             $className = get_called_class();
@@ -556,10 +562,7 @@ class PretrainedModel
             }
         }
 
-        /** @disregard P1014 */
-        $classConfig = (property_exists($this, 'generationConfig')) ? $this->generationConfig : null;
-
-        return GenerationConfig::mergeConfigs($modelConfig, $classConfig, $userProvidedConfig);
+        return GenerationConfig::mergeConfigs($modelConfig, $this->generationConfig, $userProvidedConfig);
     }
 
     /**
@@ -599,7 +602,7 @@ class PretrainedModel
      */
     function runEncoderForwardPass($modelInputs, GenerationConfig $generationConfig)
     {
-        $inputNames = array_column($this->session->inputs(), 'name');
+        $inputNames = array_column($this->sessions['encoder']->inputs(), 'name');
 
         if (
             in_array('inputs_embeds', $inputNames) &&

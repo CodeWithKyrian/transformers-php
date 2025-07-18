@@ -8,7 +8,6 @@ namespace Codewithkyrian\Transformers\FeatureExtractors;
 use Codewithkyrian\Transformers\Tensor\Tensor;
 use Codewithkyrian\Transformers\Utils\Image;
 use Exception;
-use Imagine\Image\Point;
 
 class ImageFeatureExtractor extends FeatureExtractor
 {
@@ -78,61 +77,6 @@ class ImageFeatureExtractor extends FeatureExtractor
         }
     }
 
-
-    /**
-     * Crops the margin of the image. Gray pixels are considered margin (i.e., pixels with a value below the threshold).
-     *
-     * @param int $grayThreshold Value below which pixels are considered to be gray.
-     *
-     * @return static The cropped image.
-     */
-    public function cropMargin(Image $image, int $grayThreshold = 200): static
-    {
-        $grayImage = $image->clone()->grayscale();
-
-        // Get the min and max pixel values
-        $minValue = min($grayImage->toTensor()->buffer())[0];
-        $maxValue = max($grayImage->toTensor()->buffer())[0];
-
-        $diff = $maxValue - $minValue;
-
-        // If all pixels have the same value, no need to crop
-        if ($diff === 0) {
-            return $this;
-        }
-
-        $threshold = $grayThreshold / 255;
-
-        $xMin = $image->width();
-        $yMin = $image->height();
-        $xMax = 0;
-        $yMax = 0;
-
-        $width = $image->width();
-        $height = $image->height();
-
-        // Iterate over each pixel in the image
-        for ($y = 0; $y < $height; ++$y) {
-            for ($x = 0; $x < $width; ++$x) {
-                $color = $grayImage->image->getColorAt(new Point($x, $y));
-                $pixelValue = $color->getRed(); // Assuming grayscale, so red channel is sufficient
-
-                if (($pixelValue - $minValue) / $diff < $threshold) {
-                    // We have a non-gray pixel, so update the min/max values accordingly
-                    $xMin = min($xMin, $x);
-                    $yMin = min($yMin, $y);
-                    $xMax = max($xMax, $x);
-                    $yMax = max($yMax, $y);
-                }
-            }
-        }
-
-        // Crop the image using the calculated bounds
-        $image->crop($xMin, $yMin, $xMax, $yMax);
-
-        return $this;
-    }
-
     /**
      * Pad the image by a certain amount.
      *
@@ -152,8 +96,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         string    $mode = 'constant',
         bool      $center = false,
         int       $constantValues = 0
-    ): Tensor
-    {
+    ): Tensor {
         if ($tensorFormat === 'CHW') {
             [$imageChannels, $imageHeight, $imageWidth] = $imageTensor->shape();
         } else {
@@ -324,7 +267,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         } elseif ($this->sizeDivisibility != null) {
             return $this->enforceSizeDivisibility([$srcWidth, $srcHeight], $this->sizeDivisibility);
         } else {
-            throw new Exception("Could not resize image due to unsupported 'size' parameter passed: ".json_encode($size));
+            throw new Exception("Could not resize image due to unsupported 'size' parameter passed: " . json_encode($size));
         }
     }
 
@@ -347,8 +290,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         ?bool $doPad = null,
         ?bool $doConvertRGB = null,
         ?bool $doConvertGrayscale = null
-    ): array
-    {
+    ): array {
         if ($this->doCropMargin) {
             // Specific to nougat processors. This is done before resizing,
             // and can be interpreted as a pre-preprocessing step.
@@ -400,7 +342,7 @@ class ImageFeatureExtractor extends FeatureExtractor
         if ($doNormalize ?? $this->doNormalize) {
             if (is_array($this->imageMean)) {
                 // Negate the mean values to add instead of subtract
-                $negatedMean = array_map(fn ($mean) => -$mean, $this->imageMean);
+                $negatedMean = array_map(fn($mean) => -$mean, $this->imageMean);
                 $imageMean = Tensor::repeat($negatedMean, $image->height() * $image->width(), 1);
             } else {
                 $imageMean = Tensor::fill([$image->channels * $image->height() * $image->width()], -$this->imageMean);
@@ -409,7 +351,7 @@ class ImageFeatureExtractor extends FeatureExtractor
 
             if (is_array($this->imageStd)) {
                 // Inverse the standard deviation values to multiple instead of divide
-                $inversedStd = array_map(fn ($std) => 1 / $std, $this->imageStd);
+                $inversedStd = array_map(fn($std) => 1 / $std, $this->imageStd);
                 $imageStd = Tensor::repeat($inversedStd, $image->height() * $image->width(), 1);
             } else {
                 $imageStd = Tensor::fill([$image->channels * $image->height() * $image->width()], 1 / $this->imageStd);
@@ -421,7 +363,7 @@ class ImageFeatureExtractor extends FeatureExtractor
             $imageStd = $imageStd->reshape($imageTensor->shape());
 
             if (count($imageMean) !== $image->channels || count($imageStd) !== $image->channels) {
-                throw new Exception("When set to arrays, the length of `imageMean` (".count($imageMean).") and `imageStd` (".count($imageStd).") must match the number of channels in the image ({$image->channels}).");
+                throw new Exception("When set to arrays, the length of `imageMean` (" . count($imageMean) . ") and `imageStd` (" . count($imageStd) . ") must match the number of channels in the image ({$image->channels}).");
             }
 
             // Normalize pixel data
@@ -450,15 +392,17 @@ class ImageFeatureExtractor extends FeatureExtractor
      * preprocesses each image, and concatenates the resulting
      * features into a single Tensor.
      *
-     * @param Image|Image[] $images The image(s) to extract features from.
+     * @param Image|Image[] $input The image(s) to extract features from.
      * @param mixed ...$args Additional arguments.
      *
      * @return array An object containing the concatenated pixel values (and other metadata) of the preprocessed images.
      */
-    public function __invoke(Image|array $images, ...$args): array
+    public function __invoke($input, ...$args): array
     {
-        if (!is_array($images)) {
-            $images = [$images];
+        $images = is_array($input) ? $input : [$input];
+
+        if (count($images) === 0) {
+            throw new Exception('No images provided');
         }
 
         $imageData = array_map([$this, 'preprocess'], $images);
@@ -516,6 +460,6 @@ class ImageFeatureExtractor extends FeatureExtractor
             $x = ceil($a) * $multiple;
         }
 
-        return $x;
+        return (int)$x;
     }
 }

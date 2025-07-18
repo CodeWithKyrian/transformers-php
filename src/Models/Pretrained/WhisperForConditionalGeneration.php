@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
 use Codewithkyrian\Transformers\Configs\GenerationConfig;
-use Codewithkyrian\Transformers\Configs\PretrainedConfig;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\WhisperTimeStampLogitsProcessor;
 use Codewithkyrian\Transformers\Generation\StoppingCriteria\StoppingCriteria;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
-use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use InvalidArgumentException;
@@ -20,16 +17,6 @@ use InvalidArgumentException;
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
     public string $mainInputName = 'input_features';
-
-    public function __construct(
-        PretrainedConfig               $config,
-        InferenceSession         $session,
-        public InferenceSession  $decoderMergedSession,
-        public ModelArchitecture $modelArchitecture,
-        public GenerationConfig  $generationConfig
-    ) {
-        parent::__construct($config, $session, $modelArchitecture);
-    }
 
     public function generate(
         Tensor               $inputs,
