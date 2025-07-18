@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForZeroShotObjectDetection extends PretrainedMixin
+class AutoModelForZeroShotObjectDetection extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         'owlvit' => \Codewithkyrian\Transformers\Models\Pretrained\OwlViTForObjectDetection::class,
@@ -15,5 +15,4 @@ class AutoModelForZeroShotObjectDetection extends PretrainedMixin
     const MODEL_CLASS_MAPPINGS = [
         self::MODEL_CLASS_MAPPING,
     ];
-
 }

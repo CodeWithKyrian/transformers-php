@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForCausalLM extends PretrainedMixin
+class AutoModelForCausalLM extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         'gpt2' => \Codewithkyrian\Transformers\Models\Pretrained\GPT2LMHeadModel::class,

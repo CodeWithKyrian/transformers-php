@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModel extends PretrainedMixin
+class AutoModel extends AutoModelBase
 {
     const ENCODER_ONLY_MODEL_MAPPING = [
         "albert" => \Codewithkyrian\Transformers\Models\Pretrained\AlbertModel::class,

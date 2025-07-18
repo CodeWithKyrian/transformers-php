@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForImageFeatureExtraction extends PretrainedMixin
+class AutoModelForImageFeatureExtraction extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         'clip' => \Codewithkyrian\Transformers\Models\Pretrained\CLIPVisionModelWithProjection::class,

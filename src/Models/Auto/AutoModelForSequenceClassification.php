@@ -6,7 +6,7 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers\Models\Auto;
 
 
-class AutoModelForSequenceClassification extends PretrainedMixin
+class AutoModelForSequenceClassification extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         'albert' => \Codewithkyrian\Transformers\Models\Pretrained\AlbertForSequenceClassification::class,

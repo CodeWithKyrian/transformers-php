@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForMaskedLM extends PretrainedMixin
+class AutoModelForMaskedLM extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         "albert" => \Codewithkyrian\Transformers\Models\Pretrained\AlbertForMaskedLM::class,

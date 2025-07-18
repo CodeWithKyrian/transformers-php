@@ -15,7 +15,7 @@ use Codewithkyrian\Transformers\Transformers;
  * Base class of all AutoModels. Contains the `from_pretrained` function
  * which is used to instantiate pretrained models.
  */
-abstract class PretrainedMixin
+abstract class AutoModelBase
 {
     /**
      * Mapping from model type to model class.

@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForTokenClassification extends PretrainedMixin
+class AutoModelForTokenClassification extends AutoModelBase
 {
     const MODEL_CLASS_MAPPING = [
         "bert" => \Codewithkyrian\Transformers\Models\Pretrained\BertForTokenClassification::class,
