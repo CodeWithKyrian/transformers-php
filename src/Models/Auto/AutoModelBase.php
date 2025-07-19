@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Auto;
 
 use Codewithkyrian\Transformers\Configs\AutoConfig;
@@ -51,39 +50,31 @@ abstract class AutoModelBase
     ): PretrainedModel {
         $config = AutoConfig::fromPretrained($modelNameOrPath, $config, $cacheDir, $revision, $onProgress);
 
-        foreach (static::MODELS as $modelType => $modelClass) {
-            if ($modelType != $config->modelType)  continue;
+        $modelClass = static::MODELS[$config->modelType] ?? null;
 
-            $modelArchitecture = self::getModelArchitecture($modelClass);
+        if ($modelClass === null) {
+            if (static::BASE_IF_FAIL) {
+                $logger = Transformers::getLogger();
+                $logger->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
 
-            return $modelClass::fromPretrained(
-                modelNameOrPath: $modelNameOrPath,
-                quantized: $quantized,
-                config: $config,
-                cacheDir: $cacheDir,
-                revision: $revision,
-                modelFilename: $modelFilename,
-                modelArchitecture: $modelArchitecture,
-                onProgress: $onProgress
-            );
+                $modelClass = PretrainedModel::class;
+            } else {
+                throw UnsupportedModelTypeException::make($config->modelType);
+            }
         }
 
-        if (static::BASE_IF_FAIL) {
-            $logger = Transformers::getLogger();
-            $logger->warning("Unknown model class for model type {$config->modelType}. Using base class PreTrainedModel.");
+        $modelArchitecture = self::getModelArchitecture($modelClass);
 
-            return PretrainedModel::fromPretrained(
-                modelNameOrPath: $modelNameOrPath,
-                quantized: $quantized,
-                config: $config,
-                cacheDir: $cacheDir,
-                revision: $revision,
-                modelFilename: $modelFilename,
-                onProgress: $onProgress
-            );
-        } else {
-            throw UnsupportedModelTypeException::make($config->modelType);
-        }
+        return $modelClass::fromPretrained(
+            modelNameOrPath: $modelNameOrPath,
+            quantized: $quantized,
+            config: $config,
+            cacheDir: $cacheDir,
+            revision: $revision,
+            modelFilename: $modelFilename,
+            modelArchitecture: $modelArchitecture,
+            onProgress: $onProgress
+        );
     }
 
     protected static function getModelArchitecture($modelClass): ModelArchitecture

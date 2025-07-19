@@ -31,11 +31,11 @@ use Codewithkyrian\Transformers\Models\Auto\AutoModelForSeq2SeqLM;
 use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Models\Output\ModelOutput;
 use Codewithkyrian\Transformers\Tensor\Tensor;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Hub;
 use Codewithkyrian\Transformers\Utils\InferenceSession;
 use Error;
 use Exception;
-use Codewithkyrian\Transformers\Transformers;
 use Psr\Log\LoggerInterface;
 
 use function Codewithkyrian\Transformers\Utils\array_every;
@@ -125,7 +125,7 @@ class PretrainedModel
             case ModelArchitecture::DecoderOnly: {
                     $session = self::constructSession(
                         modelNameOrPath: $modelNameOrPath,
-                        fileName: $modelFilename ?? "decoder_model_merged$quantizedSuffix",
+                        fileName: $modelFilename ?? "model$quantizedSuffix",
                         cacheDir: $cacheDir,
                         revision: $revision,
                         onProgress: $onProgress,
@@ -572,8 +572,8 @@ class PretrainedModel
             $errorMsg = "The current model class $className is not is not compatible with \`generate()\`, as it doesn't have a language model head.";
 
             $possibleInfo =
-                AutoModelForCausalLM::MODEL_CLASS_MAPPING[$this->config->modelType]
-                ?? AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING[$this->config->modelType]
+                AutoModelForCausalLM::MODELS[$this->config->modelType]
+                ?? AutoModelForSeq2SeqLM::MODELS[$this->config->modelType]
                 ?? null;
 
             if ($possibleInfo) {

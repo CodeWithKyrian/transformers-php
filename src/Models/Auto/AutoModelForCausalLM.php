@@ -13,6 +13,12 @@ class AutoModelForCausalLM extends AutoModelBase
         'codegen' => \Codewithkyrian\Transformers\Models\Pretrained\CodeGenForCausalLM::class,
         'llama' => \Codewithkyrian\Transformers\Models\Pretrained\LlamaForCausalLM::class,
         'trocr' => \Codewithkyrian\Transformers\Models\Pretrained\TrOCRForCausalLM::class,
-        'qwen2' => \Codewithkyrian\Transformers\Models\Pretrained\Qwen2ForCausalLM::class
+        'qwen2' => \Codewithkyrian\Transformers\Models\Pretrained\Qwen2ForCausalLM::class,
+        'gemma' => \Codewithkyrian\Transformers\Models\Pretrained\GemmaForCausalLM::class,
+        'gemma2' => \Codewithkyrian\Transformers\Models\Pretrained\Gemma2ForCausalLM::class,
+        'gemma3' => \Codewithkyrian\Transformers\Models\Pretrained\Gemma3ForCausalLM::class,
+        'qwen3' => \Codewithkyrian\Transformers\Models\Pretrained\Qwen3ForCausalLM::class,
+        'phi' => \Codewithkyrian\Transformers\Models\Pretrained\PhiForCausalLM::class,
+        'phi3' => \Codewithkyrian\Transformers\Models\Pretrained\Phi3ForCausalLM::class,
     ];
 }

@@ -43,6 +43,12 @@ class AutoModel extends AutoModelBase
         "codegen" => \Codewithkyrian\Transformers\Models\Pretrained\CodeGenModel::class,
         "llama" => \Codewithkyrian\Transformers\Models\Pretrained\LlamaModel::class,
         "qwen2" => \Codewithkyrian\Transformers\Models\Pretrained\Qwen2Model::class,
+        "gemma" => \Codewithkyrian\Transformers\Models\Pretrained\GemmaModel::class,
+        "gemma2" => \Codewithkyrian\Transformers\Models\Pretrained\Gemma2Model::class,
+        "gemma3" => \Codewithkyrian\Transformers\Models\Pretrained\Gemma3Model::class,
+        "qwen3" => \Codewithkyrian\Transformers\Models\Pretrained\Qwen3Model::class,
+        "phi" => \Codewithkyrian\Transformers\Models\Pretrained\PhiModel::class,
+        "phi3" => \Codewithkyrian\Transformers\Models\Pretrained\Phi3Model::class,
     ];
 
     const MODELS = [
@@ -61,7 +67,6 @@ class AutoModel extends AutoModelBase
         ...AutoModelForObjectDetection::MODELS,
         ...AutoModelForZeroShotObjectDetection::MODELS,
     ];
-
 
     const BASE_IF_FAIL = true;
 }
