@@ -28,7 +28,8 @@ $audioUrl = __DIR__ . '/../sounds/jfk.wav';
 $streamer = WhisperTextStreamer::make()
     ->onStream(fn($text) => print($text));
 
-$output = $transcriber($audioUrl,
+$output = $transcriber(
+    $audioUrl,
     maxNewTokens: 256,
     chunkLengthSecs: 24,
     streamer: $streamer,

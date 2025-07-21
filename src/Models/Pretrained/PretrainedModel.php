@@ -263,6 +263,7 @@ class PretrainedModel
      * @param callable|null $onProgress
      * @param mixed ...$sessionOptions
      *
+     *
      * @return InferenceSession|null
      * @throws HubException
      */
@@ -301,6 +302,7 @@ class PretrainedModel
      * method based on model architecture.
      *
      * @param array $modelInputs The input data to the model in the format specified in the ONNX model.
+     *
      *
      * @return array{logits: Tensor, hidden_states: Tensor, attentions: Tensor} The output data from the model in the format specified in the ONNX model.
      */

@@ -43,6 +43,7 @@ class AutoTokenizer
         'CodeGenTokenizer' => CodeGenTokenizer::class,
         'CLIPTokenizer' => CLIPTokenizer::class,
         'SiglipTokenizer' => SiglipTokenizer::class,
+        'SiglipTokenizer' => SiglipTokenizer::class,
         // 'MarianTokenizer' => MarianTokenizer::class,
         'BloomTokenizer' => BloomTokenizer::class,
         'NllbTokenizer' => NllbTokenizer::class,
@@ -83,6 +84,7 @@ class AutoTokenizer
      * @param string $revision
      * @param mixed $legacy
      * @param OutputInterface|null $output
+     *
      * @return PreTrainedTokenizer|null
      */
     public static function fromPretrained(

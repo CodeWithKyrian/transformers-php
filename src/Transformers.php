@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Codewithkyrian\Transformers;
 
 use Codewithkyrian\Transformers\Utils\ImageDriver;
-use RuntimeException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Psr\Log\NullLogger;
 
 class Transformers
@@ -24,7 +24,6 @@ class Transformers
     protected static ImageDriver $imageDriver = ImageDriver::VIPS;
 
     protected static ?LoggerInterface $logger = null;
-
 
     /**
      * Returns a new instance of the static class.
