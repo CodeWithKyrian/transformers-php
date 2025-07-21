@@ -8,6 +8,14 @@ use SplPriorityQueue;
 
 /**
  * BPE class for encoding text into Byte-Pair-Encoding (BPE) tokens.
+ * 
+ * Byte-Pair Encoding (BPE) is a subword tokenization technique that iteratively merges the most frequent pair of adjacent subwords in a vocabulary.
+ * This process continues until a desired vocabulary size is reached.
+ * 
+ * The algorithm works as follows:
+ * 1. Initialize the vocabulary with the most frequent characters.
+ * 2. Iteratively merge the most frequent pair of adjacent subwords in the vocabulary.
+ * 3. Continue until the desired vocabulary size is reached.
  */
 class BPEModel extends TokenizerModel
 {
@@ -53,9 +61,24 @@ class BPEModel extends TokenizerModel
 
         $this->vocab = array_flip($vocab);
 
-        $this->bpeRanks = array_flip($config['merges']);
+        // Check if using new merge format (Tokenizers >= 0.20.0)
+        $useNewMergeFormat = is_array($config['merges'][0]);
 
-        $this->merges = array_map(fn($merge) => explode(' ', $merge), $config['merges']);
+        if ($useNewMergeFormat) {
+            $this->merges = $config['merges'];
+        } else {
+            $this->merges = array_map(
+                fn($merge) => explode(' ', $merge, 2),
+                $config['merges']
+            );
+        }
+
+        $this->bpeRanks = [];
+
+        foreach ($this->merges as $i => $pair) {
+            $key = json_encode($pair);
+            $this->bpeRanks[$key] = $i;
+        }
 
         $this->endOfWordSuffix = $config['end_of_word_suffix'] ?? null;
         $this->continuingSubwordSuffix = $config['continuing_subword_suffix'] ?? null;
@@ -186,15 +209,19 @@ class BPEModel extends TokenizerModel
         return $result;
     }
 
-
+    /**
+     * Add a node to the priority queue.
+     * 
+     * `score` is a measure of the merge priority: lower means higher priority.
+     * We use the BPE rank as a measure of priority (i.e., the local of the merge in the merges list)
+     * We also add a fractional component to the score to break ties (with the earlier character having higher priority)
+     */
     public function addNodeToQueue(SplPriorityQueue $queue, BPENode $node): void
     {
-        // `score` is a measure of the merge priority: lower means higher priority.
-        // We use the BPE rank as a measure of priority (i.e., the local of the merge in the merges list)
-        // We also add a fractional component to the score to break ties (with the earlier character having higher priority)
-        $rank = $this->bpeRanks[$node->token . self::BPE_SPLIT_TOKEN . $node->next?->token] ?? null;
+        $pairKey = json_encode([$node->token, $node->next->token]);
+        $rank = $this->bpeRanks[$pairKey] ?? null;
 
-        if ($rank !== null) {
+        if ($rank) {
             $node->score = - ($rank + $node->bias);
             $queue->insert($node, $node->score);
         }

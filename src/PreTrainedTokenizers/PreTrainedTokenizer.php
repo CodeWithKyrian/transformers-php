@@ -653,7 +653,6 @@ class PreTrainedTokenizer
         bool    $returnTensor = true
     ): string|array {
         $chatTemplate ??= $this->chatTemplate ?? $this->getDefaultChatTemplate();
-        dd($chatTemplate);
 
         // Compilation function uses a cache to avoid recompiling the same template
         $compiledTemplate = $this->compiledTemplateCache[$chatTemplate] ?? null;

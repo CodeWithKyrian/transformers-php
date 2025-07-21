@@ -12,7 +12,7 @@ $application = new Application();
 try {
     $application->setName('Transformers PHP CLI');
 
-    $application->add(new Codewithkyrian\Transformers\Commands\DownloadModelCommand());
+    $application->addCommand(new Codewithkyrian\Transformers\Commands\DownloadModelCommand());
 
     $application->run();
 } catch (Exception $e) {
