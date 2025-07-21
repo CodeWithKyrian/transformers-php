@@ -221,7 +221,7 @@ class BPEModel extends TokenizerModel
         $pairKey = json_encode([$node->token, $node->next->token]);
         $rank = $this->bpeRanks[$pairKey] ?? null;
 
-        if ($rank) {
+        if ($rank !== null) {
             $node->score = - ($rank + $node->bias);
             $queue->insert($node, $node->score);
         }

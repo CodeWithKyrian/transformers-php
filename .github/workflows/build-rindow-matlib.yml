@@ -1,0 +1,52 @@
+name: Build Rindow Matlib
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build rindow-matlib (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runs-on: ubuntu-24.04
+            artifact_name: linux-x86_64
+          - arch: arm64
+            runs-on: ubuntu-24.04-arm
+            artifact_name: linux-arm64
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          repository: rindow/rindow-matlib
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+
+      - name: Build
+        run: |
+          cmake -S . -B build
+          cmake --build build --config Release
+
+      - name: Run tests
+        run: |
+          cd build
+          ctest -C Release
+
+      - name: Package
+        run: |
+          cd build
+          cpack -G TGZ -C Release
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: packages/*

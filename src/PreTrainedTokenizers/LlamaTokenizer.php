@@ -14,7 +14,7 @@ class LlamaTokenizer extends PreTrainedTokenizer
     protected string $defaultChatTemplate = "{% if messages[0]['role'] == 'system' %}{% set loop_messages = messages[1:] %}{% set system_message = messages[0]['content'] %}{% elif USE_DEFAULT_PROMPT == true and not '<<SYS>>' in messages[0]['content'] %}{% set loop_messages = messages %}{% set system_message = 'DEFAULT_SYSTEM_MESSAGE' %}{% else %}{% set loop_messages = messages %}{% set system_message = false %}{% endif %}{% for message in loop_messages %}{% if (message['role'] == 'user') != (loop.index0 % 2 == 0) %}{{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}{% endif %}{% if loop.index0 == 0 and system_message != false %}{% set content = '<<SYS>>\n' + system_message + '\n<</SYS>>\n\n' + message['content'] %}{% else %}{% set content = message['content'] %}{% endif %}{% if message['role'] == 'user' %}{{ bos_token + '[INST] ' + content.strip() + ' [/INST]' }}{% elif message['role'] == 'system' %}{{ '<<SYS>>\n' + content.strip() + '\n<</SYS>>\n\n' }}{% elif message['role'] == 'assistant' %}{{ ' '  + content.strip() + ' ' + eos_token }}{% endif %}{% endfor %}";
 
     public const DEFAULT_SYSTEM_PROMPT =
-        "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your " .
+    "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your " .
         "answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure " .
         "that your responses are socially unbiased and positive in nature.\n\n" .
         "If a question does not make any sense, or is not factually coherent, explain why instead of answering something not " .
@@ -38,7 +38,6 @@ class LlamaTokenizer extends PreTrainedTokenizer
                 'prepend_scheme' => 'first',
             ]);
         }
-
     }
 
     /**
@@ -50,7 +49,7 @@ class LlamaTokenizer extends PreTrainedTokenizer
      * @param bool $addSpecialTokens
      * @return ?array
      */
-    public function encodeText(?string $text, string $textPair = null, bool $addSpecialTokens = true): ?array
+    public function encodeText(?string $text, ?string $textPair = null, bool $addSpecialTokens = true): ?array
     {
         if ($text === null) {
             return null;
