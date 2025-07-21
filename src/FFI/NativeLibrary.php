@@ -26,23 +26,23 @@ abstract class NativeLibrary
      */
     protected const PLATFORMS = [
         'linux-x86_64' => [
-            'directory' => 'linux-x86_64', 
+            'directory' => 'linux-x86_64',
             'libraryTemplate' => 'lib{name}.so.{version}'
         ],
         'linux-arm64' => [
-            'directory' => 'linux-arm64', 
+            'directory' => 'linux-arm64',
             'libraryTemplate' => 'lib{name}.so.{version}'
         ],
         'darwin-x86_64' => [
-            'directory' => 'macosx-x86_64', 
+            'directory' => 'darwin-x86_64',
             'libraryTemplate' => 'lib{name}.{version}.dylib'
         ],
         'darwin-arm64' => [
-            'directory' => 'macosx-arm64', 
+            'directory' => 'darwin-arm64',
             'libraryTemplate' => 'lib{name}.{version}.dylib'
         ],
         'windows-x86_64' => [
-            'directory' => 'windows-x86_64', 
+            'directory' => 'windows-x86_64',
             'libraryTemplate' => '{name}-{version}.dll'
         ],
     ];
@@ -51,7 +51,7 @@ abstract class NativeLibrary
      * The FFI instance for this library
      */
     protected FFI $ffi;
-    
+
     /**
      * Windows-specific kernel32 FFI instance (shared across all instances)
      */
@@ -62,7 +62,7 @@ abstract class NativeLibrary
     public function __construct(protected bool $loadLibrary = true)
     {
         $this->platformConfig = Platform::findBestMatch(self::PLATFORMS);
-        
+
         if ($this->loadLibrary) {
             $this->loadLibrary();
             $this->configurePlatformSpecifics();
@@ -137,7 +137,7 @@ abstract class NativeLibrary
         return joinPaths($this->getPlatformPath(), 'lib');
     }
 
-    protected function loadLibrary() :void
+    protected function loadLibrary(): void
     {
         if (!$this->platformConfig) {
             throw new RuntimeException("No matching platform configuration found");
