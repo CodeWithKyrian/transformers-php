@@ -16,13 +16,12 @@ class DetrFeatureExtractor extends ImageFeatureExtractor
     /**
      * Calls the feature extraction process on an array of images, preprocesses
      * each image, and concatenates the resulting features into a single Tensor.
-     * @param Image|array $images The image(s) to extract features from.
+     * @param Image|array $input The image(s) to extract features from.
      * @return array An object containing the concatenated pixel values of the preprocessed images.
      */
-    public function __invoke(Image|array $images, ...$args): array
+    public function __invoke($input, ...$args): array
     {
-        $result = parent::__invoke($images, $args);
-
+        $result = parent::__invoke($input, $args);
 
         // TODO support differently-sized images, for now assume all images are the same size.
         // TODO support different mask sizes (not just 64x64)

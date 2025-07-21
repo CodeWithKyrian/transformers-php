@@ -69,7 +69,10 @@ class TensorBuffer implements LinearBuffer
     public function __construct(int $size, int $dtype)
     {
         if (self::$ffi === null) {
-            $code = file_get_contents(__DIR__ . '/../../includes/buffer.h');
+            $code = "
+                typedef struct _rindow_complex_float { float real, imag; } rindow_complex_float;
+                typedef struct _rindow_complex_double { double real, imag; } rindow_complex_double;
+            ";
             self::$ffi = FFI::cdef($code);
         }
 

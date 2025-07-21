@@ -11,7 +11,7 @@ function memoryUsage(): string
     $mem = memory_get_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
 }
 
 function memoryPeak(): string
@@ -19,7 +19,7 @@ function memoryPeak(): string
     $mem = memory_get_peak_usage(true);
     $unit = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2).' '.$unit[$i];
+    return @round($mem / pow(1024, ($i = floor(log($mem, 1024)))), 2) . ' ' . $unit[$i];
 }
 
 
@@ -37,8 +37,8 @@ function timeUsage(bool $milliseconds = false, bool $sinceLastCall = true, bool 
 
     $timeDiff = $milliseconds ? $timeDiff * 1000 : $timeDiff;
 
-//    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
-    return $returnString ? @round($timeDiff, 4).($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
+    //    return @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s');
+    return $returnString ? @round($timeDiff, 4) . ($milliseconds ? ' ms' : ' s') : @round($timeDiff, 4);
 }
 
 function array_some(array $array, callable $callback): bool
@@ -82,6 +82,11 @@ function array_keys_to_snake_case(array $array): array
     }
 
     return $snakeCasedArray;
+}
+
+function array_pick(array $array, array $keys): array
+{
+    return array_intersect_key($array, array_flip($keys));
 }
 
 function camelCaseToSnakeCase(string $input): string
@@ -150,7 +155,7 @@ function prepareImages(mixed $images): array
 function getBoundingBox(array $box, bool $asInteger): array
 {
     if ($asInteger) {
-        $box = array_map(fn ($x) => (int)$x, $box);
+        $box = array_map(fn($x) => (int)$x, $box);
     }
 
     [$xmin, $ymin, $xmax, $ymax] = $box;
@@ -190,7 +195,31 @@ function createPattern(array $pattern, bool $invert = true): ?string
         // NOTE: if invert is true, we wrap the pattern in a group so that it is kept when performing split
         return $invert ? $escaped : "($escaped)";
     } else {
-        Transformers::getLogger()?->error('Unknown pattern type: '.print_r($pattern, true));
+        $logger = Transformers::getLogger();
+        $logger->warning('Unknown pattern type: ' . print_r($pattern, true));
         return null;
     }
+}
+
+/**
+ * Checks whether the given Unicode codepoint represents a CJK (Chinese, Japanese, or Korean) character.
+ *
+ * A "chinese character" is defined as anything in the CJK Unicode block.
+ *
+ * @param int $cp The Unicode codepoint to check.
+ *
+ * @return bool True if the codepoint represents a CJK character, false otherwise.
+ */
+function isChineseChar(int $cp): bool
+{
+    return (
+        ($cp >= 0x4E00 && $cp <= 0x9FFF)
+        || ($cp >= 0x3400 && $cp <= 0x4DBF)
+        || ($cp >= 0x20000 && $cp <= 0x2A6DF)
+        || ($cp >= 0x2A700 && $cp <= 0x2B73F)
+        || ($cp >= 0x2B740 && $cp <= 0x2B81F)
+        || ($cp >= 0x2B820 && $cp <= 0x2CEAF)
+        || ($cp >= 0xF900 && $cp <= 0xFAFF)
+        || ($cp >= 0x2F800 && $cp <= 0x2FA1F)
+    );
 }

@@ -5,7 +5,8 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Pipelines;
 
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
+
 use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
 use function Codewithkyrian\Transformers\Utils\prepareImages;
 
@@ -71,5 +72,4 @@ class ImageToTextPipeline extends Pipeline
 
         return $isBatched ? $toReturn : $toReturn[0];
     }
-
 }

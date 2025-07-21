@@ -2,63 +2,32 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Pretrained;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\LogitsProcessorList;
 use Codewithkyrian\Transformers\Generation\LogitsProcessors\WhisperTimeStampLogitsProcessor;
+use Codewithkyrian\Transformers\Generation\StoppingCriteria\StoppingCriteria;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
-use Codewithkyrian\Transformers\Models\ModelArchitecture;
 use Codewithkyrian\Transformers\Tensor\Tensor;
-use Codewithkyrian\Transformers\Utils\AutoConfig;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
-use Codewithkyrian\Transformers\Utils\InferenceSession;
+use Codewithkyrian\Transformers\Transformers;
 use Exception;
 use InvalidArgumentException;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 class WhisperForConditionalGeneration extends WhisperPretrainedModel
 {
-    public bool $requiresAttentionMask = false;
     public string $mainInputName = 'input_features';
-
-    protected mixed $numDecoderLayers;
-    protected mixed $numDecoderHeads;
-    protected mixed $decoderDimKv;
-    protected mixed $numEncoderLayers;
-    protected mixed $numEncoderHeads;
-    protected mixed $encoderDimKv;
-
-    public function __construct(
-        AutoConfig               $config,
-        InferenceSession         $session,
-        public InferenceSession  $decoderMergedSession,
-        public ModelArchitecture $modelArchitecture,
-        public GenerationConfig  $generationConfig
-    )
-    {
-        parent::__construct($config, $session, $modelArchitecture);
-
-        $this->numDecoderLayers = $this->config['decoder_layers'];
-        $this->numDecoderHeads = $this->config['decoder_attention_heads'];
-        $this->decoderDimKv = $this->config['d_model'] / $this->numDecoderHeads;
-
-        $this->numEncoderLayers = $this->config['encoder_layers'];
-        $this->numEncoderHeads = $this->config['encoder_attention_heads'];
-        $this->encoderDimKv = $this->config['d_model'] / $this->numEncoderHeads;
-    }
 
     public function generate(
         Tensor               $inputs,
         ?GenerationConfig    $generationConfig = null,
         ?LogitsProcessorList $logitsProcessor = null,
-        Tensor               $inputsAttentionMask = null,
-        ?Streamer            $streamer = null
-    ): array
-    {
-        $generationConfig = $this->getGenerationConfig($generationConfig);
+        ?StoppingCriteria    $stoppingCriteria = null,
+        ?Streamer            $streamer = null,
+        ...$kwargs
+    ): array|Tensor {
+        $generationConfig = $this->prepareGenerationConfig($generationConfig);
 
-        // Whisper has additional options for returning timestamps
         $generationConfig['return_timestamps'] ??= false;
 
         if ($generationConfig['return_timestamps']) {
@@ -66,19 +35,19 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
             $logitsProcessor->push(new WhisperTimeStampLogitsProcessor($generationConfig));
         }
 
-
         if (isset($generationConfig['return_token_timestamps'])) {
             $generationConfig['output_attentions'] = true;
             $generationConfig['return_dict_in_generate'] = true;
 
             if ($generationConfig['task'] ?? '' === 'translate') {
-                trigger_error("Token-level timestamps may not be reliable for task 'translate'.", E_USER_WARNING);
+                $logger = Transformers::getLogger();
+                $logger->warning("Token-level timestamps may not be reliable for task 'translate'.");
             }
 
             if (!isset($generationConfig['alignment_heads'])) {
                 throw new Exception(
                     "Model generation config has no `alignment_heads`, token-level timestamps not available. " .
-                    "See https://gist.github.com/hollance/42e32852f24243b748ae6bc1f985b13a on how to add this property to the generation config."
+                        "See https://gist.github.com/hollance/42e32852f24243b748ae6bc1f985b13a on how to add this property to the generation config."
                 );
             }
         }
@@ -104,6 +73,7 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
      * @param array $alignmentHeads Alignment heads of the model
      * @param int|null $numFrames Number of frames in the input audio
      * @param float $timePrecision Precision of the timestamps in seconds
+     *
      * @return Tensor Tensor containing the timestamps in seconds for each predicted token
      * @throws Exception If the model outputs do not contain cross attentions
      */
@@ -112,18 +82,18 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
         array    $alignmentHeads,
         int|null $numFrames = null,
         float    $timePrecision = 0.02
-    ): Tensor
-    {
+    ): Tensor {
         if (!isset($generateOutputs['cross_attentions'])) {
             throw new Exception(
                 "Model outputs must contain cross attentions to extract timestamps. " .
-                "This is most likely because the model was not exported with `output_attentions=True`."
+                    "This is most likely because the model was not exported with `output_attentions=True`."
             );
         }
 
         $medianFilterWidth = $this->config['median_filter_width'] ?? null;
         if ($medianFilterWidth === null) {
-            trigger_error("Model config has no `median_filter_width`, using default value of 7.", E_USER_WARNING);
+            $logger = Transformers::getLogger();
+            $logger->warning("Model config has no `median_filter_width`, using default value of 7.");
             $medianFilterWidth = 7;
         }
 
@@ -211,8 +181,10 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
      * Applies a median filter of width `$windowSize` along the last dimension of the input.
      *
      * The `$input` tensor is assumed to be 3- or 4-dimensional.
+     *
      * @param Tensor $input
      * @param int $windowSize
+     *
      * @return Tensor
      */
     function medianFilter(Tensor $input, int $windowSize): Tensor
@@ -252,7 +224,9 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
      * Measures
      * similarity between two temporal sequences: the input audio and the output tokens. Used to generate
      * token-level timestamps.
+     *
      * @param Tensor $tensor
+     *
      * @return array
      */
     private function dynamicTimeWarping(Tensor $tensor): array
@@ -324,5 +298,4 @@ class WhisperForConditionalGeneration extends WhisperPretrainedModel
 
         return [$textIndices, $timeIndices];
     }
-
 }

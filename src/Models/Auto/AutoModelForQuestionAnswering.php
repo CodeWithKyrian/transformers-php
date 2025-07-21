@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForQuestionAnswering extends PretrainedMixin
+class AutoModelForQuestionAnswering extends AutoModelBase
 {
-    const MODEL_CLASS_MAPPING = [
+    const MODELS = [
         'albert' => \Codewithkyrian\Transformers\Models\Pretrained\AlbertForQuestionAnswering::class,
         'bert' => \Codewithkyrian\Transformers\Models\Pretrained\BertForQuestionAnswering::class,
         'deberta' => \Codewithkyrian\Transformers\Models\Pretrained\DebertaForQuestionAnswering::class,
@@ -16,9 +15,5 @@ class AutoModelForQuestionAnswering extends PretrainedMixin
         'mobilebert' => \Codewithkyrian\Transformers\Models\Pretrained\MobileBertForQuestionAnswering::class,
         'roberta' => \Codewithkyrian\Transformers\Models\Pretrained\RobertaForQuestionAnswering::class,
         'roformer' => \Codewithkyrian\Transformers\Models\Pretrained\RoFormerForQuestionAnswering::class,
-    ];
-
-    const MODEL_CLASS_MAPPINGS = [
-        self::MODEL_CLASS_MAPPING,
     ];
 }

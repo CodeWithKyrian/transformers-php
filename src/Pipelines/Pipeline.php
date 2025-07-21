@@ -18,9 +18,7 @@ class Pipeline
         protected PretrainedModel   $model,
         public ?PreTrainedTokenizer $tokenizer = null,
         protected ?Processor        $processor = null,
-    )
-    {
-    }
+    ) {}
 
     /**
      * @param string[]|string $inputs
@@ -31,7 +29,6 @@ class Pipeline
     {
         return [];
     }
-
 }
 
 /**
@@ -64,8 +61,7 @@ function pipeline(
     string           $revision = 'main',
     ?string          $modelFilename = null,
     ?callable $onProgress = null
-): Pipeline
-{
+): Pipeline {
     if (is_string($task)) {
         $stringTask = $task;
         $task = Task::tryFrom($stringTask);
@@ -77,7 +73,25 @@ function pipeline(
 
     $modelName ??= $task->defaultModelName();
 
-    $model = $task->autoModel($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+    $modelClass = $task->autoModelClass();
+
+    $modelClass = is_array($modelClass) ? $modelClass : [$modelClass];
+
+    $model = null;
+    $lastException = null;
+
+    foreach ($modelClass as $modelClass) {
+        try {
+            $model = $modelClass::fromPretrained($modelName, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
+            break;
+        } catch (\Throwable $e) {
+            $lastException = $e;
+        }
+    }
+
+    if ($model === null) {
+        throw new \RuntimeException('Could not instantiate model for task: ' . $task->value, 0, $lastException);
+    }
 
     $tokenizer = $task->autoTokenizer($modelName, $cacheDir, $revision, $onProgress);
 

@@ -15,6 +15,7 @@ models, and the remote path template. These settings allow you to tailor how and
 ```php
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\ImageDriver;
+use Psr\Log\LoggerInterface;
 
 Transformers::setup()
         ->setCacheDir('/path/to/models')
@@ -23,7 +24,7 @@ Transformers::setup()
         ->setAuthToken('your-token')
         ->setUserAgent('your-user-agent')
         ->setImageDriver(ImageDriver::IMAGICK)
-        ->setLogger(new StreamLogger('transformers-php'));
+        ->setLogger($logger);
 ```
 
 ::: tip
@@ -95,8 +96,7 @@ Transformers::setup()->setUserAgent('your-user-agent');
 ### `setImageDriver(ImageDriver $imageDriver)`
 
 This setting allows you to specify the image backend to use for image processing tasks. By default, the image driver is
-not set and an error will be thrown if you try to perform any image related task. You can change this to `IMAGICK`, `GD`
-or `VIPS` if you prefer, just make sure to have the required extensions installed.
+set to `VIPS`. You can change this to `IMAGICK`, `GD` or `VIPS` if you prefer, just make sure to have the required extensions installed.
 
 ```php
 use Codewithkyrian\Transformers\Utils\ImageDriver;
@@ -108,11 +108,21 @@ Transformers::setup()
 
 ### `setLogger(LoggerInterface $logger)`
 
-This setting allows you to set a custom logger for TransformersPHP. No logger is set by default, but you can set a
-logger to debug TransformersPHP's internal behavior. The logger should implement the `Psr\Log\LoggerInterface` interface. TransformersPHP
-comes with a `StreamLogger` class, similar to Monolog's `StreamHandler`, which can be used to log to a stream (STDOUT, STDERR,
-or a file) and can be customized to log at different levels (debug, info, warning, error, critical). You can also pass in a 
-logger that is already configured and ready to use e.g. a Laravel logger.
+This setting allows you to specify a PSR-3 compatible logger for TransformersPHP. The library will log various events such as model loading, generation progress, warnings, and errors. If no logger is set, a `NullLogger` will be used by default, which discards all log messages.
+
+```php
+use Psr\Log\LoggerInterface;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+// Create a logger instance (example using Monolog)
+$logger = new Logger('transformers');
+$logger->pushHandler(new StreamHandler('logs/transformers.log', Logger::INFO));
+
+Transformers::setup()
+    ->setLogger($logger)
+    ->apply();
+```
 
 ## Standalone PHP Projects
 
@@ -147,6 +157,7 @@ set the cache directory to the subdirectory of the `storage` directory, as it's 
 
 ```php [AppServiceProvider.php]
 use Codewithkyrian\Transformers\Transformers;
+use Illuminate\Support\Facades\Log;
 
 public function boot()
 {
@@ -156,6 +167,7 @@ public function boot()
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
         ->setUserAgent('your-user-agent')
+        ->setLogger(Log::getLogger())
         ->apply();
 }
 ```
@@ -171,15 +183,20 @@ services, making it a good place to set up global configurations.
 
 ```php [Kernel.php]
 use Codewithkyrian\Transformers\Transformers;
+use Psr\Log\LoggerInterface;
 
 public function boot()
 {
+    // Get the logger from the container
+    $logger = $this->getContainer()->get(LoggerInterface::class);
+    
     Transformers::setup()
         ->setCacheDir('/path/to/models')
         ->setRemoteHost('https://yourmodelshost.com')
         ->setRemotePathTemplate('custom/path/{model}/{file}')
         ->setAuthToken('your-token')
         ->setUserAgent('your-user-agent')
+        ->setLogger($logger)
         ->apply();
 }
 ```

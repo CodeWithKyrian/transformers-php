@@ -9,6 +9,7 @@ use Codewithkyrian\Transformers\FeatureExtractors\FeatureExtractor;
 use Codewithkyrian\Transformers\Models\Output\ObjectDetectionOutput;
 use Codewithkyrian\Transformers\Utils\Math;
 use Exception;
+use Codewithkyrian\Transformers\Transformers;
 
 /**
  * Represents a Processor that extracts features from an input.
@@ -17,9 +18,7 @@ class Processor
 {
     public function __construct(
         public FeatureExtractor $featureExtractor
-    )
-    {
-    }
+    ) {}
 
     /**
      * Post-processes the outputs of the model (for object detection).
@@ -31,19 +30,18 @@ class Processor
      */
     public static function postProcessObjectDetection(ObjectDetectionOutput $outputs, float $threshold = 0.5, ?array $targetSizes = null, bool $isZeroShot = false): array
     {
-
+        $logger = Transformers::getLogger();
         $outLogits = $outputs->logits;
         $outBbox = $outputs->predBoxes;
-
         [$batchSize, $numBoxes, $numClasses] = $outLogits->shape();
-
-
         if ($targetSizes !== null && count($targetSizes) !== $batchSize) {
+            $logger->warning('Target sizes count does not match batch size', [
+                'targetSizes_count' => count($targetSizes),
+                'batchSize' => $batchSize
+            ]);
             throw new Exception("Make sure that you pass in as many target sizes as the batch dimension of the logits");
         }
-
         $toReturn = [];
-
         for ($i = 0; $i < $batchSize; ++$i) {
             $targetSize = $targetSizes !== null ? $targetSizes[$i] : null;
             $info = [
@@ -53,14 +51,12 @@ class Processor
             ];
             $logits = $outLogits[$i];
             $bbox = $outBbox[$i];
-
+            $detectionCount = 0;
             for ($j = 0; $j < $numBoxes; ++$j) {
                 $logit = $logits[$j];
-
                 $indices = [];
                 $probs = [];
                 if ($isZeroShot) {
-                    // Get indices of classes with high enough probability
                     $logitSigmoid = $logit->sigmoid();
                     foreach ($logitSigmoid as $k => $prob) {
                         if ($prob > $threshold) {
@@ -69,26 +65,17 @@ class Processor
                     }
                     $probs = $logitSigmoid;
                 } else {
-                    // Get most probable class
                     $maxIndex = $logit->argMax();
-
                     if ($maxIndex === $numClasses - 1) {
-                        // This is the background class, skip it
                         continue;
                     }
                     $indices[] = $maxIndex;
-
-                    // Compute softmax over classes
                     $probs = $logit->softmax();
                 }
-
                 foreach ($indices as $index) {
                     $box = $bbox[$j]->toArray();
-
-
                     // convert to [x0, y0, x1, y1] format
                     $box = self::centerToCornersFormat($box);
-
                     if ($targetSize !== null) {
                         $box = array_map(fn($x, $i) => $x * $targetSize[($i + 1) % 2], $box, array_keys($box));
                     }
@@ -96,9 +83,13 @@ class Processor
                     $info['boxes'][] = $box;
                     $info['classes'][] = $index;
                     $info['scores'][] = $probs[$index];
+                    $detectionCount++;
                 }
-
             }
+            $logger->info('Object detection post-processing complete for batch item', [
+                'item' => $i,
+                'detections' => $detectionCount
+            ]);
             $toReturn[] = $info;
         }
         return $toReturn;
@@ -128,5 +119,4 @@ class Processor
     {
         return $this->featureExtractor->__invoke($input, ...$args);
     }
-
 }

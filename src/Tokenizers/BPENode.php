@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Tokenizers;
 
+/**
+ * A class representing a node in a BPE tokenizer.
+ */
 class BPENode
 {
     public float $score = 0.0;
@@ -16,7 +18,5 @@ class BPENode
         public float  $bias,
         public ?BPENode $prev = null,
         public ?BPENode $next = null,
-    )
-    {
-    }
+    ) {}
 }

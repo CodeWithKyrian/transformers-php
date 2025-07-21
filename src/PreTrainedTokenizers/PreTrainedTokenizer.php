@@ -18,6 +18,8 @@ use Codewithkyrian\Transformers\Tokenizers\TokenizerModel;
 use Error;
 use Exception;
 use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Codewithkyrian\Transformers\Transformers;
+use Psr\Log\LoggerInterface;
 
 class PreTrainedTokenizer
 {
@@ -54,6 +56,8 @@ class PreTrainedTokenizer
     protected mixed $chatTemplate;
     protected array $compiledTemplateCache = [];
 
+    protected LoggerInterface $logger;
+
     /**
      * @param array $tokenizerJSON The JSON of the tokenizer.
      * @param ?array $tokenizerConfig The config of the tokenizer.
@@ -62,7 +66,8 @@ class PreTrainedTokenizer
      */
     public function __construct(protected array $tokenizerJSON, protected ?array $tokenizerConfig)
     {
-        // Construct parts of the tokenizer from the JSON
+        $this->logger = Transformers::getLogger();
+
         $this->normalizer = Normalizer::fromConfig($this->tokenizerJSON['normalizer']);
         $this->preTokenizer = PreTokenizer::fromConfig($this->tokenizerJSON['pre_tokenizer']);
         $this->model = TokenizerModel::fromConfig(
@@ -74,6 +79,10 @@ class PreTrainedTokenizer
         $this->postProcessor = PostProcessor::fromConfig($this->tokenizerJSON['post_processor'] ?? null);
         $this->decoder = Decoder::fromConfig($this->tokenizerJSON['decoder']);
 
+        $this->logger->info('Tokenizer loaded', [
+            'model' => (new \ReflectionClass($this->model))->getShortName(),
+            'vocab_size' => isset($this->model->vocab) ? count($this->model->vocab) : null,
+        ]);
 
         foreach ($this->tokenizerJSON['added_tokens'] as $addedToken) {
             $token = AddedToken::make($addedToken);
@@ -88,7 +97,6 @@ class PreTrainedTokenizer
             }
         }
 
-        // Update additional_special_tokens
         $this->additionalSpecialTokens = $this->tokenizerConfig['additional_special_tokens'] ?? [];
         $this->specialTokens = [...$this->specialTokens, ...$this->additionalSpecialTokens];
         $this->specialTokens = array_unique($this->specialTokens);
@@ -103,10 +111,10 @@ class PreTrainedTokenizer
             $addedTokensPatterns = array_map(function ($x) {
                 $lstrip = $x->lStrip ? '\s*' : '';
                 $rstrip = $x->rStrip ? '\s*' : '';
-                return $lstrip.'('.preg_quote($x->content, '/').')'.$rstrip;
+                return $lstrip . '(' . preg_quote($x->content, '/') . ')' . $rstrip;
             }, $this->addedTokens);
 
-            $this->addedTokensRegex = '/'.implode('|', $addedTokensPatterns).'/';
+            $this->addedTokensRegex = '/' . implode('|', $addedTokensPatterns) . '/';
         }
 
         // Set mask token if present
@@ -160,7 +168,7 @@ class PreTrainedTokenizer
                 if ($item['__type'] == 'AddedToken') {
                     return $item['content'];
                 } else {
-                    throw new Exception("Unknown token: ".json_encode($item));
+                    throw new Exception("Unknown token: " . json_encode($item));
                 }
             } else {
                 return $item;
@@ -184,9 +192,8 @@ class PreTrainedTokenizer
         string  $modelNameOrPath,
         ?string $cacheDir = null,
         string  $revision = 'main',
-                $legacy = null,
-    ): PreTrainedTokenizer
-    {
+        $legacy = null,
+    ): PreTrainedTokenizer {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
             TokenizerModel::load($modelNameOrPath, $cacheDir, $revision, $legacy);
 
@@ -213,8 +220,7 @@ class PreTrainedTokenizer
         bool              $truncation = false,
         ?int              $maxLength = null,
         bool              $returnTensor = true
-    ): array
-    {
+    ): array {
         return $this->__invoke($text, $textPair, $padding, $addSpecialTokens, $truncation, $maxLength, $returnTensor);
     }
 
@@ -239,37 +245,40 @@ class PreTrainedTokenizer
         bool              $truncation = false,
         ?int              $maxLength = null,
         bool              $returnTensor = true
-    ): array
-    {
+    ): array {
         $isBatched = is_array($text);
 
         $encodedTokens = [];
 
         if ($isBatched) {
             if (count($text) === 0) {
+                $this->logger->error('Tokenization called with empty text array');
                 throw new Exception('$text array must be non-empty');
             }
 
             if ($textPair !== null) {
                 if (!is_array($textPair)) {
+                    $this->logger->error('Tokenization called with mismatched text/textPair types');
                     throw new Exception('$textPair must also be an array');
                 } elseif (count($text) !== count($textPair)) {
+                    $this->logger->error('Tokenization called with text/textPair of different lengths');
                     throw new Exception('$text and $textPair must have the same length');
                 }
 
                 $encodedTokens = array_map(
-                    fn ($t, $i) => $this->encodePlus($t, $textPair[$i], $addSpecialTokens),
+                    fn($t, $i) => $this->encodePlus($t, $textPair[$i], $addSpecialTokens),
                     $text,
                     array_keys($text)
                 );
             } else {
                 $encodedTokens = array_map(
-                    fn ($x) => $this->encodePlus($x, addSpecialTokens: $addSpecialTokens),
+                    fn($x) => $this->encodePlus($x, addSpecialTokens: $addSpecialTokens),
                     $text
                 );
             }
         } else {
             if (is_array($textPair)) {
+                $this->logger->error('Tokenization called with string text and array textPair');
                 throw new Exception('When specifying `$textPair`, since `$text` is a string, `$textPair` must also be a string (i.e., not an array).');
             }
 
@@ -285,11 +294,11 @@ class PreTrainedTokenizer
                 $maxLength = $this->modelMaxLength;
             } else {
                 // Calculate max length from sequences
-                $maxLength = max(array_map(fn ($x) => count($x['input_ids']), $encodedTokens));
+                $maxLength = max(array_map(fn($x) => count($x['input_ids']), $encodedTokens));
             }
         } else {
             if (!$truncation) {
-                trigger_error("Truncation was not explicitly activated but `maxLength` is provided a specific value, please use `truncation=true` to explicitly truncate examples to max length.", E_USER_WARNING);
+                $this->logger->warning('Truncation was not explicitly activated but `maxLength` is provided a specific value, please use `truncation=true` to explicitly truncate examples to max length.');
             }
         }
 
@@ -314,7 +323,7 @@ class PreTrainedTokenizer
                         $this->padHelper(
                             $token,
                             $maxLength,
-                            fn ($key) => $key === 'input_ids' ? $this->padTokenId : 0,
+                            fn($key) => $key === 'input_ids' ? $this->padTokenId : 0,
                             $this->paddingSide
                         );
                     }
@@ -353,7 +362,7 @@ class PreTrainedTokenizer
                     continue;
                 }
 
-                $array = array_map(fn ($x) => $x[$key], $encodedTokens);
+                $array = array_map(fn($x) => $x[$key], $encodedTokens);
 
                 $result[$key] = new Tensor($array, Tensor::int64, $shape);
             }
@@ -361,7 +370,7 @@ class PreTrainedTokenizer
             $result = [];
 
             foreach ($encodedTokens[0] as $key => $value) {
-                $result[$key] = array_map(fn ($x) => $x[$key], $encodedTokens);
+                $result[$key] = array_map(fn($x) => $x[$key], $encodedTokens);
             }
 
             // If not returning a tensor, we match the input type
@@ -388,8 +397,7 @@ class PreTrainedTokenizer
         string|null $text,
         string|null $textPair = null,
         bool        $addSpecialTokens = true
-    ): array
-    {
+    ): array {
         // Function called by users to encode possibly multiple texts
         $tokens = $this->encodeText($text);
 
@@ -443,9 +451,8 @@ class PreTrainedTokenizer
                     $x = preg_replace('/\s+/', ' ', trim($x));
                 }
 
-
                 if ($this->doLowerCaseAndRemoveAccent) {
-                    $x = TokenizerModel::lowerCaseAndRemoveAccents($x);
+                    $x = $this->lowerCaseAndRemoveAccents($x);
                 }
 
                 if ($this->normalizer !== null) {
@@ -454,8 +461,7 @@ class PreTrainedTokenizer
 
                 // If, after normalization, this section is empty (e.g., trimming whitespace),
                 // we return an empty array
-                if (mb_strlen($x) === 0)
-                {
+                if (mb_strlen($x) === 0) {
                     return [];
                 }
 
@@ -523,7 +529,7 @@ class PreTrainedTokenizer
      *
      * @return array
      */
-    public function encode(string $text, string $textPair = null, bool $addSpecialTokens = true): array
+    public function encode(string $text, ?string $textPair = null, bool $addSpecialTokens = true): array
     {
         return $this->encodePlus($text, $textPair, $addSpecialTokens)['input_ids'];
     }
@@ -537,9 +543,10 @@ class PreTrainedTokenizer
      *
      * @return string[]
      */
-    public function batchDecode(array $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
+    public function batchDecode(array|Tensor $batch, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): array
     {
-        return array_map(fn ($x) => $this->decode($x, $skipSpecialTokens, $cleanUpTokenizationSpaces), $batch);
+        if ($batch instanceof Tensor) $batch = $batch->toArray();
+        return array_map(fn($x) => $this->decode($x, $skipSpecialTokens, $cleanUpTokenizationSpaces), $batch);
     }
 
     /**
@@ -554,6 +561,7 @@ class PreTrainedTokenizer
     public function decode(array $tokenIds, bool $skipSpecialTokens = false, ?bool $cleanUpTokenizationSpaces = null): string
     {
         if (empty($tokenIds) || !is_int($tokenIds[0])) {
+            $this->logger->error('decode called with invalid input', ['token_ids' => $tokenIds]);
             throw new Exception("token_ids must be a non-empty array of integers.");
         }
 
@@ -574,7 +582,7 @@ class PreTrainedTokenizer
         $tokens = $this->model->convertIdsToTokens($tokenIds);
 
         if ($skipSpecialTokens) {
-            $tokens = array_values(array_filter($tokens, fn ($x) => !in_array($x, $this->specialTokens)));
+            $tokens = array_values(array_filter($tokens, fn($x) => !in_array($x, $this->specialTokens)));
         }
 
         // If `this.decoder` is null, we just join tokens with a space:
@@ -591,7 +599,6 @@ class PreTrainedTokenizer
                 $decoded = rtrim($decoded);
             }
         }
-
 
         if ($cleanUpTokenizationSpaces ?? $this->cleanUpTokenizationSpaces) {
             $decoded = TokenizerModel::cleanUpTokenization($decoded);
@@ -643,9 +650,8 @@ class PreTrainedTokenizer
         bool    $padding = false,
         bool    $truncation = false,
         ?int    $maxLength = null,
-        bool $returnTensor = true
-    ): string|array
-    {
+        bool    $returnTensor = true
+    ): string|array {
         $chatTemplate ??= $this->chatTemplate ?? $this->getDefaultChatTemplate();
 
         // Compilation function uses a cache to avoid recompiling the same template
@@ -686,11 +692,35 @@ class PreTrainedTokenizer
 
     protected function getDefaultChatTemplate(): string
     {
-        //        if (!$this->warnedAboutChatTemplate) {
-        //            trigger_error("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.", E_USER_WARNING);
-        //            $this->warnedAboutChatTemplate = true;
-        //        }
+        if (!$this->warnedAboutChatTemplate) {
+            $this->logger->warning("The default chat template is deprecated and will be removed in a future version. Please use the `chat_template` option instead.");
+            $this->warnedAboutChatTemplate = true;
+        }
 
         return $this->defaultChatTemplate;
+    }
+
+    /**
+     * Helper function to lowercase a string and remove accents.
+     *
+     * @param string $text The text to lowercase and remove accents from.
+     *
+     * @return string The text with accents removed and lowercased.
+     */
+    protected function lowerCaseAndRemoveAccents(string $text): string
+    {
+        return mb_strtolower($this->removeAccents($text));
+    }
+
+    /**
+     * Helper function to remove accents from a string.
+     *
+     * @param string $text The text to remove accents from.
+     *
+     * @return string The text with accents removed.
+     */
+    protected function removeAccents(string $text): string
+    {
+        return preg_replace('/[\x{0300}-\x{036f}]/u', '', $text);
     }
 }

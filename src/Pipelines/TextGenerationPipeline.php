@@ -2,16 +2,14 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Pipelines;
 
+use Codewithkyrian\Transformers\Configs\GenerationConfig;
 use Codewithkyrian\Transformers\Generation\Streamers\Streamer;
-use Codewithkyrian\Transformers\Utils\GenerationConfig;
+
 use function Codewithkyrian\Transformers\Utils\array_every;
 use function Codewithkyrian\Transformers\Utils\array_pop_key;
 use function Codewithkyrian\Transformers\Utils\array_keys_to_snake_case;
-use function Codewithkyrian\Transformers\Utils\camelCaseToSnakeCase;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
 
 /**
  * Language generation pipeline using any `ModelWithLMHead` or `ModelForCausalLM`.
@@ -104,19 +102,20 @@ class TextGenerationPipeline extends Pipeline
             truncation: true
         );
 
-        $streamer?->setTokenizer($this->tokenizer)?->setPromptTokens($inputIds[0]->toArray());
+        $streamer?->setTokenizer($this->tokenizer);
 
-        $outputTokenIds = $this->model->generate($inputIds,
+        $outputTokenIds = $this->model->generate(
+            inputs: $inputIds,
             generationConfig: $generationConfig,
-            inputsAttentionMask: $attentionMask,
-            streamer: $streamer
+            streamer: $streamer,
+            attentionMask: $attentionMask
         );
 
         $decoded = $this->tokenizer->batchDecode($outputTokenIds, skipSpecialTokens: true);
 
         $promptLengths = null;
         if (!$returnFullText && $inputIds->shape()[count($inputIds->shape()) - 1] > 0) {
-            $promptLengths = array_map(fn($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds->toArray(), skipSpecialTokens: true));
+            $promptLengths = array_map(fn($x) => mb_strlen($x), $this->tokenizer->batchDecode($inputIds, skipSpecialTokens: true));
         }
 
         $toReturn = array_fill(0, count($inputs), []);
@@ -142,7 +141,6 @@ class TextGenerationPipeline extends Pipeline
         }
 
         return (!$isBatched && count($toReturn) === 1) ? $toReturn[0] : $toReturn;
-
     }
 
     // Detect chat mode
@@ -150,5 +148,4 @@ class TextGenerationPipeline extends Pipeline
     {
         return is_array($x) && array_every($x, fn($item) => isset($item['role']) && isset($item['content']));
     }
-
 }

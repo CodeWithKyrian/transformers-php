@@ -24,11 +24,15 @@ class MinNewTokensLengthLogitsProcessor extends LogitsProcessor
      */
     public function __invoke(array $inputIds, Tensor $logits): Tensor
     {
-        $newTokensLength = count($inputIds) - $this->promptLengthToSkip;
+        for ($i = 0; $i < count($inputIds); $i++) {
+            $newTokensLength = count($inputIds[$i]) - $this->promptLengthToSkip;
 
-        if ($newTokensLength < $this->minNewTokens) {
-            foreach ($this->eosTokenId as $eosTokenId) {
-                $logits->buffer()[$eosTokenId] = -INF;
+            if ($newTokensLength < $this->minNewTokens) {
+                $batchLogits = $logits[$i];
+                
+                foreach ($this->eosTokenId as $eosTokenId) {
+                    $batchLogits->buffer()[$eosTokenId] = -INF;
+                }
             }
         }
 

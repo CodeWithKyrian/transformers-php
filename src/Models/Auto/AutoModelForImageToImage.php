@@ -5,13 +5,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForImageToImage extends PretrainedMixin
+class AutoModelForImageToImage extends AutoModelBase
 {
-    const MODEL_CLASS_MAPPING = [
+    const MODELS = [
         'swin2sr' => \Codewithkyrian\Transformers\Models\Pretrained\Swin2SRForImageSuperResolution::class,
-    ];
-
-    const MODEL_CLASS_MAPPINGS = [
-        self::MODEL_CLASS_MAPPING,
     ];
 }

@@ -43,6 +43,7 @@ class AutoTokenizer
         'CodeGenTokenizer' => CodeGenTokenizer::class,
         'CLIPTokenizer' => CLIPTokenizer::class,
         'SiglipTokenizer' => SiglipTokenizer::class,
+        'SiglipTokenizer' => SiglipTokenizer::class,
         // 'MarianTokenizer' => MarianTokenizer::class,
         'BloomTokenizer' => BloomTokenizer::class,
         'NllbTokenizer' => NllbTokenizer::class,
@@ -92,8 +93,7 @@ class AutoTokenizer
         string    $revision = 'main',
         mixed     $legacy = null,
         ?callable $onProgress = null
-    ): ?PreTrainedTokenizer
-    {
+    ): ?PreTrainedTokenizer {
         ['tokenizerJson' => $tokenizerJson, 'tokenizerConfig' => $tokenizerConfig] =
             TokenizerModel::load($modelNameOrPath, $cacheDir, $revision, $legacy, $onProgress);
 
@@ -106,7 +106,8 @@ class AutoTokenizer
         $cls = self::TOKENIZER_CLASS_MAPPING[$tokenizerClassName] ?? null;
 
         if ($cls == null) {
-            Transformers::getLogger()?->warning("Unknown tokenizer class $tokenizerClassName. Using PreTrainedTokenizer.");
+            $logger = Transformers::getLogger();
+            $logger->warning("Unknown tokenizer class $tokenizerClassName. Using PreTrainedTokenizer.");
 
             $cls = PreTrainedTokenizer::class;
         }

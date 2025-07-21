@@ -11,28 +11,28 @@
     "php",
     "codewithkyrian"
   ],
-  "type": "library",
+  "type": "platform-package",
   "require": {
     "php": "^8.1",
     "ext-ffi": "*",
-    "psr/log": "^1.1.3|^2.0|^3.0",
-    "codewithkyrian/jinja-php": "^1.0",
-    "codewithkyrian/transformers-libsloader": "^2.0",
+    "codewithkyrian/jinja-php": "^2.0",
+    "codewithkyrian/platform-package-installer": "^1.0",
     "imagine/imagine": "^1.3",
-    "rindow/rindow-math-matrix": "^2.0",
-    "rindow/rindow-matlib-ffi": "^1.0",
+    "psr/log": "^1.1 || ^2.0 || ^3.0",
+    "rindow/rindow-math-matrix": "^2.1",
+    "rindow/rindow-matlib-ffi": "^1.1",
     "rindow/rindow-openblas-ffi": "^1.0",
-    "symfony/console": "^6.4|^7.0",
-    "rokka/imagine-vips": "^0.31.0"
+    "rokka/imagine-vips": "^0.40",
+    "symfony/console": "^6.4|^7.0"
   },
   "require-dev": {
-    "pestphp/pest": "^2.31",
-    "symfony/var-dumper": "^7.0"
+    "ffi/var-dumper": "^1.0",
+    "pestphp/pest": "^2.36.0|^3.5.0",
+    "symfony/var-dumper": "^6.4.11|^7.1.5"
   },
   "suggest": {
     "ext-imagick": "Required to use the Imagick Driver for image processing",
-    "ext-gd": "Required to use the GD Driver for image processing",
-    "rokka/imagine-vips": "Required to use the VIPS Driver for image processing"
+    "ext-gd": "Required to use the GD Driver for image processing"
   },
   "license": "Apache-2.0",
   "autoload": {
@@ -51,9 +51,10 @@
     }
   ],
   "config": {
+    "sort-packages": true,
     "allow-plugins": {
       "pestphp/pest-plugin": true,
-      "codewithkyrian/transformers-libsloader": true
+      "codewithkyrian/platform-package-installer": true
     }
   },
   "bin": [
@@ -61,13 +62,20 @@
   ],
   "scripts": {
     "test": "vendor/bin/pest",
-    "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage",
-    "post-install-cmd": "Codewithkyrian\\Transformers\\Utils\\LibsChecker::check",
-    "post-update-cmd": "Codewithkyrian\\Transformers\\Utils\\LibsChecker::check"
+    "test:coverage": "XDEBUG_MODE=coverage ./vendor/bin/pest --coverage"
   },
   "archive": {
     "exclude": [
       "/docs"
     ]
+  },
+  "extra": {
+    "platform-urls": {
+      "linux-x86_64": "https://github.com/codewithkyrian/transformers-php/releases/download/{version}/dist-linux-x86_64.tar.gz",
+      "linux-arm64": "https://github.com/codewithkyrian/transformers-php/releases/download/{version}/dist-linux-arm64.tar.gz",
+      "darwin-x86_64": "https://github.com/codewithkyrian/transformers-php/releases/download/{version}/dist-darwin-x86_64.tar.gz",
+      "darwin-arm64": "https://github.com/codewithkyrian/transformers-php/releases/download/{version}/dist-darwin-arm64.tar.gz",
+      "windows-x86_64": "https://github.com/codewithkyrian/transformers-php/releases/download/{version}/dist-windows-x86_64.zip"
+    }
   }
 }

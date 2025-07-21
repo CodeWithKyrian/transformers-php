@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModel extends PretrainedMixin
+class AutoModel extends AutoModelBase
 {
-    const ENCODER_ONLY_MODEL_MAPPING = [
+    const ENCODER_ONLY_MODELS = [
         "albert" => \Codewithkyrian\Transformers\Models\Pretrained\AlbertModel::class,
         "bert" => \Codewithkyrian\Transformers\Models\Pretrained\BertModel::class,
         "distilbert" => \Codewithkyrian\Transformers\Models\Pretrained\DistilBertModel::class,
@@ -18,7 +18,7 @@ class AutoModel extends PretrainedMixin
         "clip" => \Codewithkyrian\Transformers\Models\Pretrained\CLIPModel::class,
         "vit" => \Codewithkyrian\Transformers\Models\Pretrained\ViTModel::class,
         "deit" => \Codewithkyrian\Transformers\Models\Pretrained\DeiTModel::class,
-        "siglip" => \Codewithkyrian\Transformers\Models\Pretrained\SigLipModel::class,
+        "siglip" => \Codewithkyrian\Transformers\Models\Pretrained\SiglipModel::class,
 
         "audio-spectrogram-transformer" => \Codewithkyrian\Transformers\Models\Pretrained\ASTModel::class,
         "wav2vec2" => \Codewithkyrian\Transformers\Models\Pretrained\Wav2Vec2Model::class,
@@ -30,38 +30,43 @@ class AutoModel extends PretrainedMixin
         'swin2sr' => \Codewithkyrian\Transformers\Models\Pretrained\Swin2SRModel::class,
     ];
 
-    const ENCODER_DECODER_MODEL_MAPPING = [
+    const ENCODER_DECODER_MODELS = [
         "t5" => \Codewithkyrian\Transformers\Models\Pretrained\T5Model::class,
         "bart" => \Codewithkyrian\Transformers\Models\Pretrained\BartModel::class,
         "m2m_100" => \Codewithkyrian\Transformers\Models\Pretrained\M2M100Model::class,
     ];
 
-    const DECODER_ONLY_MODEL_MAPPING = [
+    const DECODER_ONLY_MODELS = [
         "gpt2" => \Codewithkyrian\Transformers\Models\Pretrained\GPT2Model::class,
         "gptj" => \Codewithkyrian\Transformers\Models\Pretrained\GPTJModel::class,
         "gpt_bigcode" => \Codewithkyrian\Transformers\Models\Pretrained\GPTBigCodeModel::class,
         "codegen" => \Codewithkyrian\Transformers\Models\Pretrained\CodeGenModel::class,
         "llama" => \Codewithkyrian\Transformers\Models\Pretrained\LlamaModel::class,
         "qwen2" => \Codewithkyrian\Transformers\Models\Pretrained\Qwen2Model::class,
+        "gemma" => \Codewithkyrian\Transformers\Models\Pretrained\GemmaModel::class,
+        "gemma2" => \Codewithkyrian\Transformers\Models\Pretrained\Gemma2Model::class,
+        "gemma3" => \Codewithkyrian\Transformers\Models\Pretrained\Gemma3Model::class,
+        "qwen3" => \Codewithkyrian\Transformers\Models\Pretrained\Qwen3Model::class,
+        "phi" => \Codewithkyrian\Transformers\Models\Pretrained\PhiModel::class,
+        "phi3" => \Codewithkyrian\Transformers\Models\Pretrained\Phi3Model::class,
     ];
 
-    const MODEL_CLASS_MAPPINGS = [
-        self::ENCODER_ONLY_MODEL_MAPPING,
-        self::ENCODER_DECODER_MODEL_MAPPING,
-        self::DECODER_ONLY_MODEL_MAPPING,
+    const MODELS = [
+        ...AutoModelForZeroShotObjectDetection::MODELS,
+        ...AutoModelForObjectDetection::MODELS,
+        ...AutoModelForVision2Seq::MODELS,
+        ...AutoModelForImageClassification::MODELS,
+        ...AutoModelForQuestionAnswering::MODELS,
+        ...AutoModelForMaskedLM::MODELS,
+        ...AutoModelForCausalLM::MODELS,
+        ...AutoModelForSeq2SeqLM::MODELS,
+        ...AutoModelForTokenClassification::MODELS,
+        ...AutoModelForSequenceClassification::MODELS,
 
-        AutoModelForSequenceClassification::MODEL_CLASS_MAPPING,
-        AutoModelForTokenClassification::MODEL_CLASS_MAPPING,
-        AutoModelForSeq2SeqLM::MODEL_CLASS_MAPPING,
-        AutoModelForCausalLM::MODEL_CLASS_MAPPING,
-        AutoModelForMaskedLM::MODEL_CLASS_MAPPING,
-        AutoModelForQuestionAnswering::MODEL_CLASS_MAPPING,
-        AutoModelForImageClassification::MODEL_CLASS_MAPPING,
-        AutoModelForVision2Seq::MODEL_CLASS_MAPPING,
-        AutoModelForObjectDetection::MODEL_CLASS_MAPPING,
-        AutoModelForZeroShotObjectDetection::MODEL_CLASS_MAPPING,
+        ...self::DECODER_ONLY_MODELS,
+        ...self::ENCODER_DECODER_MODELS,
+        ...self::ENCODER_ONLY_MODELS,
     ];
-
 
     const BASE_IF_FAIL = true;
 }

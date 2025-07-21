@@ -13,20 +13,34 @@ use FFI;
 use InvalidArgumentException;
 use RuntimeException;
 use SplFixedArray;
+use Codewithkyrian\Transformers\Transformers;
+use Psr\Log\LoggerInterface;
 
 class Audio
 {
-    public function __construct(protected $sndfile, protected $sfinfo) {}
+    protected Sndfile $snd;
+    protected Samplerate $src;
 
-    public static function read(string $filename): static
+    protected $sfinfo;
+    protected $sndfile;
+
+    protected LoggerInterface $logger;
+
+    public function __construct(string $filename)
     {
-        $sfinfo = Sndfile::new('SF_INFO');
+        $this->logger = Transformers::getLogger();
+        $this->snd = new Sndfile();
+        $this->src = new Samplerate();
 
-        $sndfile = Sndfile::open($filename, Sndfile::enum('SFM_READ'), FFI::addr($sfinfo));
-
-        return new static($sndfile, $sfinfo);
+        $this->sfinfo = $this->snd->new('SF_INFO');
+        $this->sndfile = $this->snd->open($filename, $this->snd->enum('SFM_READ'), FFI::addr($this->sfinfo));
+        $this->logger->info('Audio file loaded', [
+            'file' => $filename,
+            'samplerate' => $this->sfinfo->samplerate,
+            'channels' => $this->sfinfo->channels,
+            'frames' => $this->sfinfo->frames
+        ]);
     }
-
 
     public function channels(): int
     {
@@ -53,24 +67,20 @@ class Audio
         $tensorData = '';
         $totalOutputFrames = 0;
 
-        $state = Samplerate::srcNew(Samplerate::enum('SRC_SINC_FASTEST'), $this->channels());
-
+        $state = $this->src->src_new($this->src->enum('SRC_SINC_FASTEST'), $this->channels());
         $inputSize = $chunkSize * $this->channels();
-        $inputData = Samplerate::new("float[$inputSize]");
+        $inputData = $this->src->new("float[$inputSize]");
         $outputSize = $chunkSize * $this->channels();
-        $outputData = Samplerate::new("float[$outputSize]");
+        $outputData = $this->src->new("float[$outputSize]");
 
-        $srcData = Samplerate::new('SRC_DATA');
-        $srcData->data_in = Samplerate::cast('float *', $inputData);
+        $srcData = $this->src->new('SRC_DATA');
+        $srcData->data_in = $this->src->cast('float *', $inputData);
         $srcData->output_frames = $chunkSize / $this->channels();
-        $srcData->data_out = Samplerate::cast('float *', $outputData);
+        $srcData->data_out = $this->src->cast('float *', $outputData);
         $srcData->src_ratio = $samplerate / $this->samplerate();
 
         while (true) {
-            /* Read the chunk of data */
-            $srcData->input_frames = Sndfile::readFrames($this->sndfile, $inputData, $chunkSize);
-
-            /* Add to tensor data without resample if the sample rate is the same */
+            $srcData->input_frames = $this->snd->readf_float($this->sndfile, $inputData, $chunkSize);
             if ($this->samplerate() === $samplerate) {
                 $strBuffer = FFI::string($inputData, $srcData->input_frames * $this->channels() * FFI::sizeof($inputData[0]));
                 $tensorData .= $strBuffer;
@@ -81,55 +91,63 @@ class Audio
                 continue;
             }
 
-            /* The last read will not be a full buffer, so snd_of_input. */
+            $this->logger->info('Resampling audio segment', [
+                'input_samplerate' => $this->samplerate(),
+                'output_samplerate' => $samplerate,
+                'input_frames' => $srcData->input_frames,
+                'output_frames' => $srcData->output_frames_gen
+            ]);
+
             if ($srcData->input_frames < $chunkSize) {
-                $srcData->end_of_input = Sndfile::enum('SF_TRUE');
+                $srcData->end_of_input = $this->snd->enum('SF_TRUE');
             }
 
-            /* Process current block. */
-            Samplerate::srcProcess($state, FFI::addr($srcData));
-
-            /* Terminate if done. */
+            $this->src->process($state, FFI::addr($srcData));
             if ($srcData->end_of_input && $srcData->output_frames_gen === 0) {
                 break;
             }
 
-            /* Add the processed data to the tensor data */
             $outputSize = $srcData->output_frames_gen * $this->channels() * FFI::sizeof($outputData[0]);
             $strBuffer = FFI::string($outputData, $outputSize);
             $tensorData .= $strBuffer;
             $totalOutputFrames += $srcData->output_frames_gen;
         }
 
-        Samplerate::srcDelete($state);
-
+        $this->src->delete($state);
         $audioTensor = Tensor::fromString($tensorData, Tensor::float32, [$totalOutputFrames, $this->channels()]);
 
         if ($this->channels() > 1) {
+            $this->logger->info('Averaging channels to mono', ['channels' => $this->channels()]);
             $audioTensor = $audioTensor->mean(1)->multiply(sqrt(2));
         }
 
+        $this->logger->info('Audio tensor conversion complete', ['shape' => $audioTensor->shape()]);
         return $audioTensor->squeeze();
     }
 
     public function fromTensor(Tensor $tensor): void
     {
         $size = $tensor->size();
-        $buffer = Sndfile::new("float[$size]");
+        $buffer = $this->snd->new("float[$size]");
         $bufferString = $tensor->toString();
-        $buffer->cdata = Sndfile::cast('float *', (int)$bufferString);
-
-        $write = Sndfile::writeFrames($this->sndfile, $buffer, $size);
+        $buffer->cdata = $this->snd->cast('float *', (int)$bufferString);
+        $write = $this->snd->writef_float($this->sndfile, $buffer, $size);
 
         if ($write !== $size) {
+            $this->logger->warning('Wrote fewer frames than expected to audio file', [
+                'expected' => $size,
+                'actual' => $write
+            ]);
             throw new RuntimeException("Failed to write to file");
         }
+
+        $this->logger->info('Audio tensor written to file successfully', ['frames' => $write]);
     }
 
 
     public function __destruct()
     {
-        Sndfile::close($this->sndfile);
+        $this->snd->close($this->sndfile);
     }
 
     /**
@@ -158,8 +176,7 @@ class Audio
         ?string $norm = null,
         string  $melScale = "htk",
         bool    $triangularizeInMelSpace = false
-    ): array
-    {
+    ): array {
         if ($norm !== null && $norm !== "slaney") {
             throw new InvalidArgumentException('norm must be one of null or "slaney"');
         }
@@ -173,7 +190,7 @@ class Audio
 
         if ($triangularizeInMelSpace) {
             $fft_bin_width = $samplingRate / ($nFrequencyBins * 2);
-            $fftFreqs = self::hertzToMel(array_map(fn ($i) => $i * $fft_bin_width, range(0, $nFrequencyBins - 1)), $melScale);
+            $fftFreqs = self::hertzToMel(array_map(fn($i) => $i * $fft_bin_width, range(0, $nFrequencyBins - 1)), $melScale);
             $filterFreqs = $melFreqs;
         } else {
             $fftFreqs = self::linspace(0, floor($samplingRate / 2), $nFrequencyBins);
@@ -252,13 +269,13 @@ class Audio
     private static function linspace(float $start, float $end, int $num): array
     {
         $step = ($end - $start) / ($num - 1);
-        return array_map(fn ($i) => $start + $step * $i, range(0, $num - 1));
+        return array_map(fn($i) => $start + $step * $i, range(0, $num - 1));
     }
 
     public static function hertzToMel(array|float|int $hz, string $melScale = "htk"): float|int|array
     {
         if (is_array($hz)) {
-            return array_map(fn ($i) => self::hertzToMel($i, $melScale), $hz);
+            return array_map(fn($i) => self::hertzToMel($i, $melScale), $hz);
         }
 
         if ($melScale === "htk") {
@@ -283,7 +300,7 @@ class Audio
     public static function melToHertz(array|float|int $mel, string $melScale = "htk"): float|int|array
     {
         if (is_array($mel)) {
-            return array_map(fn ($i) => self::melToHertz($i, $melScale), $mel);
+            return array_map(fn($i) => self::melToHertz($i, $melScale), $mel);
         }
 
         if ($melScale === "htk") {
@@ -314,8 +331,7 @@ class Audio
         float  $reference,
         float  $minValue,
         ?float $dbRange
-    ): Tensor
-    {
+    ): Tensor {
         if ($reference <= 0) {
             throw new InvalidArgumentException('reference must be greater than zero');
         }
@@ -327,10 +343,10 @@ class Audio
         $reference = max($minValue, $reference);
         $logReference = log10($reference);
 
-//        for ($i = 0; $i < count($spectrogram); $i++) {
-//            $spectrogram->buffer()[$i] = $factor * log10(max($minValue, $spectrogram->buffer()[$i]) - $logReference);
-//        }
-        $spectrogram->u(fn ($x) => $factor * log10(max($minValue, $x) - $logReference));
+        //        for ($i = 0; $i < count($spectrogram); $i++) {
+        //            $spectrogram->buffer()[$i] = $factor * log10(max($minValue, $spectrogram->buffer()[$i]) - $logReference);
+        //        }
+        $spectrogram->u(fn($x) => $factor * log10(max($minValue, $x) - $logReference));
 
         if ($dbRange !== null) {
             if ($dbRange <= 0) {
@@ -339,10 +355,10 @@ class Audio
 
             $maxValue = $spectrogram->max() - $dbRange;
 
-//            for ($i = 0; $i < count($spectrogram); $i++) {
-//                $spectrogram->buffer()[$i] = max($spectrogram->buffer()[$i], $maxValue);
-//            }
-            $spectrogram->u(fn ($x) => max($x, $maxValue));
+            //            for ($i = 0; $i < count($spectrogram); $i++) {
+            //                $spectrogram->buffer()[$i] = max($spectrogram->buffer()[$i], $maxValue);
+            //            }
+            $spectrogram->u(fn($x) => max($x, $maxValue));
         }
 
         return $spectrogram;
@@ -352,20 +368,19 @@ class Audio
      * Converts an amplitude spectrogram to the decibel scale. This computes `20 * log10(spectrogram / reference)`,
      *  using basic logarithm properties for numerical stability. NOTE: Operates in-place.
      *
-     * @param SplFixedArray $spectrogram The input amplitude (mel) spectrogram.
+     * @param Tensor $spectrogram The input amplitude (mel) spectrogram.
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
      *
-     * @return SplFixedArray
+     * @return Tensor
      */
     public static function amplitudeToDB(
         Tensor $spectrogram,
         float  $reference = 1.0,
         float  $minValue = 1e-5,
         ?float $dbRange = null
-    ): Tensor
-    {
+    ): Tensor {
         return self::dBConversionHelper($spectrogram, 20.0, $reference, $minValue, $dbRange);
     }
 
@@ -373,20 +388,19 @@ class Audio
      * Converts a power spectrogram (amplitude squared) to the decibel scale. This computes `10 * log10(spectrogram / reference)`,
      * using basic logarithm properties for numerical stability. NOTE: Operates in-place.
      *
-     * @param SplFixedArray $spectrogram The input power spectrogram.
+     * @param Tensor $spectrogram The input power spectrogram.
      * @param float $reference Sets the input spectrogram value that corresponds to 0 dB.
      * @param float $minValue Minimum threshold for `spectrogram` and `reference` values.
      * @param float|null $dbRange Dynamic range of the resulting decibel scale. If set, the decibel scale is compressed
      *
-     * @return SplFixedArray
+     * @return Tensor
      */
     public static function powerToDB(
         Tensor $spectrogram,
         float  $reference = 1.0,
         float  $minValue = 1e-5,
         ?float $dbRange = null
-    ): Tensor
-    {
+    ): Tensor {
         return self::dBConversionHelper($spectrogram, 10.0, $reference, $minValue, $dbRange);
     }
 
@@ -426,8 +440,9 @@ class Audio
         ?int    $maxNumFrames = null, // -1 for c
         bool    $doPad = true,
         bool    $transpose = false
-    ): Tensor
-    {
+    ): Tensor {
+        $transformersLib = new TransformersUtils();
+
         $fftLength ??= $frameLength;
         if ($frameLength > $fftLength) {
             throw new InvalidArgumentException("frameLength ($frameLength) may not be larger than fftLength ($fftLength)");
@@ -450,7 +465,7 @@ class Audio
             $halfWindow = (int)floor(($fftLength - 1) / 2) + 1;
             $paddedLength = $waveform->size() + (2 * $halfWindow);
 
-            $padded = TransformersUtils::padReflect(
+            $padded = $transformersLib->padReflect(
                 $waveform->buffer()->addr($waveform->offset()),
                 $waveform->size(),
                 $paddedLength
@@ -480,13 +495,13 @@ class Audio
         $melFilters = Tensor::fromArray($melFilters, Tensor::float32);
         $spectrogramShape = $transpose ? [$d1Max, $melFilters->count()] : [$melFilters->count(), $d1Max];
         $logMel = match ($logMel) {
-            'log' => TransformersUtils::enum('LOG_MEL_LOG'),
-            'log10' => TransformersUtils::enum('LOG_MEL_LOG10'),
-            'dB' => TransformersUtils::enum('LOG_MEL_DB'),
-            default => TransformersUtils::enum('LOG_MEL_NONE'),
+            'log' => $transformersLib->enum('LOG_MEL_LOG'),
+            'log10' => $transformersLib->enum('LOG_MEL_LOG10'),
+            'dB' => $transformersLib->enum('LOG_MEL_DB'),
+            default => $transformersLib->enum('LOG_MEL_NONE'),
         };
 
-        $spectrogram = TransformersUtils::spectrogram(
+        $spectrogram = $transformersLib->spectrogram(
             $waveform->buffer()->addr($waveform->offset()),
             $waveform->size(),
             array_product($spectrogramShape),
@@ -558,10 +573,9 @@ class Audio
         int    $windowLength,
         string $name,
         bool   $periodic = true,
-        int    $frameLength = null,
+        ?int   $frameLength = null,
         bool   $center = true
-    ): Tensor
-    {
+    ): Tensor {
 
         $length = $periodic ? $windowLength + 1 : $windowLength;
 
@@ -586,5 +600,4 @@ class Audio
 
         return $window;
     }
-
 }

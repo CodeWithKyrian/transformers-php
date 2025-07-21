@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 namespace Codewithkyrian\Transformers\Tokenizers;
 
 use Codewithkyrian\Transformers\DataStructures\CharTrie;

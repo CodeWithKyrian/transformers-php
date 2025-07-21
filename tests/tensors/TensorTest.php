@@ -263,13 +263,13 @@ describe('Statistical operations', function () {
         expect($t->mean())->toBe(3.0);
     });
 
-    it('can calculate standard deviation', function () {
-        $t = new Tensor([1.0, 2.0, 3.0, 4.0, 5.0]);
-        [$std, $mean] = $t->stdMean();
-
-        expect($std)->toEqualWithDelta(1.4142, 1e-4)
-            ->and($mean)->toEqualWithDelta(3.0, 1e-4);
-    })->todo();
+//    it('can calculate standard deviation', function () {
+//        $t = new Tensor([1.0, 2.0, 3.0, 4.0, 5.0]);
+//        [$std, $mean] = $t->stdMean();
+//
+//        expect($std)->toEqualWithDelta(1.4142, 1e-4)
+//            ->and($mean)->toEqualWithDelta(3.0, 1e-4);
+//    })->todo();
 
     it('can calculate cosine similarity', function () {
         $t1 = new Tensor([1.0, 2.0, 3.0]);

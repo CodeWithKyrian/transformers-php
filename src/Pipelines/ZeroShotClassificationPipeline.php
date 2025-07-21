@@ -10,7 +10,7 @@ use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Math;
-use function Codewithkyrian\Transformers\Utils\timeUsage;
+use Codewithkyrian\Transformers\Transformers;
 
 /**
  * NLI-based zero-shot classification pipeline using any model that has been fine-tuned on NLI (natural language inference)
@@ -68,14 +68,16 @@ class ZeroShotClassificationPipeline extends Pipeline
 
         $this->entailmentId = $this->label2id['entailment'] ?? null;
 
+        $logger = Transformers::getLogger();
+
         if ($this->entailmentId === null) {
-            Transformers::getLogger()?->warning("Could not find 'entailment' in label2id mapping. Using 2 as entailment_id.");
+            $logger->warning("Could not find 'entailment' in label2id mapping. Using 2 as entailment_id.");
             $this->entailmentId = 2;
         }
 
         $this->contradictionId = $this->label2id['contradiction'] ?? $this->label2id['not_entailment'] ?? null;
         if ($this->contradictionId === null) {
-            Transformers::getLogger()?->warning("Could not find 'contradiction' in label2id mapping. Using 0 as contradiction_id.");
+            $logger->warning("Could not find 'contradiction' in label2id mapping. Using 0 as contradiction_id.");
             $this->contradictionId = 0;
         }
     }
@@ -121,7 +123,6 @@ class ZeroShotClassificationPipeline extends Pipeline
                 } else {
                     $entailsLogits[] = $outputs->logits->buffer()[$this->entailmentId];
                 }
-
             }
 
             $scores = $softmaxEach

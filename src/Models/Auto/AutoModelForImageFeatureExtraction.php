@@ -5,16 +5,10 @@ declare(strict_types=1);
 
 namespace Codewithkyrian\Transformers\Models\Auto;
 
-class AutoModelForImageFeatureExtraction extends PretrainedMixin
+class AutoModelForImageFeatureExtraction extends AutoModelBase
 {
-    const MODEL_CLASS_MAPPING = [
+    const MODELS = [
         'clip' => \Codewithkyrian\Transformers\Models\Pretrained\CLIPVisionModelWithProjection::class,
         'siglip' => \Codewithkyrian\Transformers\Models\Pretrained\SiglipVisionModel::class,
-    ];
-
-    const MODEL_CLASS_MAPPINGS = [
-        self::MODEL_CLASS_MAPPING,
-        AutoModel::ENCODER_ONLY_MODEL_MAPPING,
-        AutoModel::DECODER_ONLY_MODEL_MAPPING,
     ];
 }
