@@ -640,7 +640,7 @@ class PreTrainedTokenizer
      * @param bool $truncation Whether to truncate the returned token ids.
      * @param ?int $maxLength The maximum length to pad/truncate the returned token ids.
      *
-     * @return string|int[]|int[][] The token ids or string, depending on the value of `tokenize`.
+     * @return string|int[]|int[][]|Tensor The token ids or string, depending on the value of `tokenize`.
      */
     public function applyChatTemplate(
         array   $conversation,
@@ -651,7 +651,7 @@ class PreTrainedTokenizer
         bool    $truncation = false,
         ?int    $maxLength = null,
         bool    $returnTensor = true
-    ): string|array {
+    ): string|array|Tensor {
         $chatTemplate ??= $this->chatTemplate ?? $this->getDefaultChatTemplate();
 
         // Compilation function uses a cache to avoid recompiling the same template
