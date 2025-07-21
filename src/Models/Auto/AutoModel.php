@@ -52,20 +52,20 @@ class AutoModel extends AutoModelBase
     ];
 
     const MODELS = [
-        ...self::ENCODER_ONLY_MODELS,
-        ...self::ENCODER_DECODER_MODELS,
-        ...self::DECODER_ONLY_MODELS,
-
-        ...AutoModelForSequenceClassification::MODELS,
-        ...AutoModelForTokenClassification::MODELS,
-        ...AutoModelForSeq2SeqLM::MODELS,
-        ...AutoModelForCausalLM::MODELS,
-        ...AutoModelForMaskedLM::MODELS,
-        ...AutoModelForQuestionAnswering::MODELS,
-        ...AutoModelForImageClassification::MODELS,
-        ...AutoModelForVision2Seq::MODELS,
-        ...AutoModelForObjectDetection::MODELS,
         ...AutoModelForZeroShotObjectDetection::MODELS,
+        ...AutoModelForObjectDetection::MODELS,
+        ...AutoModelForVision2Seq::MODELS,
+        ...AutoModelForImageClassification::MODELS,
+        ...AutoModelForQuestionAnswering::MODELS,
+        ...AutoModelForMaskedLM::MODELS,
+        ...AutoModelForCausalLM::MODELS,
+        ...AutoModelForSeq2SeqLM::MODELS,
+        ...AutoModelForTokenClassification::MODELS,
+        ...AutoModelForSequenceClassification::MODELS,
+
+        ...self::DECODER_ONLY_MODELS,
+        ...self::ENCODER_DECODER_MODELS,
+        ...self::ENCODER_ONLY_MODELS,
     ];
 
     const BASE_IF_FAIL = true;

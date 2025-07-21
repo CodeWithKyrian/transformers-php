@@ -6,16 +6,20 @@ namespace Codewithkyrian\Transformers\Pipelines;
 
 use Codewithkyrian\Transformers\Models\Auto\AutoModel;
 use Codewithkyrian\Transformers\Processors\AutoProcessor;
+use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Image;
+use Codewithkyrian\Transformers\Utils\ImageDriver;
 
 require_once './bootstrap.php';
 
 ini_set('memory_limit', '-1');
 
+Transformers::setup()->setImageDriver(ImageDriver::GD);
+
 $processor = AutoProcessor::fromPretrained('Xenova/yolov9-c_all');
 $model = AutoModel::fromPretrained('Xenova/yolov9-c_all');
 
-$image = Image::read(__DIR__.'/../images/multitask.png');
+$image = Image::read(__DIR__ . '/../images/multitask.png');
 
 $inputs = $processor($image);
 
@@ -42,10 +46,10 @@ $fontSize = 10;
 $fontScalingFactor = 0.75;
 $fontFile = '/Users/Kyrian/Library/Fonts/JosefinSans-Bold.ttf';
 $labelBoxHeight = $fontSize * 2 * $fontScalingFactor;
-$colors = array_map(fn () => sprintf('#%06x', mt_rand(0, 0xFFFFFF)), range(0, count($boxes) - 1));
+$colors = array_map(fn() => sprintf('#%06x', mt_rand(0, 0xFFFFFF)), range(0, count($boxes) - 1));
 
 foreach ($boxes as $box) {
-    $detectionLabel = $box['label'].'  '.round($box['score'], 2);
+    $detectionLabel = $box['label'] . '  ' . round($box['score'], 2);
     $color = $colors[array_search($box, $boxes)];
 
     $image = $image
@@ -69,4 +73,4 @@ foreach ($boxes as $box) {
         );
 }
 
-$image->save(__DIR__.'/../images/corgi-detected.jpg');
+$image->save(__DIR__ . '/../images/corgi-detected.jpg');
