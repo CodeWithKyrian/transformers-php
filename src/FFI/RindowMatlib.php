@@ -30,6 +30,6 @@ class RindowMatlib extends NativeLibrary
 
     protected function getLibraryVersion(): string
     {
-        return '1.1.0';
+        return '1.1.1';
     }
-} 
+}
