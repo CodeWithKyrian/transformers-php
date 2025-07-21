@@ -2,6 +2,55 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## v0.6.0 - 2025-07-21
+
+### What’s Changed
+
+- Add support for stopping criteria: `MaxLength`, `MaxTime`, and `Interruptable` for more flexible generation control.
+- Add PSR-3 logging support
+- Extend `PretrainedConfig` to reduce code repetition across model files and improve maintainability.
+- Restructure `AutoModel` resolution to prioritize generic model selection when no task-specific class is found.
+- Add support for new model families: `Gemma`, `Gemma2`, `Gemma3`, `Qwen3`, and `Phi3`, with their respective causal language models.
+- Add support for `eos` and `last_token` pooling strategies in the `FeatureExtractionPipeline`.
+- Add support for new merge format in `BPEModel` with better compatibility via JSON-encoded token pair mapping.
+- Introduce `PretrainedModel::$sessions `array to streamline model session handling across subclasses.
+- Simplify streamer implementation to improve clarity and flexibility.
+- Enhance image processing methods and VIPS integration.
+- Convert to a platform package with native shared library support for Linux, macOS, and Windows (x86_64 and ARM64).
+- Introduce dynamic shared library loading with platform-specific path resolution logic.
+- Update example configurations, docs, and usage instructions to reflect new architecture.
+- Add tests for image utilities and inference session logic.
+
+### Bug Fixes
+
+- Fix `Tensor::slice()` error during generation.
+- Fix logic in `RepetitionPenaltyLogitsProcessor` to properly apply penalties based on generated tokens.
+- Fix compatibility issues with PHP 8.1 and adjust dependency versions accordingly.
+- Fix bug in `HubTest` for Windows paths by using `DIRECTORY_SEPARATOR`.
+- Fix edge case in `BPEModel` when null value encountered in merge map.
+- Fix various doc inconsistencies and default constructor bugs in model subclasses.
+
+### Improvements
+
+- Refactor library architecture for improved platform compatibility and modularity.
+- Refactor `Samplerate`, `Sndfile`, and other FFI wrappers to use instance-based invocation.
+- Improve generation configuration merging logic and model resolution flow.
+- Unify code style across components and improve clarity of core components.
+- Update shared native dependencies:
+  - onnxruntime → 1.21.0
+  - rindowmatlib → 1.1.1
+  
+- Clean up feature extractors and consolidate model session logic.
+- Improve error handling in FFI calls and utility classes.
+- Rename internal config and model mapping classes for better clarity (`PretrainedMixin` → `AutoModelBase`, etc.)
+
+### New Contributors
+
+* @panariga made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/73
+* @Deltachaos made their first contribution in https://github.com/CodeWithKyrian/transformers-php/pull/77
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.5.3...0.6.0
+
 ## TransformersPHP v0.5.3 - 2024-09-27
 
 This release brings new features, critical bug fixes, and improvements to enhance the functionality and performance of the package. Below is a summary of the changes.
@@ -84,6 +133,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   
   
   
+  
     ```
 - **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
   
@@ -95,6 +145,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     // [
     //   "text" => "We, the people of the United States, ..."
     // ]
+    
     
     
     
@@ -114,6 +165,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     $image = Image::read($url);
   $resizedImage = $image->resize(100, 100);
   // $image remains unchanged
+  
   
   
   
@@ -288,11 +340,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -319,6 +373,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
