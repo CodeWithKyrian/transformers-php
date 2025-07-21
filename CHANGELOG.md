@@ -2,6 +2,16 @@
 
 All notable changes to `transformers-php` will be documented in this file.
 
+## 0.6.1 - 2025-07-21
+
+### What's New
+
+- feat: update Rindow Matlib macOS binaries for ARM64 and x86_64 architectures
+- fix: update darwin platform directory names
+- chore(ci): clean up distribution directory after artifact creation in release workflow
+
+**Full Changelog**: https://github.com/CodeWithKyrian/transformers-php/compare/0.6.0...0.6.1
+
 ## v0.6.0 - 2025-07-21
 
 ### What’s Changed
@@ -33,16 +43,24 @@ All notable changes to `transformers-php` will be documented in this file.
 ### Improvements
 
 - Refactor library architecture for improved platform compatibility and modularity.
+  
 - Refactor `Samplerate`, `Sndfile`, and other FFI wrappers to use instance-based invocation.
+  
 - Improve generation configuration merging logic and model resolution flow.
+  
 - Unify code style across components and improve clarity of core components.
+  
 - Update shared native dependencies:
+  
   - onnxruntime → 1.21.0
   - rindowmatlib → 1.1.1
   
 - Clean up feature extractors and consolidate model session logic.
+  
 - Improve error handling in FFI calls and utility classes.
+  
 - Rename internal config and model mapping classes for better clarity (`PretrainedMixin` → `AutoModelBase`, etc.)
+  
 
 ### New Contributors
 
@@ -134,6 +152,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
   
   
   
+  
     ```
 - **New Pipeline: Automatic Speech Recognition (ASR)** - Supports models like `wav2vec` and `whisper` for transcribing speech to text. If a specific model is not officially supported, please open an issue with a feature request.
   
@@ -145,6 +164,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     // [
     //   "text" => "We, the people of the United States, ..."
     // ]
+    
     
     
     
@@ -165,6 +185,7 @@ I'm excited to announce the latest version of TransformersPHP, packed with new f
     $image = Image::read($url);
   $resizedImage = $image->resize(100, 100);
   // $image remains unchanged
+  
   
   
   
@@ -341,11 +362,13 @@ composer require codewithkyrian/transformers
 
 
 
+
 ```
 And you must initialize the library to download neccesary libraries for ONNX
 
 ```bash
 ./vendor/bin/transformers install
+
 
 
 
@@ -373,6 +396,7 @@ To ensure a smooth user experience, especially with larger models, we recommend 
 
 ```bash
 ./vendor/bin/transformers download <model_identifier>
+
 
 
 
