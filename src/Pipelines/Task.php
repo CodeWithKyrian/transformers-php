@@ -151,61 +151,50 @@ enum Task: string
         };
     }
 
-    public function autoModel(
-        string    $modelNameOrPath,
-        bool      $quantized = true,
-        ?array    $config = null,
-        ?string   $cacheDir = null,
-        string    $revision = 'main',
-        ?string   $modelFilename = null,
-        ?callable $onProgress = null
-    ): PretrainedModel
+    /**
+     * @return class-string<PretrainedModel>|array<class-string<PretrainedModel>>
+     */
+    public function autoModelClass(): string|array
     {
         return match ($this) {
             self::SentimentAnalysis,
             self::TextClassification,
-            self::ZeroShotClassification => AutoModelForSequenceClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ZeroShotClassification => AutoModelForSequenceClassification::class,
 
-            self::FillMask => AutoModelForMaskedLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::FillMask => AutoModelForMaskedLM::class,
 
-            self::QuestionAnswering => AutoModelForQuestionAnswering::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::QuestionAnswering => AutoModelForQuestionAnswering::class,
 
             self::FeatureExtraction,
-            self::Embeddings => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::Embeddings => AutoModel::class,
 
             self::Text2TextGeneration,
             self::Translation,
-            self::Summarization => AutoModelForSeq2SeqLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::Summarization => AutoModelForSeq2SeqLM::class,
 
-            self::TextGeneration => AutoModelForCausalLM::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::TextGeneration => AutoModelForCausalLM::class,
 
             self::TokenClassification,
-            self::Ner => AutoModelForTokenClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::Ner => AutoModelForTokenClassification::class,
 
-            self::ImageToText => AutoModelForVision2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ImageToText => AutoModelForVision2Seq::class,
 
-            self::ImageClassification => AutoModelForImageClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ImageClassification => AutoModelForImageClassification::class,
 
-            self::ImageFeatureExtraction => AutoModelForImageFeatureExtraction::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ImageFeatureExtraction => [AutoModelForImageFeatureExtraction::class, AutoModel::class],
 
-            self::ZeroShotImageClassification => AutoModel::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ZeroShotImageClassification => AutoModel::class,
 
-            self::ImageToImage => AutoModelForImageToImage::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ImageToImage => AutoModelForImageToImage::class,
 
-            self::ObjectDetection => AutoModelForObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ObjectDetection => AutoModelForObjectDetection::class,
 
-            self::ZeroShotObjectDetection => AutoModelForZeroShotObjectDetection::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::ZeroShotObjectDetection => AutoModelForZeroShotObjectDetection::class,
 
-            self::AudioClassification => AutoModelForAudioClassification::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress),
+            self::AudioClassification => AutoModelForAudioClassification::class,
 
             self::ASR,
-            self::AutomaticSpeechRecognition => (function () use ($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress) {
-                try {
-                    return AutoModelForSpeechSeq2Seq::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
-                } catch (UnsupportedModelTypeException) {
-                    return AutoModelForCTC::fromPretrained($modelNameOrPath, $quantized, $config, $cacheDir, $revision, $modelFilename, $onProgress);
-                }
-            })(),
+            self::AutomaticSpeechRecognition => [AutoModelForSpeechSeq2Seq::class, AutoModelForCTC::class],
         };
     }
 
@@ -214,8 +203,7 @@ enum Task: string
         ?string   $cacheDir = null,
         string    $revision = 'main',
         ?callable $onProgress = null
-    ): ?PreTrainedTokenizer
-    {
+    ): ?PreTrainedTokenizer {
         return match ($this) {
 
             self::ImageClassification,
@@ -252,8 +240,7 @@ enum Task: string
         ?string   $cacheDir = null,
         string    $revision = 'main',
         ?callable $onProgress = null
-    ): ?Processor
-    {
+    ): ?Processor {
         return match ($this) {
 
             self::ImageToText,
