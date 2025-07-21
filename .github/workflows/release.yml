@@ -92,7 +92,7 @@ jobs:
             tar -czvf "dist-${{ matrix.platform }}.tar.gz" "$DIST_DIR"
             ARTIFACT_EXT="tar.gz"
           fi
-          
+          rm -rf "$DIST_DIR"
           echo "Artifact created: dist-${{ matrix.platform }}.$ARTIFACT_EXT"
 
       - name: Upload Artifact to Release
