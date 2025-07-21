@@ -1,0 +1,170 @@
+name: Create Platform-Specific Artifacts
+
+permissions:
+  contents: write
+  packages: read
+
+on:
+  release:
+    types: [ published ]
+
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to build artifacts for'
+        required: false
+        type: string
+
+jobs:
+  prepare-artifacts:
+    runs-on: ubuntu-latest
+
+    outputs:
+      platforms: ${{ steps.generate-matrix.outputs.platforms }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_tag || github.ref }}
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Generate Build Matrix
+        id: generate-matrix
+        run: |
+          # Extract platforms from platforms.yml
+          platforms=$(yq -o=json 'keys' platforms.yml)
+          echo "platforms=$(echo $platforms | jq -c '. | map(split("/")[0]) | unique')" >> $GITHUB_OUTPUT
+
+  build-artifacts:
+    needs: prepare-artifacts
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: ${{ fromJson(needs.prepare-artifacts.outputs.platforms) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_tag || github.ref }}
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Create Platform-Specific Artifact
+        run: |
+          # Prepare exclusion list
+          if [ -f ".gitignore" ]; then
+            cp .gitignore rsync_exclude.txt
+          else
+            touch rsync_exclude.txt
+          fi
+          
+          # Add platform-specific exclusions from platforms.yml
+          echo "" >> rsync_exclude.txt
+          yq e ".\"${{ matrix.platform }}\".exclude[]" platforms.yml >> rsync_exclude.txt
+          
+          # Add standard exclusions
+          echo ".git" >> rsync_exclude.txt
+          echo ".github" >> rsync_exclude.txt
+          echo "rsync_exclude.txt" >> rsync_exclude.txt
+          
+          # Copy files using rsync with exclusions
+          DIST_DIR="dist-${{ matrix.platform }}"
+          mkdir -p "$DIST_DIR"
+          echo "$DIST_DIR" >> rsync_exclude.txt
+          rsync -av --exclude-from=rsync_exclude.txt ./ "$DIST_DIR"/
+          
+          # Compress artifact
+          if [[ "${{ matrix.platform }}" == windows-* ]]; then
+            zip -r "dist-${{ matrix.platform }}.zip" "$DIST_DIR"
+            ARTIFACT_EXT="zip"
+          else
+            tar -czvf "dist-${{ matrix.platform }}.tar.gz" "$DIST_DIR"
+            ARTIFACT_EXT="tar.gz"
+          fi
+          
+          echo "Artifact created: dist-${{ matrix.platform }}.$ARTIFACT_EXT"
+
+      - name: Upload Artifact to Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist-*
+
+      - name: Upload Artifact to Artifact Hub
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: dist-*
+          retention-days: 1
+
+  create-release-metadata:
+    needs: [ prepare-artifacts, build-artifacts ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_tag || github.ref }}
+
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Generate Platform URLs Metadata
+        run: |
+          # Prepare variables
+          RELEASE_TAG="${{ github.event.inputs.release_tag || github.ref }}"
+          REPO="${{ github.repository }}"
+
+          # Start JSON structure
+          echo "{" > platform-urls.json
+          echo '  "platform-urls": {' >> platform-urls.json
+
+          # Generate URLs for each platform
+          FIRST=true
+          platforms=$(yq -o=json 'keys' platforms.yml | jq -r '.[]')
+          for platform in $platforms; do
+          if [ "$FIRST" = true ]; then
+           FIRST=false
+          else
+           echo "," >> platform-urls.json
+          fi
+          
+          # Determine file extension
+          if [[ "$platform" == windows-* ]]; then
+           EXT="zip"
+          else
+           EXT="tar.gz"
+          fi
+          
+          # Generate URL
+          printf '    "%s": "https://github.com/%s/releases/download/%s/dist-%s.%s"' \
+           "$platform" "$REPO" "$RELEASE_TAG" "$platform" "$EXT" >> platform-urls.json
+          done
+
+          # Close JSON structure
+          echo "" >> platform-urls.json
+          echo '  }' >> platform-urls.json
+          echo "}" >> platform-urls.json
+
+          cat platform-urls.json
+
+      - name: Upload Platform URLs Metadata
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: platform-urls.json
