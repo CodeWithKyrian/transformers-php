@@ -10,7 +10,6 @@ use Codewithkyrian\Transformers\Models\Pretrained\PretrainedModel;
 use Codewithkyrian\Transformers\PreTrainedTokenizers\PreTrainedTokenizer;
 use Codewithkyrian\Transformers\Transformers;
 use Codewithkyrian\Transformers\Utils\Math;
-use Codewithkyrian\Transformers\Transformers;
 
 /**
  * NLI-based zero-shot classification pipeline using any model that has been fine-tuned on NLI (natural language inference)
