@@ -12,7 +12,9 @@ $application = new Application();
 try {
     $application->setName('Transformers PHP CLI');
 
-    $application->addCommand(new Codewithkyrian\Transformers\Commands\DownloadModelCommand());
+    // TODO: remove when upgrading to Symfony 8.0 where `addCommand` will be the only option
+    $addCommandMethodName = method_exists($application, 'addCommand') ? 'addCommand' : 'add';
+    $application->$addCommandMethodName(new Codewithkyrian\Transformers\Commands\DownloadModelCommand());
 
     $application->run();
 } catch (Exception $e) {
