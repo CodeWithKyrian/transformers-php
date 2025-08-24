@@ -26,7 +26,7 @@ class ByteLevelPostProcessor extends PostProcessor
      * @param bool $addSpecialTokens Whether to add the special tokens associated with the corresponding model.
      * @return PostProcessedOutput
      */
-    public function postProcess(array $tokens, array $tokenPair = null,  bool $addSpecialTokens = true): PostProcessedOutput
+    public function postProcess(array $tokens, ?array $tokenPair = null, bool $addSpecialTokens = true): PostProcessedOutput
     {
         if ($tokenPair !== null) {
             $tokens = array_merge($tokens, $tokenPair);

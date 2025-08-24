@@ -61,10 +61,10 @@ class Tensor implements NDArray, Countable, Serializable, IteratorAggregate
     protected bool $portableSerializeMode = false;
 
     public function __construct(
-        mixed $array = null,
-        int   $dtype = null,
-        array $shape = null,
-        int   $offset = null,
+        mixed  $array = null,
+        ?int   $dtype = null,
+        ?array $shape = null,
+        ?int   $offset = null,
     ) {
         if ($array === null && $dtype === null && $shape === null && $offset === null) {
             // Empty definition for Unserialize

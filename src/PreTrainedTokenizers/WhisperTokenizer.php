@@ -409,7 +409,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
      * @throws Exception If there is a bug within the function.
      * @private
      */
-    private function findLongestCommonSequence(array $sequences, array $tokenTimestampSequences = null): array
+    private function findLongestCommonSequence(array $sequences, ?array $tokenTimestampSequences = null): array
     {
         $leftSequence = $sequences[0];
         $leftLength = count($leftSequence);
@@ -501,7 +501,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
      */
     private function combineTokensIntoWords(
         array  $tokens,
-        string $language = null
+        ?string $language = null
     ): array
     {
         $language = $language ?? 'english';
@@ -522,7 +522,7 @@ class WhisperTokenizer extends PreTrainedTokenizer
         array $tokenIds,
         bool  $skipSpecialTokens = false,
         ?bool $cleanUpTokenizationSpaces = null,
-        bool  $decodeWithTimestamps = null,
+        ?bool $decodeWithTimestamps = null,
         float $timePrecision = 0.02
     ): string
     {
