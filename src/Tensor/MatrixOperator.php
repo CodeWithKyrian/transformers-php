@@ -10,7 +10,7 @@ use Rindow\Math\Matrix\NDArrayPhp;
 
 class MatrixOperator extends \Rindow\Math\Matrix\MatrixOperator
 {
-    protected function alloc(mixed $array, int $dtype = null, array $shape = null): NDArray
+    protected function alloc(mixed $array, ?int $dtype = null, ?array $shape = null): NDArray
     {
         if ($dtype === null) {
             //$dtype = $this->resolveDtype($array);

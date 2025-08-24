@@ -22,7 +22,7 @@ class TensorBuffer implements LinearBuffer
     static protected ?FFI $ffi = null;
 
     /** @var array<int,string> $typeString */
-    protected static $typeString = [
+    protected static array $typeString = [
         NDArray::bool => 'uint8_t',
         NDArray::int8 => 'int8_t',
         NDArray::int16 => 'int16_t',
@@ -114,7 +114,7 @@ class TensorBuffer implements LinearBuffer
         }
     }
 
-    protected function isComplex(int $dtype = null): bool
+    protected function isComplex(?int $dtype = null): bool
     {
         $dtype = $dtype ?? $this->dtype;
         return $dtype == NDArray::complex64 || $dtype == NDArray::complex128;
